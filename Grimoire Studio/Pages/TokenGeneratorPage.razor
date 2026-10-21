@@ -1,0 +1,231 @@
+﻿@page "/generator"
+
+<div class="container-fluid py-3">
+    <div class="row g-3">
+        <!-- LEWA STRONA: OPCJE (2 podkolumny jak w WPF) -->
+        <div class="col-xl-8 col-lg-9">
+            <div class="card p-3 shadow-sm">
+                <div class="row">
+                    <!-- LEWA KOLUMNA OPCJI -->
+                    <div class="col-md-6">
+                        <!-- Presety -->
+                        <div class="mb-3">
+                            <label class="form-label">Presety:</label>
+                            <select class="form-select mb-2" @bind="SelectedPreset">
+                                <option value=""></option>
+                            </select>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-secondary btn-sm" @onclick="SavePreset_Click">Zapisz preset</button>
+                                <button class="btn btn-danger btn-sm" @onclick="DeletePreset_Click">Usuń</button>
+                            </div>
+                        </div>
+
+                        <!-- Typ tokena -->
+                        <div class="mb-3">
+                            <label class="form-label">Typ tokena:</label>
+                            <select class="form-select" @bind="TokenType">
+                                <option value="Gracz">Gracz</option>
+                                <option value="Przypomnienie">Przypomnienie</option>
+                            </select>
+                        </div>
+
+                        <!-- Czcionka -->
+                        <div class="mb-3">
+                            <label class="form-label">Czcionka:</label>
+                            <select class="form-select" @bind="SelectedFont">
+                                <option value="Times New Roman">Times New Roman</option>
+                                <option value="Roboto">Roboto</option>
+                            </select>
+                        </div>
+
+                        <!-- Nazwa -->
+                        <div class="mb-3">
+                            <label class="form-label">Nazwa:</label>
+                            <input type="text" class="form-control" @bind="LabelText" style="height: 37px;" />
+                        </div>
+
+                        <!-- Rozmiar czcionki -->
+                        <div class="mb-3">
+                            <label class="form-label">Rozmiar czcionki:</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="range" class="form-range" min="10" max="72" step="2" @bind="FontSize" @bind:event="oninput" style="width: 160px;" />
+                                <span class="fw-semibold">@FontSize</span>
+                            </div>
+                        </div>
+
+                        <!-- Przesunięcie tekstu pionowo -->
+                        <div class="mb-3">
+                            <label class="form-label">Przesunięcie tekstu pionowo:</label>
+                            <input type="range" class="form-range" min="-1.5" max="1" step="0.05" @bind="TextVertical" @bind:event="oninput" />
+                        </div>
+
+                        <!-- Odstępy liter -->
+                        <div class="mb-3">
+                            <label class="form-label">Odstępy liter:</label>
+                            <input type="range" class="form-range" min="-5" max="20" @bind="LetterSpacing" @bind:event="oninput" />
+                        </div>
+
+                        <!-- Opis -->
+                        <div class="mb-3">
+                            <label class="form-label">Opis:</label>
+                            <textarea class="form-control mb-2" rows="3" @bind="DescriptionText" style="height: 80px;"></textarea>
+                        </div>
+
+                        <!-- Czcionka opisu -->
+                        <div class="mb-3">
+                            <label class="form-label">Czcionka:</label>
+                            <select class="form-select" @bind="DescriptionFont">
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
+                        </div>
+
+                        <!-- Rozmiar czcionki opisu -->
+                        <div class="mb-3">
+                            <label class="form-label">Rozmiar czcionki:</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="range" class="form-range" min="8" max="48" step="1" @bind="DescriptionFontSize" @bind:event="oninput" style="width: 160px;" />
+                                <span class="fw-semibold">@DescriptionFontSize</span>
+                            </div>
+                        </div>
+
+                        <!-- Przesunięcie tekstu opisu pionowo -->
+                        <div class="mb-3">
+                            <label class="form-label">Przesunięcie tekstu pionowo:</label>
+                            <input type="range" class="form-range" min="-0.8" max="0.8" step="0.05" @bind="DescriptionVertical" @bind:event="oninput" />
+                        </div>
+
+                        <!-- Dodaj do arkusza -->
+                        <div class="mb-3">
+                            <button class="btn btn-secondary btn-sm" @onclick="AddToSheet_Click" style="width: 150px;">Dodaj do arkusza</button>
+                        </div>
+
+                        <!-- Rozmiar tokenu cm -->
+                        <div class="mb-3">
+                            <label class="form-label">Rozmiar tokenu (cm):</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="range" class="form-range" min="1" max="10" step="0.1" @bind="TokenSizeCm" @bind:event="oninput" style="width: 160px;" />
+                                <span class="fw-semibold">@TokenSizeCm.ToString("0.0")</span>
+                            </div>
+                        </div>
+
+                        <!-- Eksport do PDF -->
+                        <div>
+                            <button class="btn btn-secondary btn-sm" @onclick="ExportPdf_Click" style="width: 150px;">Eksport do PDF</button>
+                        </div>
+                    </div>
+
+                    <!-- PRAWA KOLUMNA OPCJI -->
+                    <div class="col-md-6">
+                        <!-- Obrazek -->
+                        <div class="mb-3">
+                            <label class="form-label">Obrazek:</label>
+                            <div class="d-flex flex-column gap-2">
+                                <button class="btn btn-secondary btn-sm" style="width: 120px;" @onclick="ChooseBackgroundButton_Click">Wybierz tło...</button>
+                                <button class="btn btn-secondary btn-sm" style="width: 120px;" @onclick="ChooseImageButton_Click">Wybierz obraz...</button>
+                                <button class="btn btn-secondary btn-sm" style="width: 100px;" @onclick="ClearImageButton_Click">Wyczyść</button>
+                            </div>
+                        </div>
+
+                        <!-- Wielkość obrazka -->
+                        <div class="mb-3">
+                            <label class="form-label">Wielkość obrazka (%):</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="range" class="form-range" min="0.2" max="1.5" step="0.05" @bind="ImageScale" @bind:event="oninput" style="width: 140px;" />
+                                <span class="fw-semibold">@((ImageScale * 100).ToString("0"))%</span>
+                            </div>
+                        </div>
+
+                        <!-- Przesunięcia obrazka -->
+                        <div class="mb-3">
+                            <label class="form-label">Przesunięcie obrazka pionowo:</label>
+                            <input type="range" class="form-range" min="-0.5" max="0.5" step="0.05" @bind="ImageVertical" @bind:event="oninput" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Przesunięcie obrazka poziomo:</label>
+                            <input type="range" class="form-range" min="-0.5" max="0.5" step="0.05" @bind="ImageHorizontal" @bind:event="oninput" />
+                        </div>
+
+                        <!-- Kolory obwódki -->
+                        <div class="mb-3">
+                            <label class="form-label">Kolor obwódki (Gracz):</label>
+                            <input type="color" class="form-control form-control-color mb-2" @bind="BorderColor" style="width: 160px;" />
+                            <input type="color" class="form-control form-control-color" @bind="BorderColor2" style="width: 160px;" />
+
+                            <label class="form-label mt-2">Grubość obwódki (px):</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="range" class="form-range" min="2" max="60" step="1" @bind="BorderThickness" @bind:event="oninput" style="width: 140px;" />
+                                <span class="fw-semibold">@BorderThickness</span>
+                            </div>
+                        </div>
+
+                        <!-- Nakładki liści -->
+                        <div class="mb-3">
+                            <span class="fw-bold d-block mb-2">Nakładki liści:</span>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="leafRight" @bind="LeafRightCheck" />
+                                <label class="form-check-label" for="leafRight">Pozostałe noce</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="leafLeft" @bind="LeafLeftCheck" />
+                                <label class="form-check-label" for="leafLeft">Pierwsza noc</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="leafOrange" @bind="LeafOrangeCheck" />
+                                <label class="form-check-label" for="leafOrange">Zmiana ilości ról</label>
+                            </div>
+
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="leafTop" @bind="LeafTopCheck" />
+                                <label class="form-check-label" for="leafTop">Ilość tokenów przypomnień</label>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <span class="text-muted">Ilość:</span>
+                                <input type="range" class="form-range" min="1" max="5" step="1" @bind="LeafTopCount" disabled="@(!LeafTopCheck)" style="width: 80px;" />
+                                <span>@LeafTopCount</span>
+                            </div>
+                        </div>
+
+                        <!-- Rozmiar liści -->
+                        <div class="mb-3">
+                            <label class="form-label">Rozmiar liści:</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="range" class="form-range" min="1" max="3" step="0.1" @bind="LeafScale" @bind:event="oninput" style="width: 130px;" />
+                                <span>@LeafScale.ToString("0.0")x</span>
+                            </div>
+                        </div>
+
+                        <!-- Podgląd rozmiaru w px -->
+                        <div class="mb-3">
+                            <label class="form-label">Podgląd rozmiaru (px):</label>
+                            <input type="range" class="form-range" min="50" max="1200" step="50" @bind="PreviewSize" @bind:event="oninput" />
+                            <span class="text-muted small">Rozmiar: @PreviewSize</span>
+                        </div>
+
+                        <!-- Przycisk generowania -->
+                        <div>
+                            <button class="btn btn-secondary btn-sm" @onclick="GenerateButton_Click" style="width: 150px;">Generuj i zapisz PNG</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRAWA STRONA: PODGLĄD GRAFICZNY -->
+        <div class="col-xl-4 col-lg-3">
+            <div class="card p-3 shadow-sm sticky-top" style="top: 20px;">
+                <h5 class="fw-bold mb-3">Podgląd:</h5>
+                <div class="border rounded bg-light p-3 d-flex justify-content-center align-items-center overflow-auto" style="min-height: 600px;">
+                    @if (!string.IsNullOrEmpty(PreviewImageSrc))
+                    {
+                        <img src="@PreviewImageSrc" alt="Podgląd tokena" style="max-width: 100%; height: auto;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted">Brak wygenerowanego podglądu</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

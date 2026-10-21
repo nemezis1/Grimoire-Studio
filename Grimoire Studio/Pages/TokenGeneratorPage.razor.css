@@ -1,0 +1,34 @@
+﻿/* Dodatkowe style scopowane dla strony generatora */
+.card {
+    border-radius: 6px;
+}
+
+@font-face {
+    font-family: 'Poetsen One';
+    src: url('/Fonts/PoetsenOne-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'KG Red Hands';
+    src: url('/Fonts/KGRedHands.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Autour One';
+    src: url('/Fonts/AutourOne-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Bellota';
+    src: url('/Fonts/Bellota-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Chopin Script';
+    src: url('/Fonts/ChopinScript.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('/Fonts/Roboto-Regular.ttf') format('truetype');
+}

@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Grimoire Studio/Grimoire Studio.csproj" />
+  <Project Path="GrimoireStudio.Data.Tests/GrimoireStudio.Data.Tests.csproj" />
+  <Project Path="GrimoireStudio.Data/GrimoireStudio.Data.csproj" />
+</Solution>

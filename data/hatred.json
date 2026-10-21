@@ -1,0 +1,447 @@
+[
+  {
+    "id": "chambermaid",
+    "hatred": [
+      {
+        "id": "mathematician",
+        "reasonEn": "The Chambermaid learns if the Mathematician wakes tonight or not, even though the Chambermaid wakes first.",
+        "reasonPl": "Pokojówka dowiaduje się, czy Matematyk budzi się tej nocy, mimo że Pokojówka budzi się pierwsza."
+      }
+    ]
+  },
+  {
+    "id": "butler",
+    "hatred": [
+      {
+        "id": "cannibal",
+        "reasonEn": "If the Cannibal gains the Butler ability, the Cannibal learns this.",
+        "reasonPl": "Jeśli Kanibal zyska zdolność Lokaja, dowiaduje się o tym."
+      }
+    ]
+  },
+  {
+    "id": "lunatic",
+    "hatred": [
+      {
+        "id": "mathematician",
+        "reasonEn": "The Mathematician learns if the Lunatic attacks a different player(s) than the real Demon attacked.",
+        "reasonPl": "Matematyk dowiaduje się, jeśli Lunatyk zaatakuje innego gracza (lub graczy) niż prawdziwy Demon."
+      }
+    ]
+  },
+  {
+    "id": "pithag",
+    "hatred": [
+      {
+        "id": "heretic",
+        "reasonEn": "A Pit-Hag can not create a Heretic. ",
+        "reasonPl": "Jędza z Jam nie może stworzyć Heretyka."
+      },
+      {
+        "id": "damsel",
+        "reasonEn": "If a Pit-Hag creates a Damsel, the Storyteller chooses which player it is.",
+        "reasonPl": "Jeśli Jędza z Jam stworzy Damę w Opałach, Narrator wybiera, który to gracz."
+      },
+      {
+        "id": "politician",
+        "reasonEn": "A Pit-hag can not create an evil Politician.",
+        "reasonPl": "Jędza z Jam nie może stworzyć złego Polityka."
+      }
+    ]
+  },
+  {
+    "id": "cerenovus",
+    "hatred": [
+      {
+        "id": "goblin",
+        "reasonEn": "The Cerenovus may choose to make a player mad that they are the Goblin.",
+        "reasonPl": "Cerenovus może sprawić, by gracz był przekonany, że jest Goblinem."
+      }
+    ]
+  },
+  {
+    "id": "leviathan",
+    "hatred": [
+      {
+        "id": "soldier",
+        "reasonEn": "If Leviathan nominates and executes the Soldier, the Soldier does not die.",
+        "reasonPl": "Jeśli Lewiatan nominuje i egzekwuje Żołnierza, Żołnierz nie ginie."
+      },
+      {
+        "id": "monk",
+        "reasonEn": "If Leviathan nominates and executes the player the Monk chose, that player does not die.",
+        "reasonPl": "Jeśli Lewiatan nominuje i egzekwuje gracza wybranego przez Mnicha, ten gracz nie ginie."
+      },
+      {
+        "id": "innkeeper",
+        "reasonEn": "If Leviathan nominates and executes a player the Innkeeper chose, that player does not die.",
+        "reasonPl": "Jeśli Lewiatan nominuje i egzekwuje gracza wybranego przez Karczmarza, ten gracz nie ginie."
+      },
+      {
+        "id": "ravenkeeper",
+        "reasonEn": "If Leviathan is in play & the Ravenkeeper dies by execution, they wake that night to use their ability.",
+        "reasonPl": "Jeśli Lewiatan jest w grze i Strażnik Kruków zginie przez egzekucję, budzi się tej nocy, aby użyć swojej zdolności."
+      },
+      {
+        "id": "sage",
+        "reasonEn": "If Leviathan is in play & the Sage dies by execution, they wake that night to use their ability.",
+        "reasonPl": "Jeśli Lewiatan jest w grze i Mędrzec zginie przez egzekucję, budzi się tej nocy, aby użyć swojej zdolności."
+      },
+      {
+        "id": "farmer",
+        "reasonEn": "If Leviathan is in play & a Farmer dies by execution, a good player becomes a Farmer that night.",
+        "reasonPl": "Jeśli Lewiatan jest w grze i Rolnik zginie przez egzekucję, dobry gracz staje się Rolnikiem tej nocy."
+      },
+      {
+        "id": "mayor",
+        "reasonEn": "If Leviathan is in play & no execution occurs on day 5, good wins.",
+        "reasonPl": "Jeśli Lewiatan jest w grze i 5. dnia nie dojdzie do egzekucji, dobro wygrywa."
+      }
+    ]
+  },
+  {
+    "id": "alhadikhia",
+    "hatred": [
+      {
+        "id": "scarletwoman",
+        "reasonEn": "If there are two living Al-Hadikhias, the Scarlet Woman Al-Hadikhia becomes the Scarlet Woman again.",
+        "reasonPl": "Jeśli w grze jest dwie żyjące Al-Hadikhie, Szkarłatna Dama będąca Al-Hadikhią staje się ponownie Szkarłatną Damą."
+      },
+      {
+        "id": "mastermind",
+        "reasonEn": "Only 1 jinxed character can be in play. Evil players start knowing which player and character it is.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze. Zli gracze zaczynają, wiedząc, który to gracz i postać."
+      }
+    ]
+  },
+  {
+    "id": "lilmonsta",
+    "hatred": [
+      {
+        "id": "poppygrower",
+        "reasonEn": "If the Poppy Grower is in play, Minions don't wake together. They are woken one by one, until one of them chooses to take the Lil' Monsta token.",
+        "reasonPl": "Jeśli Hodowca Maków jest w grze, Miniony nie budzą się razem. Budzą się pojedynczo, aż jeden z nich zdecyduje się wziąć żeton Lil' Monsta."
+      },
+      {
+        "id": "magician",
+        "reasonEn": "Only 1 jinxed character can be in play. ",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      },
+      {
+        "id": "scarletwoman",
+        "reasonEn": "If there are 5 or more players alive and the player holding the Lil' Monsta token dies, the Scarlet Woman is given the Lil' Monsta token tonight.",
+        "reasonPl": "Jeśli żyje 5 lub więcej graczy i gracz trzymający żeton Lil' Monsta ginie, Szkarłatna Dama otrzymuje żeton Lil' Monsta tej nocy."
+      }
+    ]
+  },
+  {
+    "id": "lycanthrope",
+    "hatred": [
+      {
+        "id": "gambler",
+        "reasonEn": "If the Lycanthrope is alive and the Gambler kills themself at night, no other players can die tonight.",
+        "reasonPl": "Jeśli Likantrop żyje i Hazardzista zabije się w nocy, nikt inny nie może tej nocy zginąć."
+      }
+    ]
+  },
+  {
+    "id": "legion",
+    "hatred": [
+      {
+        "id": "engineer",
+        "reasonEn": "Legion and the Engineer can not both be in play at the start of the game. If the Engineer creates Legion, most players (including all evil players) become evil Legion.",
+        "reasonPl": "Legion i Inżynier nie mogą być jednocześnie w grze na jej początku. Jeśli Inżynier stworzy Legion, większość graczy (w tym wszyscy źli) staje się złym Legionem."
+      },
+      {
+        "id": "preacher",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      }
+    ]
+  },
+  {
+    "id": "fanggu",
+    "hatred": [
+      {
+        "id": "scarletwoman",
+        "reasonEn": "If the Fang Gu chooses an Outsider and dies, the Scarlet Woman does not become the Fang Gu.",
+        "reasonPl": "Jeśli Fang Gu wybierze Outsidera i zginie, Szkarłatna Dama nie staje się Fang Gu."
+      }
+    ]
+  },
+  {
+    "id": "spy",
+    "hatred": [
+      {
+        "id": "magician",
+        "reasonEn": "When the Spy sees the Grimoire, the Demon and Magician's character tokens are removed.",
+        "reasonPl": "Gdy Szpieg patrzy w Grimoire, żetony Demona i Magika są usuwane."
+      },
+      {
+        "id": "alchemist",
+        "reasonEn": "The Alchemist can not have the Spy ability.",
+        "reasonPl": "Alchemik nie może posiadać zdolności Szpiega."
+      },
+      {
+        "id": "poppygrower",
+        "reasonEn": "If the Poppy Grower is in play, the Spy does not see the Grimoire until the Poppy Grower dies.",
+        "reasonPl": "Jeśli Hodowca Maków jest w grze, Szpieg nie widzi Grimoire'u dopóki Hodowca Maków nie zginie."
+      },
+      {
+        "id": "damsel",
+        "reasonEn": "Only 1 jinxed character can be in play. ",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      },
+      {
+        "id": "heretic",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      }
+    ]
+  },
+  {
+    "id": "widow",
+    "hatred": [
+      {
+        "id": "magician",
+        "reasonEn": "When the Widow sees the Grimoire, the Demon and Magician's character tokens are removed.",
+        "reasonPl": "Gdy Wdowa patrzy w Grimoire, żetony Demona i Magika są usuwane."
+      },
+      {
+        "id": "poppygrower",
+        "reasonEn": "If the Poppy Grower is in play, the Widow does not see the Grimoire until the Poppy Grower dies.",
+        "reasonPl": "Jeśli Hodowca Maków jest w grze, Wdowa nie widzi Grimoire'u dopóki Hodowca Maków nie zginie."
+      },
+      {
+        "id": "alchemist",
+        "reasonEn": "The Alchemist can not have the Widow ability.",
+        "reasonPl": "Alchemik nie może posiadać zdolności Wdowy."
+      },
+      {
+        "id": "damsel",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      },
+      {
+        "id": "heretic",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      }
+    ]
+  },
+  {
+    "id": "godfather",
+    "hatred": [
+      {
+        "id": "heretic",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      }
+    ]
+  },
+  {
+    "id": "baron",
+    "hatred": [
+      {
+        "id": "heretic",
+        "reasonEn": "The Baron might only add 1 Outsider, not 2.",
+        "reasonPl": "Baron może dodać tylko 1 Outsidera zamiast 2."
+      }
+    ]
+  },
+  {
+    "id": "marionette",
+    "hatred": [
+      {
+        "id": "lilmonsta",
+        "reasonEn": "The Marionette neighbors a Minion, not the Demon. The Marionette is not woken to choose who takes the Lil' Monsta token.",
+        "reasonPl": "Marionetka sąsiaduje z Minionem, a nie z Demonem. Marionetka nie jest budzona, by wybrać, kto bierze żeton Lil' Monsta."
+      },
+      {
+        "id": "poppygrower",
+        "reasonEn": "When the Poppy Grower dies, the Demon learns the Marionette but the Marionette learns nothing.",
+        "reasonPl": "Gdy Hodowca Maków ginie, Demon dowiaduje się, kto jest Marionetką, ale Marionetka nie dowiaduje się niczego."
+      },
+      {
+        "id": "snitch",
+        "reasonEn": "The Marionette does not learn 3 not in-play characters. The Demon learns an extra 3 instead.",
+        "reasonPl": "Marionetka nie poznaje 3 postaci spoza gry. Zamiast tego Demon dowiaduje się o dodatkowych 3 postaciach."
+      },
+      {
+        "id": "balloonist",
+        "reasonEn": "If the Marionette thinks that they are the Balloonist, +1 Outsider was added.",
+        "reasonPl": "Jeśli Marionetka myśli, że jest Baloniarzem, dodano +1 Outsidera."
+      },
+      {
+        "id": "damsel",
+        "reasonEn": "The Marionette does not learn that a Damsel is in play.",
+        "reasonPl": "Marionetka nie dowiaduje się, że Dama w Opałach jest w grze."
+      },
+      {
+        "id": "huntsman",
+        "reasonEn": "If the Marionette thinks that they are the Huntsman, the Damsel was added.",
+        "reasonPl": "Jeśli Marionetka myśli, że jest Łowcą, Dama w Opałach została dodana do gry."
+      }
+    ]
+  },
+  {
+    "id": "riot",
+    "hatred": [
+      {
+        "id": "engineer",
+        "reasonEn": "Riot and the Engineer can not both be in play at the start of the game. \nIf the Engineer creates Riot, the evil players become Riot.",
+        "reasonPl": "Riot i Inżynier nie mogą być jednocześnie w grze na jej początku. Jeśli Inżynier stworzy Riot, źli gracze stają się Riot."
+      },
+      {
+        "id": "golem",
+        "reasonEn": "If The Golem nominates Riot, the Riot player does not die.",
+        "reasonPl": "Jeśli Golem nominuje gracza Riot, gracz Riot nie ginie."
+      },
+      {
+        "id": "snitch",
+        "reasonEn": "If the Snitch is in play, each Riot player gets an extra 3 bluffs.",
+        "reasonPl": "Jeśli Kapuś jest w grze, każdy gracz Riot otrzymuje 3 dodatkowe bluffy."
+      },
+      {
+        "id": "saint",
+        "reasonEn": "If a good player nominates and kills the Saint, the Saint's team loses.",
+        "reasonPl": "Jeśli dobry gracz nominuje i zabije Świętego, drużyna Świętego przegrywa."
+      },
+      {
+        "id": "butler",
+        "reasonEn": "The Butler can not nominate their master.",
+        "reasonPl": "Lokaj nie może nominować swojego pana."
+      },
+      {
+        "id": "pithag",
+        "reasonEn": "If the Pit-Hag creates Riot, all evil players become Riot. \nIf the Pit-Hag creates Riot after day 3, the game continues for one more day.",
+        "reasonPl": "Jeśli Jędza z Jam stworzy Riot, wszyscy źli gracze stają się Riot. Jeśli Jędza z Jam stworzy Riot po 3. dniu, gra toczy się o jeden dzień dłużej."
+      },
+      {
+        "id": "mayor",
+        "reasonEn": "If the 3rd day begins with just three players alive, the players may choose (as a group) not to nominate at all. If so (and a Mayor is alive) then the Mayor's team wins.",
+        "reasonPl": "Jeśli 3. dzień zaczyna się z tylko trzema żywymi graczami, gracze mogą zdecydować grupowo, że w ogóle nie nominują. Jeśli tak się stanie (i Burmistrz żyje), drużyna Burmistrza wygrywa."
+      },
+      {
+        "id": "monk",
+        "reasonEn": "If a Riot player nominates and kills the Monk-protected-player, the Monk-protected-player does not die.",
+        "reasonPl": "Jeśli gracz Riot nominuje i zabije gracza chronionego przez Mnicha, gracz ten nie ginie."
+      },
+      {
+        "id": "farmer",
+        "reasonEn": "If a Riot player nominates and kills a Farmer, the Farmer uses their ability tonight.",
+        "reasonPl": "Jeśli gracz Riot nominuje i zabije Rolnika, Rolnik używa swojej zdolności tej nocy."
+      },
+      {
+        "id": "innkeeper",
+        "reasonEn": "If a Riot player nominates an Innkeeper-protected-player, the Innkeeper-protected-player does not die.",
+        "reasonPl": "Jeśli gracz Riot nominuje gracza chronionego przez Karczmarza, gracz ten nie ginie."
+      },
+      {
+        "id": "sage",
+        "reasonEn": "If a Riot player nominates and kills a Sage, the Sage uses their ability tonight.",
+        "reasonPl": "Jeśli gracz Riot nominuje i zabije Mędrca, Mędrzec używa swojej zdolności tej nocy."
+      },
+      {
+        "id": "ravenkeeper",
+        "reasonEn": "If a Riot player nominates and kills the Ravenkeeper, the Ravenkeeper uses their ability tonight.",
+        "reasonPl": "Jeśli gracz Riot nominuje i zabije Strażnika Kruków, Strażnik Kruków używa swojej zdolności tej nocy."
+      },
+      {
+        "id": "soldier",
+        "reasonEn": "If a Riot player nominates the Soldier, the Soldier does not die.",
+        "reasonPl": "Jeśli gracz Riot nominuje Żołnierza, Żołnierz nie ginie."
+      },
+      {
+        "id": "grandmother",
+        "reasonEn": "If a Riot player nominates and kills the Grandchild, the Grandmother dies too.",
+        "reasonPl": "Jeśli gracz Riot nominuje i zabije Wnuczka, Babcia również ginie."
+      },
+      {
+        "id": "king",
+        "reasonEn": "If a Riot player nominates and kills the King and the Choirboy is alive, the Choirboy uses their ability tonight.",
+        "reasonPl": "Jeśli gracz Riot nominuje i zabije Króla, a Chórzysta żyje, Chórzysta używa swojej zdolności tej nocy."
+      },
+      {
+        "id": "exorcist",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      },
+      {
+        "id": "minstrel",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      },
+      {
+        "id": "flowergirl",
+        "reasonEn": "Only 1 jinxed character can be in play.",
+        "reasonPl": "Tylko jedna postać objęta jinxem może być w grze."
+      },
+      {
+        "id": "undertaker",
+        "reasonEn": "Players that die by nomination register as being executed to the Undertaker.",
+        "reasonPl": "Gracze ginący przez nominację są uznawani przez Grabarza za straconych w wyniku egzekucji."
+      },
+      {
+        "id": "cannibal",
+        "reasonEn": "Players that die by nomination register as being executed to the Cannibal.",
+        "reasonPl": "Gracze ginący przez nominację są uznawani przez Kanibala za straconych w wyniku egzekucji."
+      },
+      {
+        "id": "pacifist",
+        "reasonEn": "Players that die by nomination register as being executed to the Pacifist.",
+        "reasonPl": "Gracze ginący przez nominację są uznawani przez Pacyfistę za straconych w wyniku egzekucji."
+      },
+      {
+        "id": "devilsadvocate",
+        "reasonEn": "Players that die by nomination register as being executed to the Devil's Advocate.",
+        "reasonPl": "Gracze ginący przez nominację są uznawani przez Adwokata Diabła za straconych w wyniku egzekucji."
+      },
+      {
+        "id": "investigator",
+        "reasonEn": "Riot registers as a Minion to the Investigator.",
+        "reasonPl": "Riot rejestruje się u Śledczego jako Minion."
+      },
+      {
+        "id": "clockmaker",
+        "reasonEn": "Riot registers as a Minion to the Clockmaker.",
+        "reasonPl": "Riot rejestruje się u Zegarmistrza jako Minion."
+      },
+      {
+        "id": "towncrier",
+        "reasonEn": "Riot registers as a Minion to the Town Crier.",
+        "reasonPl": "Riot rejestruje się u Herolda Miejskiego jako Minion."
+      },
+      {
+        "id": "damsel",
+        "reasonEn": "Riot registers as a Minion to the Damsel.",
+        "reasonPl": "Riot rejestruje się u Damy w Opałach jako Minion."
+      },
+      {
+        "id": "preacher",
+        "reasonEn": "Riot registers as a Minion to the Preacher.",
+        "reasonPl": "Riot rejestruje się u Kaznodziei jako Minion."
+      }
+    ]
+  },
+  {
+    "id": "lleech",
+    "hatred": [
+      {
+        "id": "mastermind",
+        "reasonEn": "If the Mastermind is alive and the Lleech's host dies by execution, the Lleech lives but loses their ability. ",
+        "reasonPl": "Jeśli Mózg Operacji żyje, a żywiciel Pijawki zginie przez egzekucję, Pijawka przeżywa, ale traci swoją zdolność."
+      },
+      {
+        "id": "slayer",
+        "reasonEn": "If the Slayer slays the Lleech's host, the host dies. ",
+        "reasonPl": "Jeśli Zabójca zgładzi żywiciela Pijawki, żywiciel ginie."
+      },
+      {
+        "id": "heretic",
+        "reasonEn": "If the Lleech has poisoned the Heretic then the Lleech dies, the Heretic remains poisoned.",
+        "reasonPl": "Jeśli Pijawka zatruła Heretyka i Pijawka zginie, Heretyk pozostaje zatruty."
+      }
+    ]
+  }
+]
