@@ -1,0 +1,24 @@
+@using Grimoire_Studio.Generator
+
+<select value="@Value" @onchange="e => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)" style="font-family: '@Value'">
+    <optgroup label="Dołączone">
+        @foreach (var font in TokenFonts.Bundled)
+        {
+            <option value="@font" style="font-family: '@font'">@font</option>
+        }
+    </optgroup>
+    <optgroup label="Systemowe">
+        @foreach (var font in TokenFonts.Common)
+        {
+            <option value="@font" style="font-family: '@font'">@font</option>
+        }
+    </optgroup>
+</select>
+
+@code {
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+}

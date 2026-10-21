@@ -1,4 +1,5 @@
 using Grimoire_Studio;
+using Grimoire_Studio.Generator;
 using Grimoire_Studio.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -9,5 +10,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<GameDataClient>();
+builder.Services.AddScoped<TokenRenderer>();
 
 await builder.Build().RunAsync();

@@ -88,6 +88,20 @@ code {
     text-align: start;
 }
 
+/* ---------- Token fonts (bundled in wwwroot/Fonts, listed in Generator/TokenFonts.cs) ---------- */
+
+@font-face { font-family: "Appleberry"; src: url("../Fonts/Appleberry.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Autour One"; src: url("../Fonts/AutourOne.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Bellota"; src: url("../Fonts/Bellota.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Borders Divide But Hearts Shall Conquer"; src: url("../Fonts/Borders%20Divide%20But%20Hearts%20Shall%20Conquer.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Chopin Script"; src: url("../Fonts/ChopinScript.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "Chunkfive Ex"; src: url("../Fonts/Chunkfive%20Ex.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Cocogoose"; src: url("../Fonts/Cocogoose.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "DeFonarts"; src: url("../Fonts/DeFonarts.otf") format("opentype"); font-display: swap; }
+@font-face { font-family: "KG Red Hands"; src: url("../Fonts/KGRedHands.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Poetsen One"; src: url("../Fonts/PoetsenOne.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Roboto"; src: url("../Fonts/Roboto.ttf") format("truetype"); font-display: swap; }
+
 /* ---------- Grimoire Studio wiki ---------- */
 
 :root {
@@ -410,3 +424,86 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 }
 
 .night-order__item p { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--muted); }
+
+/* ---------- Token generator ---------- */
+
+.generator {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.generator__preview { position: sticky; top: 1rem; }
+
+@media (max-width: 900px) {
+    .generator { grid-template-columns: minmax(0, 1fr); }
+    .generator__preview { position: static; order: -1; }
+}
+
+.token-canvas {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 1;
+    margin: 0 auto 1rem;
+}
+
+.field { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.75rem; flex: 1 1 200px; min-width: 0; }
+.field > span { font-size: 0.85rem; color: var(--muted); }
+.field--inline { flex-direction: row; align-items: center; gap: 0.5rem; flex: 0 1 auto; }
+.field--inline > span { font-size: 0.95rem; color: var(--text); }
+.field-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin-bottom: 0.75rem; }
+.field-row .field { margin-bottom: 0; }
+
+.generator select, .generator textarea, .generator input[type="number"] {
+    font: inherit;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+.generator textarea { resize: vertical; }
+.generator input[type="color"] { width: 3rem; height: 2rem; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: none; }
+
+.slider {
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 3.5rem;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.slider__label { font-size: 0.9rem; }
+.slider__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
+.slider input { width: 100%; accent-color: var(--accent); }
+
+@media (max-width: 520px) {
+    .slider { grid-template-columns: minmax(0, 1fr) 3.5rem; }
+    .slider__label { grid-column: 1 / -1; }
+}
+
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 0.4rem 1rem; margin-bottom: 0.75rem; }
+.checks label { display: flex; align-items: center; gap: 0.5rem; }
+.checks input, .field--inline input[type="checkbox"] { accent-color: var(--accent); width: 1rem; height: 1rem; }
+
+.button { cursor: pointer; font: inherit; font-weight: 600; }
+.button--file { position: relative; overflow: hidden; }
+.button--file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.export { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; }
+.small { font-size: 0.85rem; }
+.generator input[type="text"] {
+    font: inherit;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+}
+.button:disabled { opacity: 0.5; cursor: default; }
+.export .field { margin-bottom: 0; flex: 1 1 140px; }

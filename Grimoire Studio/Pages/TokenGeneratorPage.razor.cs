@@ -1,139 +1,164 @@
-﻿using SkiaSharp;
+﻿using System.Globalization;
+using Grimoire_Studio.Generator;
+using GrimoireStudio.Data;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 
-namespace Grimoire_Studio.Pages
+namespace Grimoire_Studio.Pages;
+
+public partial class TokenGeneratorPage
 {
-    public partial class TokenGeneratorPage
+    // Canvas resolution of the preview; displayed smaller via CSS for a crisp image.
+    private const int PreviewSize = 800;
+    private const long MaxUploadBytes = 10 * 1024 * 1024;
+
+    private readonly TokenSettings _settings = new() { Text = "Nazwa" };
+    private ElementReference _canvas;
+    private GameData? _data;
+    private Role? _role;
+    private string? _uploadError;
+    private List<TokenPreset> _presets = [];
+    private string _selectedPreset = string.Empty;
+    private string _presetName = string.Empty;
+    private string? _presetMessage;
+
+    /// <summary>Role id to preload, e.g. /generator?role=imp (linked from the role page).</summary>
+    [SupplyParameterFromQuery(Name = "role")]
+    public string? RoleId { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
-        // Stan kontrolek
-        private string SelectedPreset = "";
-        private string TokenType = "Gracz";
-        private string SelectedFont = "Times New Roman";
-        private string LabelText = "Placeholder";
-        private int FontSize = 40;
-        private double TextVertical = 0;
-        private double LetterSpacing = 0;
-
-        private string DescriptionText = "opis";
-        private string DescriptionFont = "Times New Roman";
-        private int DescriptionFontSize = 20;
-        private double DescriptionVertical = -0.25;
-
-        private double TokenSizeCm = 5.0;
-
-        private double ImageScale = 1.0;
-        private double ImageVertical = 0;
-        private double ImageHorizontal = 0;
-
-        private string BorderColor = "#1E90FF";
-        private string BorderColor2 = "#000000";
-        private int BorderThickness = 20;
-
-        private bool LeafRightCheck = false;
-        private bool LeafLeftCheck = false;
-        private bool LeafOrangeCheck = false;
-        private bool LeafTopCheck = false;
-        private int LeafTopCount = 1;
-        private double LeafScale = 1.0;
-
-        private int PreviewSize = 500;
-        private string? PreviewImageSrc = null;
-
-        // Lista dostępnych czcionek
-        public List<string> AvailableFonts { get; set; } = new()
+        _presets = await Renderer.LoadPresetsAsync();
+        _data = await Client.GetAsync();
+        if (RoleId is not null && _data.FindRole(RoleId) is { } role)
         {
-            "Times New Roman",
-            "Georgia",
-            "Segoe UI",
-            "Arial",
-            "Calibri",
-            "Poetsen One",
-            "KG Red Hands",
-            "Autour One",
-            "Bellota",
-            "Chopin Script",
-            "Roboto"
-        };
+            ApplyRole(role);
+        }
+    }
 
-        protected override void OnInitialized()
+    // Every UI change re-renders the component, so redrawing here keeps the preview live.
+    protected override async Task OnAfterRenderAsync(bool firstRender) =>
+        await Renderer.RenderAsync(_canvas, _settings, PreviewSize);
+
+    private void SelectRole(string? id)
+    {
+        if (_data?.FindRole(id ?? string.Empty) is { } role)
         {
-            UpdatePreview();
+            ApplyRole(role);
+        }
+        else
+        {
+            _role = null;
         }
 
-        // Metoda generująca podgląd graficzny za pomocą SkiaSharp
-        private void UpdatePreview()
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter("role", _role?.Id), replace: true);
+    }
+
+    private void ApplyRole(Role role)
+    {
+        _role = role;
+        _settings.ApplyRole(role);
+    }
+
+    private void ToggleSecondColor(ChangeEventArgs e) =>
+        _settings.BorderColor2 = e.Value is true ? "#B22222" : null;
+
+    private void ClearImages()
+    {
+        _settings.ImageUrl = null;
+        _settings.BackgroundUrl = null;
+        _uploadError = null;
+    }
+
+    private async Task UploadAsync(InputFileChangeEventArgs e, Action<string> apply)
+    {
+        _uploadError = null;
+        try
         {
-            int width = PreviewSize;
-            int height = PreviewSize;
+            using var stream = e.File.OpenReadStream(MaxUploadBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            apply($"data:{e.File.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}");
+        }
+        catch (IOException)
+        {
+            _uploadError = $"Plik jest za duży (maksymalnie {MaxUploadBytes / 1024 / 1024} MB).";
+        }
+    }
 
-            using var surface = SKSurface.Create(new SKImageInfo(width, height));
-            var canvas = surface.Canvas;
-            canvas.Clear(SKColors.Transparent);
+    // Accepts "4,25" as well as "4.25"; out-of-range values are clamped, invalid input is ignored.
+    private void SetSizeCm(ChangeEventArgs e)
+    {
+        var text = e.Value?.ToString()?.Replace(',', '.');
+        if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var cm))
+        {
+            _settings.SizeCm = Math.Round(Math.Clamp(cm, 1, 10), 2);
+        }
+    }
 
-            // Rysowanie bazowego koła tokena
-            var center = new SKPoint(width / 2f, height / 2f);
-            float radius = (Math.Min(width, height) / 2f) - (BorderThickness / 2f);
+    private async Task DownloadAsync() => await Renderer.DownloadPngAsync(_settings, FileName());
 
-            using var paint = new SKPaint
-            {
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = BorderThickness,
-                Color = SKColor.Parse(BorderColor)
-            };
+    private void ApplyPreset(string? name)
+    {
+        _selectedPreset = name ?? string.Empty;
+        _presetMessage = null;
+        _presets.FirstOrDefault(p => p.Name == _selectedPreset)?.ApplyTo(_settings);
+    }
 
-            // Wypełnienie tła tokena
-            using var fillPaint = new SKPaint
-            {
-                IsAntialias = true,
-                Style = SKPaintStyle.Fill,
-                Color = SKColors.White
-            };
-            canvas.DrawCircle(center, radius, fillPaint);
-
-            // Obwódka
-            canvas.DrawCircle(center, radius, paint);
-
-            // Rysowanie głównego tekstu (Nazwa) z użyciem nowszego API SkiaSharp
-            using var textPaint = new SKPaint
-            {
-                IsAntialias = true,
-                Color = SKColors.Black
-            };
-
-            using var font = new SKFont
-            {
-                Size = FontSize
-            };
-
-            // Pozycja Y tekstu z uwzględnieniem przesunięcia pionowego
-            float textY = (float)(center.Y + (FontSize / 3f) + (TextVertical * 50));
-
-            // Wyrównanie do środka przekazujemy bezpośrednio jako argument DrawText
-            canvas.DrawText(LabelText, center.X, textY, SKTextAlign.Center, font, textPaint);
-
-            // Konwersja do Base64 w formacie PNG
-            using var image = surface.Snapshot();
-            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
-            PreviewImageSrc = $"data:image/png;base64,{Convert.ToBase64String(data.ToArray())}";
-            StateHasChanged();
+    /// <summary>Restores the default look; text, description, pictures and leaf markers stay.</summary>
+    private void ResetStyle()
+    {
+        var type = _settings.TokenType;
+        new TokenPreset { Name = string.Empty, TokenType = type }.ApplyTo(_settings);
+        if (type == TokenSettings.ReminderType)
+        {
+            _settings.TextVertical = TokenSettings.ReminderTextVertical;
         }
 
-        // Wywołanie odświeżenia przy każdej zmianie parametrów
-        private void OnParametersChanged()
+        _selectedPreset = string.Empty;
+        _presetMessage = "Przywrócono ustawienia domyślne.";
+    }
+
+    private async Task SavePresetAsync()
+    {
+        var name = _presetName.Trim();
+        var preset = TokenPreset.From(name, _settings);
+        var index = _presets.FindIndex(p => p.Name == name);
+        if (index >= 0)
         {
-            UpdatePreview();
+            _presets[index] = preset;
+        }
+        else
+        {
+            _presets.Add(preset);
+            _presets.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.CurrentCulture));
         }
 
-        private void SavePreset_Click() { }
-        private void DeletePreset_Click() { }
-        private void AddToSheet_Click() { }
-        private void ExportPdf_Click() { }
-        private void ChooseBackgroundButton_Click() { }
-        private void ChooseImageButton_Click() { }
-        private void ClearImageButton_Click() { }
-        private void GenerateButton_Click()
+        _presetMessage = await Renderer.SavePresetsAsync(_presets)
+            ? (index >= 0 ? $"Nadpisano preset „{name}”." : $"Zapisano preset „{name}”.")
+            : "Przeglądarka nie pozwoliła zapisać presetu (tryb prywatny lub brak miejsca).";
+        _selectedPreset = name;
+        _presetName = string.Empty;
+    }
+
+    private async Task DeletePresetAsync()
+    {
+        _presets.RemoveAll(p => p.Name == _selectedPreset);
+        _presetMessage = await Renderer.SavePresetsAsync(_presets)
+            ? $"Usunięto preset „{_selectedPreset}”."
+            : "Przeglądarka nie pozwoliła zapisać zmian.";
+        _selectedPreset = string.Empty;
+    }
+
+    private string FileName()
+    {
+        var name = _role?.Id ?? _settings.Text;
+        if (!_settings.IsPlayer)
         {
-            UpdatePreview();
+            name = $"{_role?.Id}-{_settings.Text}".Trim('-');
         }
+
+        var safe = new string(name.Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray()).Trim('-');
+        return $"{(safe.Length == 0 ? "token" : safe)}.png";
     }
 }

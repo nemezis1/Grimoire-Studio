@@ -1,0 +1,47 @@
+@using System.Globalization
+@typeparam TValue where TValue : struct, IConvertible
+
+<label class="slider">
+    <span class="slider__label">@Label</span>
+    <input type="range" min="@Invariant(Min)" max="@Invariant(Max)" step="@Invariant(Step)"
+           value="@Invariant(ToDouble(Value))" @oninput="OnInput" />
+    <span class="slider__value">@ToDouble(Value).ToString(Format, CultureInfo.CurrentCulture)</span>
+</label>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public double Min { get; set; }
+
+    [Parameter]
+    public double Max { get; set; } = 100;
+
+    [Parameter]
+    public double Step { get; set; } = 1;
+
+    /// <summary>Display format of the current value, e.g. "0.00" or "0%".</summary>
+    [Parameter]
+    public string Format { get; set; } = "0.##";
+
+    [Parameter]
+    public TValue Value { get; set; }
+
+    [Parameter]
+    public EventCallback<TValue> ValueChanged { get; set; }
+
+    // Range inputs always use '.' as the decimal separator.
+    private static string Invariant(double value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private static double ToDouble(TValue value) => value.ToDouble(CultureInfo.InvariantCulture);
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+        {
+            var converted = typeof(TValue) == typeof(int) ? Math.Round(number) : number;
+            await ValueChanged.InvokeAsync((TValue)Convert.ChangeType(converted, typeof(TValue), CultureInfo.InvariantCulture));
+        }
+    }
+}
