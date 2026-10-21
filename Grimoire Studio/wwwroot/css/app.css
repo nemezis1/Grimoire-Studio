@@ -137,7 +137,8 @@ code {
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { color-scheme: light dark; }
+/* Reserve the scrollbar space on every page, so short pages are not wider than long ones. */
+html { color-scheme: light dark; scrollbar-gutter: stable; }
 
 body {
     margin: 0;
@@ -160,8 +161,9 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     border-bottom: 1px solid var(--border);
 }
 
+/* One width for every page, so the header and content do not jump when switching pages. */
 .site-header__inner, .page, .site-footer {
-    max-width: 1200px;
+    max-width: 1760px;
     margin: 0 auto;
     padding-inline: 16px;
 }
@@ -314,7 +316,15 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 }
 
 /* Role detail */
-.role-detail__header { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+/* Panels sit side by side on wide pages so text lines stay readable. */
+.role-detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+    gap: 0 1rem;
+    align-items: start;
+}
+
+.role-detail__header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem; }
 .role-detail__header h1 { margin: 0; }
 .role-detail__subtitle { margin: 0.25rem 0 0; color: var(--muted); }
 
@@ -393,11 +403,15 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .script-header p { margin: 0.25rem 0 0; }
 .script-header__icon { width: 96px; height: 96px; object-fit: contain; }
 
+/* Script role list: two or three columns on wide pages. */
+.sheet { columns: 3 420px; column-gap: 2rem; }
+
 .sheet__row {
     display: flex;
     gap: 0.75rem;
     padding: 0.5rem 0;
     border-bottom: 1px solid var(--border);
+    break-inside: avoid;
 }
 
 .sheet__row p { margin: 0.15rem 0 0; font-size: 0.95rem; }
@@ -427,11 +441,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 /* ---------- Token generator ---------- */
 
-/* Controls | preview | sheet on wide screens; the generator page gets more room than the wiki. */
-.page:has(.generator),
-body:has(.generator) .site-header__inner,
-body:has(.generator) .site-footer { max-width: 1760px; }
-
+/* Controls | preview | sheet on wide screens. */
 .generator {
     display: grid;
     grid-template-columns: minmax(0, 480px) minmax(0, 380px) minmax(0, 1fr);
@@ -598,7 +608,7 @@ body:has(.generator) .site-footer { max-width: 1760px; }
     body { background: #ffffff; }
     .site-header, .site-footer, .page > h1, .generator__controls, .generator__preview, .sheet-toolbar, .sheet-panel > p { display: none !important; }
     .generator { display: block; }
-    .page, .page:has(.generator), .sheet-panel { padding: 0; margin: 0; border: 0; background: none; max-width: none; }
+    .page, .sheet-panel { padding: 0; margin: 0; border: 0; background: none; max-width: none; }
     .sheet-pages { display: block; margin: 0; }
     .sheet-page { zoom: 1; box-shadow: none; break-after: page; }
     .sheet-token__actions { display: none !important; }
