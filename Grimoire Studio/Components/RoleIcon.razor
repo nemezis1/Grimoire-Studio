@@ -1,0 +1,10 @@
+<img class="role-icon role-icon--@Size" src="@GameDataClient.IconUrl(Role.Id)" alt="" loading="lazy" />
+
+@code {
+    [Parameter, EditorRequired]
+    public Role Role { get; set; } = default!;
+
+    /// <summary>sm, md or lg.</summary>
+    [Parameter]
+    public string Size { get; set; } = "md";
+}

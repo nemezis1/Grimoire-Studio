@@ -14,4 +14,25 @@
     <PackageReference Include="SkiaSharp.Views.Blazor" Version="4.153.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GrimoireStudio.Data\GrimoireStudio.Data.csproj" />
+  </ItemGroup>
+
+  <!--
+    Serve the repository data folder (JSON + icons) as wwwroot/data. Static web assets ignore linked files,
+    so the folder is copied before build; wwwroot/data is git-ignored and must not be edited by hand.
+  -->
+  <Target Name="CopyRepositoryData" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <RepositoryData Include="..\data\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(RepositoryData)"
+          DestinationFiles="@(RepositoryData->'wwwroot\data\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <Content Remove="wwwroot\data\**" />
+      <Content Include="wwwroot\data\**" />
+    </ItemGroup>
+  </Target>
+
 </Project>

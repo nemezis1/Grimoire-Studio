@@ -1,0 +1,78 @@
+@page "/scripts/{Id}"
+
+<DataView Context="data">
+    @if (data.FindScript(Id) is not { } script)
+    {
+        <PageTitle>Nie znaleziono – Grimoire Studio</PageTitle>
+        <h1>Nie ma takiego skryptu</h1>
+        <p>Skrypt <code>@Id</code> nie istnieje. <a href="scripts">Wróć do listy skryptów</a>.</p>
+    }
+    else
+    {
+        var roles = data.RolesOf(script);
+        var jinxes = roles
+            .SelectMany(r => data.JinxesFor(r.Id, script).Select(j => (Role: r, j.Other, j.Jinx)))
+            .DistinctBy(x => x.Jinx)
+            .ToList();
+
+        <PageTitle>@script.Name – Grimoire Studio</PageTitle>
+
+        <p class="breadcrumbs"><a href="scripts">Skrypty</a></p>
+
+        <header class="script-header">
+            <img class="script-header__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" />
+            <div>
+                <h1>@script.Name</h1>
+                <p class="muted">@(script.IsOfficial ? "Skrypt oficjalny" : "Skrypt własny") · @roles.Count ról · <a href="roles?script=@script.Id">filtruj role</a></p>
+            </div>
+        </header>
+
+        @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+        {
+            <section class="role-group">
+                <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key)</h2>
+                <ul class="sheet">
+                    @foreach (var role in group)
+                    {
+                        <li class="sheet__row">
+                            <a href="roles/@role.Id"><RoleIcon Role="role" /></a>
+                            <div>
+                                <a class="sheet__name" href="roles/@role.Id">@role.NamePl</a>
+                                <p>@role.AbilityPl</p>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
+        <section class="role-group">
+            <h2>Kolejność nocy</h2>
+            <div class="night-columns">
+                <NightOrderList Title="Pierwsza noc" Roles="data.NightOrder(script, firstNight: true)" FirstNight="true" />
+                <NightOrderList Title="Pozostałe noce" Roles="data.NightOrder(script, firstNight: false)" FirstNight="false" />
+            </div>
+        </section>
+
+        @if (jinxes.Count > 0)
+        {
+            <section class="role-group">
+                <h2>Jinxy</h2>
+                <ul class="jinx-list">
+                    @foreach (var (role, other, jinx) in jinxes)
+                    {
+                        <li>
+                            <span class="jinx-pair"><RoleLink Role="role" /> + <RoleLink Role="other" /></span>
+                            <p>@jinx.ReasonPl</p>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    }
+</DataView>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+}

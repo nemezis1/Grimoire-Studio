@@ -1,0 +1,35 @@
+@* Loads GameData and renders ChildContent with it; shows loading and error states. *@
+@inject GameDataClient Client
+
+@if (_error is not null)
+{
+    <p class="notice notice--error">Nie udało się wczytać danych: @_error</p>
+}
+else if (_data is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else
+{
+    @ChildContent(_data)
+}
+
+@code {
+    private GameData? _data;
+    private string? _error;
+
+    [Parameter, EditorRequired]
+    public RenderFragment<GameData> ChildContent { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _data = await Client.GetAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

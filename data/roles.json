@@ -177,7 +177,7 @@
     "remindersPl": [ "Brak zdolności" ],
     "setup": false,
     "abilityEn": "The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.",
-    "abilityPl": "Kiedy zostaniesz nominowany po raz pierwszy, jeśli nominujący jest Mieszczaninem, zostaje on natychmiast stracony."
+    "abilityPl": "Kiedy zostaniesz nominowany po raz pierwszy, jeśli nominujący jest Mieszkańcem, zostaje on natychmiast stracony."
   },
   {
     "id": "slayer",
@@ -642,7 +642,7 @@
     "firstNightReminderPl": "",
     "otherNight": 430,
     "otherNightReminderEn": "If the Professor has not used their ability: The Professor either shakes their head no, or points to a player. If that player is a Townsfolk, they are now alive.",
-    "otherNightReminderPl": "Jeśli Profesor nie użył jeszcze swojej zdolności: Profesor kręci głową na 'nie' lub wskazuje gracza. Jeśli ten gracz jest Mieszczaninem, zostaje wskrzeszony.",
+    "otherNightReminderPl": "Jeśli Profesor nie użył jeszcze swojej zdolności: Profesor kręci głową na 'nie' lub wskazuje gracza. Jeśli ten gracz jest Mieszkańcem, zostaje wskrzeszony.",
     "remindersEn": [ "Alive", "No ability" ],
     "remindersPl": [ "Żywy", "Brak zdolności" ],
     "setup": false,
@@ -801,10 +801,10 @@
     "team": "minion",
     "firstNight": 210,
     "firstNightReminderEn": "Show each of the Outsider tokens in play.",
-    "firstNightReminderPl": "Pokaż żetony wszystkich Odmieńców biorących udział w grze.",
+    "firstNightReminderPl": "Pokaż żetony wszystkich Przybyszów biorących udział w grze.",
     "otherNight": 370,
     "otherNightReminderEn": "If an Outsider died today: The Godfather points to a player. That player dies.",
-    "otherNightReminderPl": "Jeśli dzisiaj zginął Odmieniec: Ojciec Chrzestny wskazuje gracza. Ten gracz ginie.",
+    "otherNightReminderPl": "Jeśli dzisiaj zginął Przybysz: Ojciec Chrzestny wskazuje gracza. Ten gracz ginie.",
     "remindersEn": [ "Died today", "Dead" ],
     "remindersPl": [ "Zginął dzisiaj", "Martwy" ],
     "setup": true,
@@ -945,7 +945,7 @@
     "team": "traveler",
     "firstNight": 10,
     "firstNightReminderEn": "Show the Apprentice the 'You are' card, then a Townsfolk or Minion token. In the Grimoire, replace the Apprentice token with that character token, and put the Apprentice's 'Is the Apprentice' reminder by that character token.",
-    "firstNightReminderPl": "Pokaż Czeladnikowi kartę 'Jesteś', a potem żeton Mieszczanina lub Sługusa. Zastąp żeton Czeladnika w Grimoire żetonem tej postaci.",
+    "firstNightReminderPl": "Pokaż Czeladnikowi kartę 'Jesteś', a potem żeton Mieszkańca lub Sługusa. Zastąp żeton Czeladnika w Grimoire żetonem tej postaci.",
     "otherNight": 0,
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
@@ -953,7 +953,7 @@
     "remindersPl": [ "Jest Czeladnikiem" ],
     "setup": false,
     "abilityEn": "On your 1st night, you gain a Townsfolk ability (if good), or a Minion ability (if evil).",
-    "abilityPl": "Podczas swojej pierwszej nocy zyskujesz zdolność Mieszczanina (jeśli jesteś dobry) lub Sługusa (jeśli jesteś zły)."
+    "abilityPl": "Podczas swojej pierwszej nocy zyskujesz zdolność Mieszkańca (jeśli jesteś dobry) lub Sługusa (jeśli jesteś zły)."
   },
   {
     "id": "matron",
@@ -1434,7 +1434,7 @@
     "firstNightReminderPl": "",
     "otherNight": 320,
     "otherNightReminderEn": "The Vigormortis points to a player. That player dies. If a Minion, they keep their ability and one of their Townsfolk neighbours is poisoned.",
-    "otherNightReminderPl": "Vigormortis wskazuje gracza. Jeśli zabijesz Sługusa, zachowuje on zdolność, ale jeden z jego sąsiadów-Mieszczan zostaje otruty.",
+    "otherNightReminderPl": "Vigormortis wskazuje gracza. Jeśli zabijesz Sługusa, zachowuje on zdolność, ale jeden z jego sąsiadów-Mieszkańców zostaje otruty.",
     "remindersEn": [ "Dead", "Has ability", "Poisoned" ],
     "remindersPl": [ "Martwy", "Ma zdolność", "Otruty" ],
     "setup": true,
@@ -1470,7 +1470,7 @@
     "firstNightReminderPl": "",
     "otherNight": 310,
     "otherNightReminderEn": "The Vortox points to a player. That player dies.",
-    "otherNightReminderPl": "Vortox wskazuje gracza. Ten gracz ginie. Wszystkie informacje od Mieszczan są fałszywe.",
+    "otherNightReminderPl": "Vortox wskazuje gracza. Ten gracz ginie. Wszystkie informacje od Mieszkańców są fałszywe.",
     "remindersEn": [ "Dead" ],
     "remindersPl": [ "Śmierć" ],
     "setup": false,
@@ -1593,7 +1593,7 @@
     "team": "townsfolk",
     "firstNight": 460,
     "firstNightReminderEn": "Point to 1 evil player. Wake the townsfolk who is evil and show them the 'You are' card and the thumbs down evil sign.",
-    "firstNightReminderPl": "Wskaż jednego złego gracza. Jeden z Mieszczan jest zły.",
+    "firstNightReminderPl": "Wskaż jednego złego gracza. Jeden z Mieszkańców jest zły.",
     "otherNight": 640,
     "otherNightReminderEn": "If the known evil player has died, point to another evil player. ",
     "otherNightReminderPl": "Jeśli znany ci zły gracz zginął, poznajesz kolejnego złego gracza.",
@@ -1683,15 +1683,15 @@
     "team": "townsfolk",
     "firstNight": 450,
     "firstNightReminderEn": "Choose a character type. Point to a player whose character is of that type. Place the Balloonist's Seen reminder next to that character.",
-    "firstNightReminderPl": "Wskaż gracza konkretnego typu postaci. [+1 Odmieniec]",
+    "firstNightReminderPl": "Wskaż gracza konkretnego typu postaci. [+1 Przybysz]",
     "otherNight": 620,
     "otherNightReminderEn": "Choose a character type that does not yet have a Seen reminder next to a character of that type. Point to a player whose character is of that type, if there any. Place the Balloonist's Seen reminder next to that character.",
     "otherNightReminderPl": "Wskaż gracza typu postaci, którego jeszcze nie poznałeś.",
     "remindersEn": [ "Seen Townsfolk", "Seen Outsider", "Seen Minion", "Seen Demon", "Seen Traveller" ],
-    "remindersPl": [ "Widziany Mieszczanin", "Widziany Odmieniec", "Widziany Sługus", "Widziany Demon", "Widziany Podróżnik" ],
+    "remindersPl": [ "Widziany Mieszkaniec", "Widziany Przybysz", "Widziany Sługus", "Widziany Demon", "Widziany Wędrowiec" ],
     "setup": true,
     "abilityEn": "Each night, you learn 1 player of each character type, until there are no more types to learn. [+1 Outsider]",
-    "abilityPl": "Każdej nocy poznajesz jednego gracza każdego typu, dopóki nie poznasz wszystkich rodzajów postaci. [+1 Odmieniec]"
+    "abilityPl": "Każdej nocy poznajesz jednego gracza każdego typu, dopóki nie poznasz wszystkich rodzajów postaci. [+1 Przybysz]"
   },
   {
     "id": "cultleader",
@@ -1817,7 +1817,7 @@
     "remindersPl": [ "Brak zdolności" ],
     "setup": true,
     "abilityEn": "Once per game, at night, choose a living player: the Damsel, if chosen, becomes a not-in-play Townsfolk. [+the Damsel]",
-    "abilityPl": "Raz na grę, w nocy, wybierz żyjącego gracza: jeśli to Panienka, zmienia się ona w nową postać Mieszczanina. [+Panienka]"
+    "abilityPl": "Raz na grę, w nocy, wybierz żyjącego gracza: jeśli to Panienka, zmienia się ona w nową postać Mieszkańca. [+Panienka]"
   },
   {
     "id": "alchemist",
@@ -2030,12 +2030,12 @@
     "firstNightReminderPl": "Obudź wszystkich Sługusów i pokaż im żeton Damy.",
     "otherNight": 460,
     "otherNightReminderEn": "If selected by the Huntsman, wake the Damsel, show 'You are' card and a not-in-play Townsfolk token.",
-    "otherNightReminderPl": "Jeśli wybrana przez Łowcę, obudź Panienkę i pokaż jej nową postać Mieszczanina.",
+    "otherNightReminderPl": "Jeśli wybrana przez Myśliwego, obudź Panienkę i pokaż jej nową postać Mieszkańca.",
     "remindersEn": [ "Guess used" ],
     "remindersPl": [ "Zgadywanie użyte" ],
     "setup": false,
     "abilityEn": "All Minions know you are in play. If a Minion publicly guesses you (once), your team loses.",
-    "abilityPl": "Wszyscy Sługusy wiedzą, że jesteś w grze. Jeśli Sługus publicznie zgadnie, że jesteś Panienką (raz), twoja drużyna przegrywa."
+    "abilityPl": "Wszystkie Sługusy wiedzą, że jesteś w grze. Jeśli Sługus publicznie zgadnie, że jesteś Panienką (raz), twoja drużyna przegrywa."
   },
   {
     "id": "golem",
@@ -2311,7 +2311,7 @@
     "remindersPl": [],
     "setup": true,
     "abilityEn": "Nominees die, but may nominate again immediately (on day 3, they must). After day 3, evil wins. [All Minions are Riot]",
-    "abilityPl": "Nominowani giną, ale mogą natychmiast nominować ponownie (w dniu 3. muszą). Po 3. dniu zło wygrywa. [Wszyscy Sługusy to Zamieszki]"
+    "abilityPl": "Nominowani giną, ale mogą natychmiast nominować ponownie (w dniu 3. muszą). Po 3. dniu zło wygrywa. [Wszystkie Sługusy to Zamieszki]"
   },
   {
     "id": "gangster",
@@ -2522,11 +2522,11 @@
     "firstNightReminderPl": "",
     "otherNight": 315,
     "otherNightReminderEn": "Each night*, choose a player: they die. [Evil characters are in a line. You are in the middle. +1 Minion. -? to +? Outsiders]",
-    "otherNightReminderPl": "Każdej nocy* wybierz gracza: ginie. [Złe postacie stoją w szeregu. Jesteś w środku. +1 Minion. -? do +? Outsiderzy]",
+    "otherNightReminderPl": "Każdej nocy* wybierz gracza: ginie. [Złe postacie stoją w szeregu. Jesteś w środku. +1 Sługus. -? do +? Przybyszów]",
     "remindersEn": [],
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each night*, choose a player: they die. [Evil characters are in a line. You are in the middle. +1 Minion. -? to +? Outsiders]",
-    "abilityPl": "Każdej nocy* wybierz gracza: ginie. [Złe postacie stoją w szeregu. Jesteś w środku. +1 Minion. -? do +? Outsiderzy]"
+    "abilityPl": "Każdej nocy* wybierz gracza: ginie. [Złe postacie stoją w szeregu. Jesteś w środku. +1 Sługus. -? do +? Przybyszów]"
   }
 ]

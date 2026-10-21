@@ -1,0 +1,9 @@
+<a class="role-link team--@TeamText.Slug(Role.Team)" href="roles/@Role.Id">
+    <RoleIcon Role="Role" Size="sm" />
+    <span>@Role.NamePl</span>
+</a>
+
+@code {
+    [Parameter, EditorRequired]
+    public Role Role { get; set; } = default!;
+}

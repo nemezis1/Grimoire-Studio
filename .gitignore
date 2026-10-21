@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Copied from data/ at build time (see Grimoire Studio.csproj)
+Grimoire Studio/wwwroot/data/

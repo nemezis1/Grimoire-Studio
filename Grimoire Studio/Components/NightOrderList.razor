@@ -1,0 +1,34 @@
+<section class="panel night-order">
+    <h2>@Title</h2>
+    @if (Roles.Count == 0)
+    {
+        <p class="muted">Nikt się nie budzi.</p>
+    }
+    else
+    {
+        <ol>
+            @foreach (var role in Roles)
+            {
+                var reminder = FirstNight ? role.FirstNightReminderPl : role.OtherNightReminderPl;
+                <li class="night-order__item team--@TeamText.Slug(role.Team)">
+                    <RoleLink Role="role" />
+                    @if (!string.IsNullOrWhiteSpace(reminder))
+                    {
+                        <p>@reminder</p>
+                    }
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<Role> Roles { get; set; } = [];
+
+    [Parameter]
+    public bool FirstNight { get; set; }
+}
