@@ -1,0 +1,48 @@
+@using System.Globalization
+@using Grimoire_Studio.Generator
+
+@* A4 pages at real size (mm). On screen they are scaled down; when printed they come out 1:1. *@
+<div class="sheet-pages">
+    @{ var pageNumber = 0; }
+    @foreach (var page in SheetLayout.Pack(Items))
+    {
+        pageNumber++;
+        <div class="sheet-page" aria-label="Strona @pageNumber">
+            @foreach (var placement in page)
+            {
+                var item = placement.Item;
+                <div class="sheet-token @(item == Editing ? "sheet-token--editing" : null)"
+                     style="left: @Mm(placement.X); top: @Mm(placement.Y); width: @Mm(placement.Diameter); height: @Mm(placement.Diameter);">
+                    @if (item.ImageUrl is not null)
+                    {
+                        <img src="@item.ImageUrl" alt="@item.Settings.Text" />
+                    }
+                    <div class="sheet-token__actions">
+                        <button title="Edytuj" @onclick="() => OnEdit.InvokeAsync(item)">✎</button>
+                        <button title="Duplikuj" @onclick="() => OnDuplicate.InvokeAsync(item)">⧉</button>
+                        <button title="Usuń" @onclick="() => OnRemove.InvokeAsync(item)">✕</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<SheetItem> Items { get; set; } = [];
+
+    [Parameter]
+    public SheetItem? Editing { get; set; }
+
+    [Parameter]
+    public EventCallback<SheetItem> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<SheetItem> OnDuplicate { get; set; }
+
+    [Parameter]
+    public EventCallback<SheetItem> OnRemove { get; set; }
+
+    private static string Mm(double value) => value.ToString("0.##", CultureInfo.InvariantCulture) + "mm";
+}

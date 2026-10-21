@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text.Json;
 using Grimoire_Studio.Generator;
 using GrimoireStudio.Data;
 using Microsoft.AspNetCore.Components;
@@ -12,7 +13,7 @@ public partial class TokenGeneratorPage
     private const int PreviewSize = 800;
     private const long MaxUploadBytes = 10 * 1024 * 1024;
 
-    private readonly TokenSettings _settings = new() { Text = "Nazwa" };
+    private TokenSettings _settings = new() { Text = "Nazwa" };
     private ElementReference _canvas;
     private GameData? _data;
     private Role? _role;
@@ -21,6 +22,10 @@ public partial class TokenGeneratorPage
     private string _selectedPreset = string.Empty;
     private string _presetName = string.Empty;
     private string? _presetMessage;
+    private readonly List<SheetItem> _sheet = [];
+    private SheetItem? _editing;
+    private CancellationTokenSource? _sheetRefresh;
+    private bool _sheetSaveFailed;
 
     /// <summary>Role id to preload, e.g. /generator?role=imp (linked from the role page).</summary>
     [SupplyParameterFromQuery(Name = "role")]
@@ -34,11 +39,28 @@ public partial class TokenGeneratorPage
         {
             ApplyRole(role);
         }
+
+        foreach (var saved in await Renderer.LoadSheetAsync())
+        {
+            var item = new SheetItem(saved.Settings, saved.RoleId);
+            _sheet.Add(item);
+            await RefreshAsync(item);
+        }
     }
 
     // Every UI change re-renders the component, so redrawing here keeps the preview live.
-    protected override async Task OnAfterRenderAsync(bool firstRender) =>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
         await Renderer.RenderAsync(_canvas, _settings, PreviewSize);
+
+        // The sheet image of the token being edited follows the changes, shortly after they stop.
+        if (_editing is { } item && Snapshot(item.Settings) != item.RenderedState)
+        {
+            _sheetRefresh?.Cancel();
+            _sheetRefresh = new CancellationTokenSource();
+            _ = RefreshLaterAsync(item, _sheetRefresh.Token);
+        }
+    }
 
     private void SelectRole(string? id)
     {
@@ -148,6 +170,115 @@ public partial class TokenGeneratorPage
             ? $"Usunięto preset „{_selectedPreset}”."
             : "Przeglądarka nie pozwoliła zapisać zmian.";
         _selectedPreset = string.Empty;
+    }
+
+    private async Task AddToSheetAsync()
+    {
+        var item = new SheetItem(_settings.Clone(), _role?.Id);
+        _sheet.Add(item);
+        await RefreshAsync(item);
+        await SaveSheetAsync();
+    }
+
+    /// <summary>Loads a sheet token into the editor; every change applies to it directly.</summary>
+    private void EditItem(SheetItem item)
+    {
+        _editing = item;
+        _settings = item.Settings;
+        _role = item.RoleId is null ? null : _data?.FindRole(item.RoleId);
+        _selectedPreset = string.Empty;
+    }
+
+    private async Task FinishEditingAsync()
+    {
+        StopEditing();
+        await SaveSheetAsync();
+    }
+
+    /// <summary>Stops editing; the editor keeps a copy of the token as a starting point for the next one.</summary>
+    private void StopEditing()
+    {
+        if (_editing is not null)
+        {
+            _editing.RoleId = _role?.Id;
+        }
+
+        _settings = _settings.Clone();
+        _editing = null;
+    }
+
+    private async Task DuplicateAsync(SheetItem item)
+    {
+        var copy = new SheetItem(item.Settings.Clone(), item.RoleId);
+        _sheet.Insert(_sheet.IndexOf(item) + 1, copy);
+        await RefreshAsync(copy);
+        await SaveSheetAsync();
+    }
+
+    private async Task RemoveAsync(SheetItem item)
+    {
+        if (item == _editing)
+        {
+            StopEditing();
+        }
+
+        _sheet.Remove(item);
+        await Renderer.ReleaseUrlAsync(item.ImageUrl);
+        await SaveSheetAsync();
+    }
+
+    private async Task ClearSheetAsync()
+    {
+        StopEditing();
+        foreach (var item in _sheet)
+        {
+            await Renderer.ReleaseUrlAsync(item.ImageUrl);
+        }
+
+        _sheet.Clear();
+        await SaveSheetAsync();
+    }
+
+    // The sheet is kept in this browser (IndexedDB) so it survives a page reload.
+    private async Task SaveSheetAsync() => _sheetSaveFailed = !await Renderer.SaveSheetAsync(_sheet);
+
+    private async Task PrintAsync() => await Renderer.PrintAsync();
+
+    private static string Snapshot(TokenSettings settings) => JsonSerializer.Serialize(settings);
+
+    private static string TokenWord(int count) => count switch
+    {
+        1 => "token",
+        _ when count % 10 is >= 2 and <= 4 && count % 100 is < 12 or > 14 => "tokeny",
+        _ => "tokenów",
+    };
+
+    private async Task RefreshAsync(SheetItem item)
+    {
+        var state = Snapshot(item.Settings);
+        var previous = item.ImageUrl;
+        item.ImageUrl = await Renderer.RenderToUrlAsync(item.Settings);
+        item.RenderedState = state;
+        await Renderer.ReleaseUrlAsync(previous);
+    }
+
+    private async Task RefreshLaterAsync(SheetItem item, CancellationToken cancellation)
+    {
+        try
+        {
+            await Task.Delay(250, cancellation);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (_sheet.Contains(item))
+        {
+            await RefreshAsync(item);
+            await SaveSheetAsync();
+            StateHasChanged();
+        }
     }
 
     private string FileName()

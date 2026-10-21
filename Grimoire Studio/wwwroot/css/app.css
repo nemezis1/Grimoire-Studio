@@ -427,18 +427,43 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 /* ---------- Token generator ---------- */
 
+/* Controls | preview | sheet on wide screens; the generator page gets more room than the wiki. */
+.page:has(.generator),
+body:has(.generator) .site-header__inner,
+body:has(.generator) .site-footer { max-width: 1760px; }
+
 .generator {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+    grid-template-columns: minmax(0, 480px) minmax(0, 380px) minmax(0, 1fr);
+    grid-template-areas: "controls preview sheet";
     gap: 1.5rem;
     align-items: start;
 }
 
-.generator__preview { position: sticky; top: 1rem; }
+.generator__controls { grid-area: controls; }
+.generator__preview { grid-area: preview; position: sticky; top: 1rem; }
+/* Shrinks to the pages it holds instead of stretching across the whole column. */
+.generator .sheet-panel { grid-area: sheet; justify-self: start; max-width: 100%; }
+
+/* Text and buttons wrap to the width of the pages and never widen the panel themselves. */
+.generator .sheet-panel > :not(.sheet-pages) { width: 0; min-width: 100%; }
+.generator .sheet-panel:not(:has(.sheet-pages)) { justify-self: stretch; }
+
+/* Medium screens: the sheet moves under the preview in the right column. */
+@media (max-width: 1400px) {
+    .generator {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+        grid-template-areas: "controls preview" "controls sheet";
+    }
+    .generator__preview { position: static; }
+    .generator .sheet-page { zoom: 0.4; }
+}
 
 @media (max-width: 900px) {
-    .generator { grid-template-columns: minmax(0, 1fr); }
-    .generator__preview { position: static; order: -1; }
+    .generator {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "preview" "controls" "sheet";
+    }
 }
 
 .token-canvas {
@@ -506,4 +531,77 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     color: var(--text);
 }
 .button:disabled { opacity: 0.5; cursor: default; }
+.button--wide { width: 100%; margin-top: 0.75rem; }
+
+.editing-banner {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+}
+
+.editing-banner p { margin: 0 0 0.5rem; font-size: 0.9rem; }
+
+/* ---------- Token sheet (A4 at real size; scaled on screen, 1:1 in print) ---------- */
+
+.sheet-panel { margin-bottom: 0; }
+.sheet-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem 1rem; }
+.sheet-toolbar h2 { margin: 0; }
+.sheet-toolbar .field-row { margin: 0; }
+
+.sheet-pages { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem; }
+
+.sheet-page {
+    position: relative;
+    flex: none;
+    width: 210mm;
+    height: 297mm;
+    background: #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    zoom: 0.7;
+}
+
+.sheet-token { position: absolute; border-radius: 50%; }
+.sheet-token img { display: block; width: 100%; height: 100%; }
+.sheet-token--editing { outline: 6px solid var(--accent); outline-offset: 4px; }
+
+.sheet-token__actions {
+    position: absolute;
+    inset: auto 0 -0.5rem 0;
+    display: none;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.sheet-token:hover .sheet-token__actions,
+.sheet-token:focus-within .sheet-token__actions,
+.sheet-token--editing .sheet-token__actions { display: flex; }
+
+@media (hover: none) {
+    .sheet-token__actions { display: flex; }
+}
+
+.sheet-token__actions button {
+    font-size: 1.6rem;
+    width: 3.2rem;
+    height: 3.2rem;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+}
+
+@media print {
+    @page { size: A4; margin: 0; }
+
+    body { background: #ffffff; }
+    .site-header, .site-footer, .page > h1, .generator__controls, .generator__preview, .sheet-toolbar, .sheet-panel > p { display: none !important; }
+    .generator { display: block; }
+    .page, .page:has(.generator), .sheet-panel { padding: 0; margin: 0; border: 0; background: none; max-width: none; }
+    .sheet-pages { display: block; margin: 0; }
+    .sheet-page { zoom: 1; box-shadow: none; break-after: page; }
+    .sheet-token__actions { display: none !important; }
+    .sheet-token--editing { outline: none; }
+}
 .export .field { margin-bottom: 0; flex: 1 1 140px; }

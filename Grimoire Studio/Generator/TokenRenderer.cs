@@ -26,6 +26,56 @@ public sealed class TokenRenderer(IJSRuntime js) : IAsyncDisposable
         await module.InvokeVoidAsync("downloadPng", settings, settings.ExportPixels, settings.Dpi, fileName);
     }
 
+    /// <summary>Renders a token at print resolution into an object URL; release it with <see cref="ReleaseUrlAsync"/>.</summary>
+    public async Task<string> RenderToUrlAsync(TokenSettings settings)
+    {
+        var module = await Module;
+        return await module.InvokeAsync<string>("renderToUrl", settings, settings.ExportPixels);
+    }
+
+    public async Task ReleaseUrlAsync(string? url)
+    {
+        if (url is not null)
+        {
+            var module = await Module;
+            await module.InvokeVoidAsync("releaseUrl", url);
+        }
+    }
+
+    public async Task PrintAsync()
+    {
+        var module = await Module;
+        await module.InvokeVoidAsync("print");
+    }
+
+    /// <summary>Sheet saved in this browser's IndexedDB; a missing or damaged entry yields an empty list.</summary>
+    public async Task<List<SavedSheetItem>> LoadSheetAsync()
+    {
+        var module = await Module;
+        var json = await module.InvokeAsync<string?>("loadSheet");
+        if (json is null)
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<SavedSheetItem>>(json, PresetJson) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <returns>false when the browser refused to store (private mode, quota).</returns>
+    public async Task<bool> SaveSheetAsync(IEnumerable<SheetItem> items)
+    {
+        var saved = items.Select(i => new SavedSheetItem(i.RoleId, i.Settings));
+        var module = await Module;
+        return await module.InvokeAsync<bool>("saveSheet", JsonSerializer.Serialize(saved, PresetJson));
+    }
+
     /// <summary>Presets saved in this browser's localStorage; a damaged entry yields an empty list.</summary>
     public async Task<List<TokenPreset>> LoadPresetsAsync()
     {

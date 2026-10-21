@@ -562,6 +562,71 @@ export async function downloadPng(settings, size, dpi, fileName) {
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
+/** Renders the token at the given size and returns an object URL of the PNG (free it with releaseUrl). */
+export async function renderToUrl(settings, size) {
+    const canvas = document.createElement('canvas');
+    draw(canvas, settings, size, await prepare(settings));
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    return URL.createObjectURL(blob);
+}
+
+export function releaseUrl(url) {
+    if (url) {
+        URL.revokeObjectURL(url);
+    }
+}
+
+export function print() {
+    window.print();
+}
+
+// --- Token sheet (per browser, IndexedDB: uploaded pictures can be too big for localStorage) ---------------------
+
+const SHEET_DB = 'grimoire-studio';
+const SHEET_STORE = 'sheet';
+const SHEET_KEY = 'current';
+
+function openSheetDb() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(SHEET_DB, 1);
+        request.onupgradeneeded = () => request.result.createObjectStore(SHEET_STORE);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function sheetRequest(mode, action) {
+    const db = await openSheetDb();
+    try {
+        return await new Promise((resolve, reject) => {
+            const request = action(db.transaction(SHEET_STORE, mode).objectStore(SHEET_STORE));
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    } finally {
+        db.close();
+    }
+}
+
+/** Returns the saved sheet as JSON, or null when there is none or storage is unavailable. */
+export async function loadSheet() {
+    try {
+        return (await sheetRequest('readonly', store => store.get(SHEET_KEY))) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/** Stores the sheet JSON; returns false when the browser refuses (private mode, quota). */
+export async function saveSheet(json) {
+    try {
+        await sheetRequest('readwrite', store => store.put(json, SHEET_KEY));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 // --- Presets (per browser) ---------------------------------------------------------------------------------------
 
 const PRESETS_KEY = 'grimoire-studio.token-presets';

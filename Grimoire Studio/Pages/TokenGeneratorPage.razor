@@ -207,6 +207,43 @@
                 <button class="button" @onclick="DownloadAsync">Pobierz PNG</button>
             </div>
             <p class="muted small">PNG @_settings.ExportPixels × @_settings.ExportPixels px, przy druku @_settings.SizeCm.ToString("0.00") cm.</p>
+            @if (_editing is null)
+            {
+                <button class="button button--wide" @onclick="AddToSheetAsync">Dodaj do arkusza</button>
+            }
+            else
+            {
+                <div class="editing-banner">
+                    <p>Edytujesz token z arkusza. Zmiany widać na arkuszu na bieżąco.</p>
+                    <div class="field-row">
+                        <button class="button" @onclick="FinishEditingAsync">Zakończ edycję</button>
+                        <button class="button button--ghost" @onclick="() => RemoveAsync(_editing)">Usuń z arkusza</button>
+                    </div>
+                </div>
+            }
         </section>
     </aside>
+
+    <section class="panel sheet-panel">
+        <div class="sheet-toolbar">
+            <h2>Arkusz A4 <span class="muted">(@_sheet.Count @TokenWord(_sheet.Count), stron: @SheetLayout.Pack(_sheet).Count)</span></h2>
+            <div class="field-row">
+                <button class="button" disabled="@(_sheet.Count == 0)" @onclick="PrintAsync">Drukuj / zapisz PDF</button>
+                <button class="button button--ghost" disabled="@(_sheet.Count == 0)" @onclick="ClearSheetAsync">Wyczyść arkusz</button>
+            </div>
+        </div>
+        @if (_sheetSaveFailed)
+        {
+            <p class="notice notice--error">Przeglądarka nie pozwoliła zapisać arkusza; po odświeżeniu strony zniknie.</p>
+        }
+        @if (_sheet.Count == 0)
+        {
+            <p class="muted">Arkusz jest pusty. Przygotuj token i kliknij „Dodaj do arkusza”. Tokeny są układane od największych, w rzeczywistym rozmiarze.</p>
+        }
+        else
+        {
+            <p class="muted small">Najedź na token, aby go edytować, zduplikować lub usunąć. Wydruk w skali 100% daje tokeny w ustawionych średnicach.</p>
+            <TokenSheet Items="_sheet" Editing="_editing" OnEdit="EditItem" OnDuplicate="DuplicateAsync" OnRemove="RemoveAsync" />
+        }
+    </section>
 </div>

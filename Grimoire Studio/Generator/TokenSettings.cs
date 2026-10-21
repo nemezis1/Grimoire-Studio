@@ -91,6 +91,9 @@ public sealed class TokenSettings
 
     public bool IsPlayer => TokenType == PlayerType;
 
+    /// <summary>Independent copy; all properties are values or immutable strings.</summary>
+    public TokenSettings Clone() => (TokenSettings)MemberwiseClone();
+
     /// <summary>Fills name, ability, icon and leaf markers from a role (player token).</summary>
     public void ApplyRole(Role role)
     {
