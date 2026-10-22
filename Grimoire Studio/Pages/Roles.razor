@@ -5,6 +5,7 @@
 
 <h1>Role</h1>
 
+<div class="pinned fill-viewport">
 <DataView Context="data">
     @{
         var scope = Script is null ? null : data.FindScript(Script);
@@ -16,52 +17,57 @@
             .ToList();
     }
 
-    <div class="filters">
-        <input class="filters__search" type="search" placeholder="Szukaj po nazwie lub zdolności…"
-               value="@Q" @oninput="e => SetQuery(e.Value?.ToString(), Team, Script)" />
+    <div class="pinned__top">
+        <div class="filters">
+            <input class="filters__search" type="search" placeholder="Szukaj po nazwie lub zdolności…"
+                   value="@Q" @oninput="e => SetQuery(e.Value?.ToString(), Team, Script)" />
 
-        <select class="filters__select" value="@(scope?.Id ?? string.Empty)"
-                @onchange="e => SetQuery(Q, Team, e.Value?.ToString())">
-            <option value="">Wszystkie skrypty</option>
-            @foreach (var script in data.Scripts.Scripts)
-            {
-                <option value="@script.Id">@script.Name</option>
-            }
-        </select>
+            <select class="filters__select" value="@(scope?.Id ?? string.Empty)"
+                    @onchange="e => SetQuery(Q, Team, e.Value?.ToString())">
+                <option value="">Wszystkie skrypty</option>
+                @foreach (var script in data.Scripts.Scripts)
+                {
+                    <option value="@script.Id">@script.Name</option>
+                }
+            </select>
 
-        <div class="chips" role="group" aria-label="Drużyna">
-            <button class="chip @(team is null ? "chip--active" : null)" @onclick="() => SetQuery(Q, null, Script)">Wszystkie</button>
-            @foreach (var t in TeamText.All)
-            {
-                <button class="chip team--@TeamText.Slug(t) @(team == t ? "chip--active" : null)"
-                        @onclick="() => SetQuery(Q, TeamText.Slug(t), Script)">@TeamText.Plural(t)</button>
-            }
+            <div class="chips" role="group" aria-label="Drużyna">
+                <button class="chip @(team is null ? "chip--active" : null)" @onclick="() => SetQuery(Q, null, Script)">Wszystkie</button>
+                @foreach (var t in TeamText.All)
+                {
+                    <button class="chip team--@TeamText.Slug(t) @(team == t ? "chip--active" : null)"
+                            @onclick="() => SetQuery(Q, TeamText.Slug(t), Script)">@TeamText.Plural(t)</button>
+                }
+            </div>
         </div>
+
+        <p class="muted">Znaleziono: @roles.Count</p>
     </div>
 
-    <p class="muted">Znaleziono: @roles.Count</p>
-
-    @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
-    {
-        <section class="role-group">
-            <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
-            <ul class="role-grid">
-                @foreach (var role in group.OrderBy(r => r.NamePl, StringComparer.Create(new System.Globalization.CultureInfo("pl-PL"), true)))
-                {
-                    <li>
-                        <a class="role-card team--@TeamText.Slug(role.Team)" href="roles/@role.Id">
-                            <RoleIcon Role="role" />
-                            <div class="role-card__body">
-                                <div class="role-card__name">@role.NamePl <span class="muted">@role.NameEn</span></div>
-                                <p class="role-card__ability">@role.AbilityPl</p>
-                            </div>
-                        </a>
-                    </li>
-                }
-            </ul>
-        </section>
-    }
+    <div class="pinned__scroll">
+        @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+        {
+            <section class="role-group">
+                <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
+                <ul class="role-grid">
+                    @foreach (var role in group.OrderBy(r => r.NamePl, StringComparer.Create(new System.Globalization.CultureInfo("pl-PL"), true)))
+                    {
+                        <li>
+                            <a class="role-card team--@TeamText.Slug(role.Team)" href="roles/@role.Id">
+                                <RoleIcon Role="role" />
+                                <div class="role-card__body">
+                                    <div class="role-card__name">@role.NamePl <span class="muted">@role.NameEn</span></div>
+                                    <p class="role-card__ability">@role.AbilityPl</p>
+                                </div>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    </div>
 </DataView>
+</div>
 
 @code {
     [SupplyParameterFromQuery(Name = "q")]

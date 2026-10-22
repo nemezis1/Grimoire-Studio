@@ -6,6 +6,21 @@ public static class GameDataQueries
     public static Role? FindRole(this GameData data, string id) =>
         data.AllRoles.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// Data with <paramref name="overrides"/> applied: a script with an existing id replaces it in place,
+    /// a new id is appended.
+    /// </summary>
+    public static GameData WithScripts(this GameData data, IEnumerable<Script> overrides)
+    {
+        var byId = overrides.ToDictionary(s => s.Id, StringComparer.OrdinalIgnoreCase);
+        var scripts = data.Scripts.Scripts
+            .Select(s => byId.Remove(s.Id, out var replacement) ? replacement : s)
+            .Concat(byId.Values)
+            .ToList();
+
+        return data with { Scripts = data.Scripts with { Scripts = scripts } };
+    }
+
     public static Script? FindScript(this GameData data, string id) =>
         data.Scripts.Scripts.FirstOrDefault(s => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));
 

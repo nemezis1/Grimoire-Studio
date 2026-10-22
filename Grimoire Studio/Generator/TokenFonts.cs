@@ -16,6 +16,7 @@ public static class TokenFonts
         "Chunkfive Ex",
         "Cocogoose",
         "DeFonarts",
+        "Great Vibes",
         "KG Red Hands",
         "Poetsen One",
         "Roboto",

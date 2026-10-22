@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace GrimoireStudio.Data;
 
 public sealed record Script
@@ -13,5 +15,6 @@ public sealed record Script
     /// <summary>Edition icon name to use instead of <see cref="Id"/>, e.g. "custom".</summary>
     public string CustomIcon { get; init; } = string.Empty;
 
+    [JsonIgnore]
     public string IconName => string.IsNullOrWhiteSpace(CustomIcon) ? Id : CustomIcon;
 }

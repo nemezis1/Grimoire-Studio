@@ -75,6 +75,18 @@ public class GameDataQueriesTests
     }
 
     [Fact]
+    public void WithScripts_Should_ReplaceExistingAndAppendNew()
+    {
+        var edited = new Script { Id = "tb", Name = "TB (moja wersja)" };
+        var added = new Script { Id = "nowy", Name = "Nowy" };
+
+        var merged = Data.WithScripts([added, edited]).Scripts.Scripts;
+
+        Assert.Equal(["tb", "x", "nowy"], merged.Select(s => s.Id));
+        Assert.Equal("TB (moja wersja)", merged[0].Name);
+    }
+
+    [Fact]
     public void FindRole_Should_IgnoreCase()
     {
         Assert.Equal("chef", Data.FindRole("CHEF")?.Id);

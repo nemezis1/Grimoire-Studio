@@ -1,41 +1,62 @@
 @page "/scripts"
+@inject LocalScripts Local
 
 <PageTitle>Skrypty – Grimoire Studio</PageTitle>
 
-<h1>Skrypty</h1>
+<div class="pinned fill-viewport">
+<div class="pinned__top title-row">
+    <h1>Skrypty</h1>
+    <a class="button" href="scripts/new">Nowy skrypt</a>
+</div>
 
-<DataView Context="data">
-    @foreach (var (title, scripts) in new[]
-    {
-        ("Oficjalne", data.Scripts.Scripts.Where(s => s.IsOfficial).ToList()),
-        ("Własne", data.Scripts.Scripts.Where(s => !s.IsOfficial).ToList()),
-    })
-    {
-        if (scripts.Count == 0)
+<div class="pinned__scroll">
+    <DataView Context="data">
+        @foreach (var (title, scripts) in new[]
         {
-            continue;
-        }
-
-        <h2>@title</h2>
-        <ul class="script-grid">
-            @foreach (var script in scripts)
+            ("Oficjalne", data.Scripts.Scripts.Where(s => s.IsOfficial).ToList()),
+            ("Własne", data.Scripts.Scripts.Where(s => !s.IsOfficial).ToList()),
+        })
+        {
+            if (scripts.Count == 0)
             {
-                var roles = data.RolesOf(script);
-                <li>
-                    <a class="script-card" href="scripts/@script.Id">
-                        <img class="script-card__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" />
-                        <div>
-                            <div class="script-card__name">@script.Name</div>
-                            <div class="muted">
-                                @string.Join(" · ", TeamText.All
-                                    .Select(t => (Team: t, Count: roles.Count(r => r.Team == t)))
-                                    .Where(x => x.Count > 0)
-                                    .Select(x => $"{x.Count} {TeamText.Plural(x.Team).ToLowerInvariant()}"))
-                            </div>
-                        </div>
-                    </a>
-                </li>
+                continue;
             }
-        </ul>
-    }
-</DataView>
+
+            <h2>@title</h2>
+            <ul class="script-grid">
+                @foreach (var script in scripts)
+                {
+                    var roles = data.RolesOf(script);
+                    <li>
+                        <a class="script-card" href="scripts/@script.Id">
+                            <img class="script-card__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" />
+                            <div>
+                                <div class="script-card__name">
+                                    @script.Name
+                                    @if (_localIds.Contains(script.Id))
+                                    {
+                                        <span class="local-badge">lokalny</span>
+                                    }
+                                </div>
+                                <div class="muted">
+                                    @string.Join(" · ", TeamText.All
+                                        .Select(t => (Team: t, Count: roles.Count(r => r.Team == t)))
+                                        .Where(x => x.Count > 0)
+                                        .Select(x => $"{x.Count} {TeamText.Plural(x.Team).ToLowerInvariant()}"))
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </DataView>
+</div>
+</div>
+
+@code {
+    private HashSet<string> _localIds = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync() =>
+        _localIds = (await Local.GetAllAsync()).Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+}

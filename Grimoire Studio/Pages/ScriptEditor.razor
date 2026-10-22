@@ -1,0 +1,185 @@
+@page "/scripts/new"
+@page "/scripts/{Id}/edit"
+@inject GameDataClient Client
+@inject LocalScripts Local
+@inject NavigationManager Nav
+
+<PageTitle>@(IsNew ? "Nowy skrypt" : $"Edycja: {_name}") – Grimoire Studio</PageTitle>
+
+<h1>@(IsNew ? "Nowy skrypt" : "Edycja skryptu")</h1>
+<p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Skrypt z danych strony zostaje nietknięty i można do niego wrócić.</p>
+
+@if (_data is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else if (!IsNew && _notFound)
+{
+    <p>Skrypt <code>@Id</code> nie istnieje. <a href="scripts">Wróć do listy skryptów</a>.</p>
+}
+else
+{
+    var selected = _selected.Select(_data.FindRole).OfType<Role>().ToList();
+    var team = TeamText.Parse(_team);
+
+    <div class="script-editor fill-viewport">
+        <section class="panel">
+            <label class="field">
+                <span>Nazwa skryptu</span>
+                <input type="text" @bind="_name" @bind:event="oninput" placeholder="np. Pełnia Zła" />
+            </label>
+            @if (IsNew)
+            {
+                <p class="muted small">Identyfikator: <code>@NewId()</code></p>
+            }
+
+            <div class="filters">
+                <input class="filters__search" type="search" placeholder="Szukaj roli…" @bind="_query" @bind:event="oninput" />
+            </div>
+            <div class="chips">
+                <button class="chip @(team is null ? "chip--active" : null)" @onclick='() => _team = null'>Wszystkie</button>
+                @foreach (var t in TeamText.All)
+                {
+                    <button class="chip team--@TeamText.Slug(t) @(team == t ? "chip--active" : null)" @onclick="() => _team = TeamText.Slug(t)">@TeamText.Plural(t)</button>
+                }
+            </div>
+
+            <ul class="role-picker">
+                @foreach (var role in _data.AllRoles
+                    .Where(r => team is null || r.Team == team)
+                    .Where(r => SearchText.Matches(_query, r.NamePl, r.NameEn, r.Id))
+                    .OrderBy(r => r.Team)
+                    .ThenBy(r => r.NamePl, StringComparer.CurrentCulture))
+                {
+                    var isSelected = _selected.Contains(role.Id);
+                    <li>
+                        <button class="role-toggle team--@TeamText.Slug(role.Team) @(isSelected ? "role-toggle--on" : null)"
+                                aria-pressed="@isSelected" @onclick="() => Toggle(role.Id)">
+                            <RoleIcon Role="role" Size="sm" />
+                            <span>@role.NamePl</span>
+                        </button>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <aside class="panel script-editor__summary">
+            <h2>Wybrane role (@selected.Count)</h2>
+            <p class="muted small">
+                @string.Join(" · ", TeamText.All
+                    .Select(t => (Team: t, Count: selected.Count(r => r.Team == t)))
+                    .Where(x => x.Count > 0)
+                    .Select(x => $"{x.Count} {TeamText.Plural(x.Team).ToLowerInvariant()}"))
+            </p>
+            @foreach (var group in selected.GroupBy(r => r.Team).OrderBy(g => g.Key))
+            {
+                <h3 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key)</h3>
+                <ul class="selected-roles">
+                    @foreach (var role in group)
+                    {
+                        <li>
+                            <RoleIcon Role="role" Size="sm" />
+                            <span>@role.NamePl</span>
+                            <button title="Usuń ze skryptu" @onclick="() => Toggle(role.Id)">✕</button>
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (_error is not null)
+            {
+                <p class="notice notice--error">@_error</p>
+            }
+            <div class="field-row">
+                <button class="button" @onclick="SaveAsync">Zapisz</button>
+                <a class="button button--ghost" href="@(IsNew ? "scripts" : $"scripts/{Id}")">Anuluj</a>
+            </div>
+        </aside>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private GameData? _data;
+    private Script? _existing;
+    private bool _notFound;
+    private string _name = string.Empty;
+    private List<string> _selected = [];
+    private string _query = string.Empty;
+    private string? _team;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _data = await Client.GetAsync();
+        _existing = Id is null ? null : _data.FindScript(Id);
+        _notFound = Id is not null && _existing is null;
+        _name = _existing?.Name ?? string.Empty;
+        _selected = _existing?.Roles.ToList() ?? [];
+    }
+
+    private void Toggle(string roleId)
+    {
+        if (!_selected.Remove(roleId))
+        {
+            _selected.Add(roleId);
+        }
+    }
+
+    /// <summary>Id for a new script: the name in lowercase letters and digits, numbered when already taken.</summary>
+    private string NewId()
+    {
+        var baseId = new string(SearchText.Fold(_name).Where(char.IsAsciiLetterOrDigit).ToArray());
+        if (baseId.Length == 0)
+        {
+            baseId = "skrypt";
+        }
+
+        var id = baseId;
+        for (var n = 2; _data?.FindScript(id) is not null; n++)
+        {
+            id = $"{baseId}{n}";
+        }
+
+        return id;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _error = "Podaj nazwę skryptu.";
+            return;
+        }
+
+        if (_selected.Count == 0)
+        {
+            _error = "Wybierz co najmniej jedną rolę.";
+            return;
+        }
+
+        // Roles are stored in sheet order: by team, then as they appear on the list.
+        var roles = _selected
+            .Select(_data!.FindRole)
+            .OfType<Role>()
+            .OrderBy(r => r.Team)
+            .Select(r => r.Id)
+            .ToList();
+
+        var script = _existing is null
+            ? new Script { Id = NewId(), Name = _name.Trim(), Roles = roles, CustomIcon = "custom" }
+            : _existing with { Name = _name.Trim(), Roles = roles };
+
+        if (!await Local.SaveAsync(script))
+        {
+            _error = "Przeglądarka nie pozwoliła zapisać skryptu (tryb prywatny lub brak miejsca).";
+            return;
+        }
+
+        Nav.NavigateTo($"scripts/{script.Id}");
+    }
+}

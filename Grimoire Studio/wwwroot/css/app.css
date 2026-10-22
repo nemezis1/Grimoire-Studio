@@ -97,6 +97,7 @@ code {
 @font-face { font-family: "Chopin Script"; src: url("../Fonts/ChopinScript.otf") format("opentype"); font-display: swap; }
 @font-face { font-family: "Chunkfive Ex"; src: url("../Fonts/Chunkfive%20Ex.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "Cocogoose"; src: url("../Fonts/Cocogoose.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Great Vibes"; src: url("../Fonts/GreatVibes.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "DeFonarts"; src: url("../Fonts/DeFonarts.otf") format("opentype"); font-display: swap; }
 @font-face { font-family: "KG Red Hands"; src: url("../Fonts/KGRedHands.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "Poetsen One"; src: url("../Fonts/PoetsenOne.ttf") format("truetype"); font-display: swap; }
@@ -206,8 +207,6 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 .notice { color: var(--muted); }
 .notice--error { color: #c42020; }
-
-.breadcrumbs { color: var(--muted); margin: 0 0 0.5rem; font-size: 0.9rem; }
 
 /* Home */
 .hero { padding: 3rem 0; text-align: center; }
@@ -403,8 +402,8 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .script-header p { margin: 0.25rem 0 0; }
 .script-header__icon { width: 96px; height: 96px; object-fit: contain; }
 
-/* Script role list: two or three columns on wide pages. */
-.sheet { columns: 3 420px; column-gap: 2rem; }
+/* Script role list: a grid, so rows line up across columns. */
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); column-gap: 2rem; }
 
 .sheet__row {
     display: flex;
@@ -439,6 +438,33 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 .night-order__item p { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--muted); }
 
+/* ---------- Window-height layout ---------- */
+
+/*
+ * On wider screens the site works like an app: header and footer stay put and only the content scrolls.
+ * A page containing .fill-viewport goes further: it is exactly as tall as the window, the element fills the space
+ * below the title and its parts scroll on their own (.pinned: a fixed top and a scrolling body).
+ */
+@media (min-width: 1101px) {
+    html, body { height: 100%; overflow: hidden; }
+    #app { height: 100%; display: flex; flex-direction: column; }
+    .site-header, .site-footer { flex: none; }
+    .site-footer { padding-block: 0.5rem; }
+    .site-main { flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
+
+    .site-main:has(.fill-viewport) { overflow: hidden; display: flex; flex-direction: column; }
+    .page:has(.fill-viewport) { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; padding-block: 1rem; }
+    .page:has(.fill-viewport) > :not(.fill-viewport) { flex: none; }
+    .page:has(.fill-viewport) > h1 { margin-bottom: 0.75rem; }
+    .fill-viewport { flex: 1; min-height: 0; }
+
+    .pinned__scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
+    .pinned__scroll > .role-group:first-child > h2, .pinned__scroll > section:first-child > h2:first-child { margin-top: 0.5rem; }
+}
+
+.pinned { display: flex; flex-direction: column; }
+.pinned__top { flex: none; }
+
 /* ---------- Token generator ---------- */
 
 /* Controls | preview | sheet on wide screens. */
@@ -450,26 +476,38 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     align-items: start;
 }
 
+@media (min-width: 1101px) {
+    .generator { align-items: stretch; }
+    .generator__controls, .generator__preview { min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
+}
+
 .generator__controls { grid-area: controls; }
-.generator__preview { grid-area: preview; position: sticky; top: 1rem; }
-/* Shrinks to the pages it holds instead of stretching across the whole column. */
-.generator .sheet-panel { grid-area: sheet; justify-self: start; max-width: 100%; }
+.generator__preview { grid-area: preview; }
 
-/* Text and buttons wrap to the width of the pages and never widen the panel themselves. */
-.generator .sheet-panel > :not(.sheet-pages) { width: 0; min-width: 100%; }
-.generator .sheet-panel:not(:has(.sheet-pages)) { justify-self: stretch; }
+/* The sheet is as wide as one page; further pages are stacked below and scrolled inside the panel. */
+.generator .sheet-panel {
+    grid-area: sheet;
+    justify-self: start;
+    max-width: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
 
-/* Medium screens: the sheet moves under the preview in the right column. */
+.generator .sheet-pages { flex-direction: column; flex-wrap: nowrap; overflow-y: auto; min-height: 0; }
+
+/* Text and buttons wrap to the width of the page and never widen the panel themselves. */
+.generator .sheet-panel > :not(.sheet-pages) { width: 0; min-width: 100%; flex: none; }
+.generator .sheet-panel:not(:has(.sheet-pages)) { justify-self: stretch; min-width: min(100%, 320px); }
+
+/* Medium screens: three narrower columns, smaller sheet pages. */
 @media (max-width: 1400px) {
-    .generator {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
-        grid-template-areas: "controls preview" "controls sheet";
-    }
-    .generator__preview { position: static; }
+    .generator { grid-template-columns: minmax(0, 1fr) minmax(0, 300px) auto; }
     .generator .sheet-page { zoom: 0.4; }
 }
 
-@media (max-width: 900px) {
+/* Narrow screens: one column, the page scrolls as usual. */
+@media (max-width: 1100px) {
     .generator {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas: "preview" "controls" "sheet";
@@ -603,15 +641,184 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 }
 
 @media print {
-    @page { size: A4; margin: 0; }
+    /* Token sheets are already laid out with their own 10 mm margin; other printouts get a page margin. */
+    /*
+     * Own page margin boxes (Chrome 131+) replace the browser's headers and footers (date, title, address,
+     * page numbers): the corners stay empty and the footer only carries the site name.
+     */
+    @page {
+        size: A4;
+        margin: 10mm;
 
-    body { background: #ffffff; }
-    .site-header, .site-footer, .page > h1, .generator__controls, .generator__preview, .sheet-toolbar, .sheet-panel > p { display: none !important; }
+        @top-left { content: ""; }
+        @top-center { content: ""; }
+        @top-right { content: ""; }
+        @bottom-left { content: ""; }
+        @bottom-right { content: ""; }
+        @bottom-center {
+            content: "Grimoire Studio";
+            font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+            font-size: 7pt;
+            color: #777777;
+        }
+    }
+    @page tokens { size: A4; margin: 0; }
+
+    body { background: #ffffff; color: #000000; }
+    .site-header, .site-footer { display: none !important; }
+
+    body:has(.generator) .page > h1,
+    .generator__controls, .generator__preview, .sheet-toolbar, .sheet-panel > p { display: none !important; }
     .generator { display: block; }
-    .page, .sheet-panel { padding: 0; margin: 0; border: 0; background: none; max-width: none; }
-    .sheet-pages { display: block; margin: 0; }
-    .sheet-page { zoom: 1; box-shadow: none; break-after: page; }
+    body:has(.generator) .page, .sheet-panel { padding: 0; margin: 0; border: 0; background: none; max-width: none; }
+    .sheet-pages, .generator .sheet-pages { display: block; margin: 0; overflow: visible; }
+    .generator .sheet-panel { position: static; display: block; max-height: none; }
+    html:has(.fill-viewport), body:has(.fill-viewport), body:has(.fill-viewport) #app,
+    html, body, #app, .site-main, .page, .page:has(.fill-viewport), .fill-viewport, .pinned__scroll { display: block; height: auto; overflow: visible; }
+    .sheet-page, .generator .sheet-page { page: tokens; zoom: 1; box-shadow: none; break-after: page; }
     .sheet-token__actions { display: none !important; }
     .sheet-token--editing { outline: none; }
 }
 .export .field { margin-bottom: 0; flex: 1 1 140px; }
+/* ---------- Script editing and printing ---------- */
+
+.title-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
+.title-row h1 { margin: 0 0 1rem; }
+
+.local-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    border: 1px dashed var(--accent);
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: normal;
+}
+
+/* Page actions next to the title in the page header. */
+.script-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-left: 0.5rem; }
+
+.script-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.script-editor__summary { position: sticky; top: 1rem; }
+.script-editor__summary h3 { font-size: 0.95rem; margin: 0.75rem 0 0.25rem; }
+
+@media (max-width: 900px) {
+    .script-editor { grid-template-columns: minmax(0, 1fr); }
+    .script-editor__summary { position: static; }
+}
+
+.script-editor input[type="text"] {
+    font: inherit;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+.script-editor .chips { margin: 0.5rem 0 1rem; }
+
+.role-picker {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
+    gap: 0.4rem;
+}
+
+.role-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--team);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.role-toggle--on { background: var(--team); border-color: var(--team); color: #ffffff; font-weight: 600; }
+
+.selected-roles { list-style: none; margin: 0; padding: 0; }
+.selected-roles li { display: flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0; }
+.selected-roles span { flex: 1; }
+.selected-roles button {
+    border: 0;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/*
+ * Script page printout, A4 with 10 mm margins:
+ * page 1 the core roles (townsfolk, outsiders, minions, demons), page 2 travellers, fabled and jinxes (when there
+ * are any), page 3 the night order. Sizes are compact so each part fits on its page.
+ */
+@media print {
+    body:has(.script-header) .script-actions,
+    body:has(.script-header) .local-badge,
+    body:has(.script-header) .script-header .muted { display: none !important; }
+
+    body:has(.script-header) { font-size: 8pt; line-height: 1.25; }
+    body:has(.script-header) .page { max-width: none; padding: 0; }
+    body:has(.script-header) a { color: inherit; text-decoration: none; }
+    body:has(.script-header) .panel { background: none; border: 0; padding: 0; margin: 0; }
+    body:has(.script-header) h2 { font-size: 11pt; margin: 2.5mm 0 1mm; }
+
+    /* Title centred in a calligraphic font (bundled Great Vibes, OFL, covers Polish letters). */
+    .script-header { margin: 0 0 3mm; gap: 4mm; justify-content: center; }
+    .script-header__icon { width: 16mm; height: 16mm; }
+    .script-header h1 { font-family: "Great Vibes", Georgia, serif; font-weight: normal; font-size: 34pt; line-height: 1.1; }
+
+    .role-group { margin: 0; }
+    .role-group--core { break-inside: auto; }
+    .role-group--core + .role-group--core { margin-top: 6mm; }
+    .role-group--extra { break-inside: avoid-page; }
+    .role-group--core + .role-group--extra { break-before: page; }
+    .team-heading { padding-left: 2mm; border-left-width: 1mm; }
+
+    .sheet { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 6mm; }
+    .sheet__row { gap: 2mm; padding: 0.7mm 0; break-inside: avoid; border-bottom-color: #cccccc; }
+    .sheet__row .role-icon { width: 8mm; height: 8mm; }
+    .sheet__name { font-size: 8.5pt; }
+    .sheet__row p { font-size: 7.5pt; margin: 0; }
+
+    .jinx-list li { padding: 0.8mm 0; break-inside: avoid; }
+    .jinx-list p { font-size: 7.5pt; margin: 0.3mm 0 0; }
+    .jinx-list .role-icon--sm { width: 5mm; height: 5mm; }
+
+    .night-section { break-before: page; }
+    .night-columns { gap: 6mm; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .night-order h2 { font-size: 10pt; margin-top: 0; }
+    .night-order__item { font-size: 7.5pt; line-height: 1.2; padding: 0.4mm 0 0.4mm 5mm; break-inside: avoid; }
+    .night-order__item::before { top: 0.5mm; width: 4mm; }
+    .night-order__item p { font-size: 6.5pt; margin-top: 0.1mm; }
+    .night-order__item .role-icon--sm { width: 4mm; height: 4mm; }
+}
+
+
+
+/* Script editor on wide screens: the role picker and the summary scroll on their own. */
+@media (min-width: 1101px) {
+    .script-editor { align-items: stretch; }
+    .script-editor > .panel:first-child { display: flex; flex-direction: column; min-height: 0; }
+    .script-editor > .panel:first-child > :not(.role-picker) { flex: none; }
+    .script-editor .role-picker { flex: 1; min-height: 0; overflow-y: auto; align-content: start; padding-right: 0.25rem; }
+    .script-editor__summary { position: static; min-height: 0; overflow-y: auto; }
+}

@@ -1,5 +1,9 @@
 @page "/scripts/{Id}"
+@inject GameDataClient Client
+@inject LocalScripts Local
+@inject NavigationManager Nav
 
+<div class="pinned fill-viewport">
 <DataView Context="data">
     @if (data.FindScript(Id) is not { } script)
     {
@@ -17,62 +21,107 @@
 
         <PageTitle>@script.Name – Grimoire Studio</PageTitle>
 
-        <p class="breadcrumbs"><a href="scripts">Skrypty</a></p>
-
-        <header class="script-header">
-            <img class="script-header__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" />
-            <div>
-                <h1>@script.Name</h1>
-                <p class="muted">@(script.IsOfficial ? "Skrypt oficjalny" : "Skrypt własny") · @roles.Count ról · <a href="roles?script=@script.Id">filtruj role</a></p>
-            </div>
-        </header>
-
-        @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
-        {
-            <section class="role-group">
-                <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key)</h2>
-                <ul class="sheet">
-                    @foreach (var role in group)
+        <div class="pinned__top">
+            <header class="script-header">
+                <img class="script-header__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" />
+                <div>
+                    <h1>@script.Name</h1>
+                    <p class="muted">
+                        @(script.IsOfficial ? "Skrypt oficjalny" : "Skrypt własny") · @roles.Count ról · <a href="roles?script=@script.Id">filtruj role</a>
+                        @if (_isLocal)
+                        {
+                            <span class="local-badge">@(_hasOriginal ? "zmieniony lokalnie" : "tylko w tej przeglądarce")</span>
+                        }
+                    </p>
+                </div>
+                <div class="script-actions">
+                    <a class="button" href="scripts/@script.Id/edit">Edytuj</a>
+                    <button class="button button--ghost" @onclick="PrintAsync">Drukuj / PDF</button>
+                    @if (_isLocal)
                     {
-                        <li class="sheet__row">
-                            <a href="roles/@role.Id"><RoleIcon Role="role" /></a>
-                            <div>
-                                <a class="sheet__name" href="roles/@role.Id">@role.NamePl</a>
-                                <p>@role.AbilityPl</p>
-                            </div>
-                        </li>
+                        <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń skrypt")</button>
                     }
-                </ul>
-            </section>
-        }
+                </div>
+            </header>
+        </div>
 
-        <section class="role-group">
-            <h2>Kolejność nocy</h2>
-            <div class="night-columns">
-                <NightOrderList Title="Pierwsza noc" Roles="data.NightOrder(script, firstNight: true)" FirstNight="true" />
-                <NightOrderList Title="Pozostałe noce" Roles="data.NightOrder(script, firstNight: false)" FirstNight="false" />
-            </div>
-        </section>
+        <div class="pinned__scroll">
+            @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+            {
+                <section class="role-group @(group.Key <= Team.Demon ? "role-group--core" : "role-group--extra")">
+                    <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key)</h2>
+                    <ul class="sheet">
+                        @foreach (var role in group)
+                        {
+                            <li class="sheet__row">
+                                <a href="roles/@role.Id"><RoleIcon Role="role" /></a>
+                                <div>
+                                    <a class="sheet__name" href="roles/@role.Id">@role.NamePl</a>
+                                    <p>@role.AbilityPl</p>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
 
-        @if (jinxes.Count > 0)
-        {
-            <section class="role-group">
-                <h2>Jinxy</h2>
-                <ul class="jinx-list">
-                    @foreach (var (role, other, jinx) in jinxes)
-                    {
-                        <li>
-                            <span class="jinx-pair"><RoleLink Role="role" /> + <RoleLink Role="other" /></span>
-                            <p>@jinx.ReasonPl</p>
-                        </li>
-                    }
-                </ul>
+            @if (jinxes.Count > 0)
+            {
+                <section class="role-group role-group--extra">
+                    <h2>Zasady specjalne (jinxy)</h2>
+                    <ul class="jinx-list">
+                        @foreach (var (role, other, jinx) in jinxes)
+                        {
+                            <li>
+                                <span class="jinx-pair"><RoleLink Role="role" /> + <RoleLink Role="other" /></span>
+                                <p>@jinx.ReasonPl</p>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+
+            <section class="role-group night-section">
+                <h2>Kolejność nocy</h2>
+                <div class="night-columns">
+                    <NightOrderList Title="Pierwsza noc" Roles="data.NightOrder(script, firstNight: true)" FirstNight="true" />
+                    <NightOrderList Title="Pozostałe noce" Roles="data.NightOrder(script, firstNight: false)" FirstNight="false" />
+                </div>
             </section>
-        }
+        </div>
     }
 </DataView>
+</div>
 
 @code {
     [Parameter]
     public string Id { get; set; } = string.Empty;
+
+    private bool _isLocal;
+    private bool _hasOriginal;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLocal = await Local.IsLocalAsync(Id);
+        _hasOriginal = (await Client.GetOriginalAsync()).FindScript(Id) is not null;
+    }
+
+    // Load the print-only title font early, so printing with Ctrl+P also uses it.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Local.PreloadPrintFontsAsync();
+        }
+    }
+
+    private Task PrintAsync() => Local.PrintAsync();
+
+    private async Task RemoveLocalAsync()
+    {
+        await Local.RemoveAsync(Id);
+
+        // Reload the page so the original (or the script list) is shown.
+        Nav.NavigateTo(_hasOriginal ? $"scripts/{Id}" : "scripts", forceLoad: true);
+    }
 }
