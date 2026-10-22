@@ -1,0 +1,10 @@
+@* Link to the role's page on the official Blood on the Clocktower wiki (English names). *@
+<a class="wiki-link" href="@Url(Role)" target="_blank" rel="noopener noreferrer" title="Oficjalna wiki: @Role.NameEn">wiki ↗</a>
+
+@code {
+    [Parameter, EditorRequired]
+    public Role Role { get; set; } = default!;
+
+    public static string Url(Role role) =>
+        "https://wiki.bloodontheclocktower.com/" + Uri.EscapeDataString(role.NameEn.Replace(' ', '_'));
+}

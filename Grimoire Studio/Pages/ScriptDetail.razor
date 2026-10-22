@@ -2,6 +2,7 @@
 @inject GameDataClient Client
 @inject LocalScripts Local
 @inject NavigationManager Nav
+@using Grimoire_Studio.Printing
 
 <div class="pinned fill-viewport">
 <DataView Context="data">
@@ -36,7 +37,7 @@
                 </div>
                 <div class="script-actions">
                     <a class="button" href="scripts/@script.Id/edit">Edytuj</a>
-                    <button class="button button--ghost" @onclick="PrintAsync">Drukuj / PDF</button>
+                    <button class="button button--ghost" @onclick="() => _printing = true">Drukuj / PDF</button>
                     @if (_isLocal)
                     {
                         <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń skrypt")</button>
@@ -48,7 +49,7 @@
         <div class="pinned__scroll">
             @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
             {
-                <section class="role-group @(group.Key <= Team.Demon ? "role-group--core" : "role-group--extra")">
+                <section class="role-group">
                     <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key)</h2>
                     <ul class="sheet">
                         @foreach (var role in group)
@@ -56,7 +57,7 @@
                             <li class="sheet__row">
                                 <a href="roles/@role.Id"><RoleIcon Role="role" /></a>
                                 <div>
-                                    <a class="sheet__name" href="roles/@role.Id">@role.NamePl</a>
+                                    <a class="sheet__name" href="roles/@role.Id">@role.NamePl</a> <WikiLink Role="role" />
                                     <p>@role.AbilityPl</p>
                                 </div>
                             </li>
@@ -67,7 +68,7 @@
 
             @if (jinxes.Count > 0)
             {
-                <section class="role-group role-group--extra">
+                <section class="role-group">
                     <h2>Zasady specjalne (jinxy)</h2>
                     <ul class="jinx-list">
                         @foreach (var (role, other, jinx) in jinxes)
@@ -93,29 +94,26 @@
 </DataView>
 </div>
 
+@if (_printing && _data?.FindScript(Id) is { } printed)
+{
+    <ScriptPrintDialog Script="printed" Data="_data" OnClose="() => _printing = false" />
+}
+
 @code {
     [Parameter]
     public string Id { get; set; } = string.Empty;
 
     private bool _isLocal;
     private bool _hasOriginal;
+    private bool _printing;
+    private GameData? _data;
 
     protected override async Task OnParametersSetAsync()
     {
         _isLocal = await Local.IsLocalAsync(Id);
         _hasOriginal = (await Client.GetOriginalAsync()).FindScript(Id) is not null;
+        _data = await Client.GetAsync();
     }
-
-    // Load the print-only title font early, so printing with Ctrl+P also uses it.
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Local.PreloadPrintFontsAsync();
-        }
-    }
-
-    private Task PrintAsync() => Local.PrintAsync();
 
     private async Task RemoveLocalAsync()
     {

@@ -1,0 +1,47 @@
+@using Grimoire_Studio.Components
+
+@* One A4 page of the script printout: header, content shrunk to fit if needed, and the site name at the bottom. *@
+<section class="print-page">
+    <header class="print-page__header">
+        <img class="print-page__icon" src="@GameDataClient.EditionIconUrl(Script)" alt="" />
+        <div>
+            <h1 class="print-page__title">@Title</h1>
+            @if (Subtitle is not null)
+            {
+                <p class="print-page__subtitle">@Subtitle</p>
+            }
+        </div>
+    </header>
+    <div class="print-page__content">
+        <div class="print-page__inner @(FillHeight ? "print-page__inner--fill" : null)">
+            @ChildContent
+        </div>
+    </div>
+    @if (Bottom is not null)
+    {
+        <div class="print-page__bottom">@Bottom</div>
+    }
+    <footer class="print-page__footer">Grimoire Studio</footer>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public Script Script { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    /// <summary>Content takes the full page height (night order: the flipped column sits at the bottom).</summary>
+    [Parameter]
+    public bool FillHeight { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Pinned to the bottom of the page, outside the content that is shrunk to fit.</summary>
+    [Parameter]
+    public RenderFragment? Bottom { get; set; }
+}

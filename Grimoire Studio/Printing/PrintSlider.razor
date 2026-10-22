@@ -1,0 +1,44 @@
+@using System.Globalization
+
+@* Large slider with −/+ buttons for the print dialog. *@
+<div class="print-slider">
+    <span class="print-slider__label">@Label</span>
+    <div class="print-slider__row">
+        <button type="button" class="print-slider__step" aria-label="Mniej" disabled="@(Value <= Min)" @onclick="() => SetAsync(Value - Step)">−</button>
+        <input type="range" min="@Invariant(Min)" max="@Invariant(Max)" step="@Invariant(Step)" value="@Invariant(Value)"
+               aria-label="@Label" @oninput="OnInput" />
+        <button type="button" class="print-slider__step" aria-label="Więcej" disabled="@(Value >= Max)" @onclick="() => SetAsync(Value + Step)">+</button>
+        <span class="print-slider__value">@Value.ToString("0%", CultureInfo.CurrentCulture)</span>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public double Min { get; set; }
+
+    [Parameter]
+    public double Max { get; set; } = 1;
+
+    [Parameter]
+    public double Step { get; set; } = 0.05;
+
+    [Parameter]
+    public double Value { get; set; }
+
+    [Parameter]
+    public EventCallback<double> ValueChanged { get; set; }
+
+    private static string Invariant(double value) => value.ToString(CultureInfo.InvariantCulture);
+
+    private Task OnInput(ChangeEventArgs e) =>
+        double.TryParse(e.Value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+            ? SetAsync(value)
+            : Task.CompletedTask;
+
+    // Rounded to the step, so repeated −/+ clicks do not drift (0.1 + 0.05 + …).
+    private Task SetAsync(double value) =>
+        ValueChanged.InvokeAsync(Math.Round(Math.Clamp(value, Min, Max) / Step) * Step);
+}

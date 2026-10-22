@@ -1,0 +1,40 @@
+@using Grimoire_Studio.Components
+
+<section class="print-group">
+    <h2 class="team-heading team--@TeamText.Slug(Team)">@TeamText.Plural(Team)</h2>
+    <ul class="print-roles print-columns--@Columns @(AbilityBesideName ? "print-roles--beside" : null)">
+        @foreach (var role in Roles)
+        {
+            <li class="print-roles__row">
+                <RoleIcon Role="role" />
+                @if (AbilityBesideName)
+                {
+                    <strong>@role.NamePl</strong>
+                    <p>@role.AbilityPl</p>
+                }
+                else
+                {
+                    <div>
+                        <strong>@role.NamePl</strong>
+                        <p>@role.AbilityPl</p>
+                    </div>
+                }
+            </li>
+        }
+    </ul>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public Team Team { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<Role> Roles { get; set; } = [];
+
+    [Parameter]
+    public int Columns { get; set; } = 2;
+
+    /// <summary>Icon, name and ability side by side (ability in its own column).</summary>
+    [Parameter]
+    public bool AbilityBesideName { get; set; }
+}

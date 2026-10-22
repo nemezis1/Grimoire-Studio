@@ -1,4 +1,5 @@
 @page "/roles"
+@using System.Globalization
 @inject NavigationManager Nav
 
 <PageTitle>Role – Grimoire Studio</PageTitle>
@@ -15,15 +16,27 @@
             .Where(r => team is null || r.Team == team)
             .Where(r => SearchText.Matches(Q ?? string.Empty, r.NamePl, r.NameEn, r.AbilityPl, r.AbilityEn, r.Id))
             .ToList();
+
+        // Sorted by a night: only roles that wake that night, in waking order.
+        Func<Role, int>? nightOrder = Sort switch
+        {
+            FirstNightSort => r => r.FirstNight,
+            OtherNightsSort => r => r.OtherNight,
+            _ => null,
+        };
+        if (nightOrder is not null)
+        {
+            roles = roles.Where(r => nightOrder(r) > 0).OrderBy(nightOrder).ToList();
+        }
     }
 
     <div class="pinned__top">
         <div class="filters">
             <input class="filters__search" type="search" placeholder="Szukaj po nazwie lub zdolności…"
-                   value="@Q" @oninput="e => SetQuery(e.Value?.ToString(), Team, Script)" />
+                   value="@Q" @oninput="e => SetParameter(QueryName, e.Value?.ToString())" />
 
             <select class="filters__select" value="@(scope?.Id ?? string.Empty)"
-                    @onchange="e => SetQuery(Q, Team, e.Value?.ToString())">
+                    @onchange="e => SetParameter(ScriptName, e.Value?.ToString())">
                 <option value="">Wszystkie skrypty</option>
                 @foreach (var script in data.Scripts.Scripts)
                 {
@@ -31,60 +44,84 @@
                 }
             </select>
 
+            <select class="filters__select" value="@(nightOrder is null ? string.Empty : Sort)"
+                    @onchange="e => SetParameter(SortName, e.Value?.ToString())" aria-label="Sortowanie">
+                <option value="">Alfabetycznie, według drużyn</option>
+                <option value="@FirstNightSort">Kolejność pierwszej nocy</option>
+                <option value="@OtherNightsSort">Kolejność pozostałych nocy</option>
+            </select>
+
             <div class="chips" role="group" aria-label="Drużyna">
-                <button class="chip @(team is null ? "chip--active" : null)" @onclick="() => SetQuery(Q, null, Script)">Wszystkie</button>
+                <button class="chip @(team is null ? "chip--active" : null)" @onclick="() => SetParameter(TeamName, null)">Wszystkie</button>
                 @foreach (var t in TeamText.All)
                 {
                     <button class="chip team--@TeamText.Slug(t) @(team == t ? "chip--active" : null)"
-                            @onclick="() => SetQuery(Q, TeamText.Slug(t), Script)">@TeamText.Plural(t)</button>
+                            @onclick="() => SetParameter(TeamName, TeamText.Slug(t))">@TeamText.Plural(t)</button>
                 }
             </div>
         </div>
 
-        <p class="muted">Znaleziono: @roles.Count</p>
+        <p class="muted">
+            Znaleziono: @roles.Count
+            @if (nightOrder is not null)
+            {
+                <span> · tylko role, które budzą się @(Sort == FirstNightSort ? "pierwszej nocy" : "w pozostałe noce")</span>
+            }
+        </p>
     </div>
 
     <div class="pinned__scroll">
-        @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+        @if (nightOrder is not null)
         {
-            <section class="role-group">
-                <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
-                <ul class="role-grid">
-                    @foreach (var role in group.OrderBy(r => r.NamePl, StringComparer.Create(new System.Globalization.CultureInfo("pl-PL"), true)))
-                    {
-                        <li>
-                            <a class="role-card team--@TeamText.Slug(role.Team)" href="roles/@role.Id">
-                                <RoleIcon Role="role" />
-                                <div class="role-card__body">
-                                    <div class="role-card__name">@role.NamePl <span class="muted">@role.NameEn</span></div>
-                                    <p class="role-card__ability">@role.AbilityPl</p>
-                                </div>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </section>
+            <ul class="role-grid role-grid--ordered">
+                @foreach (var (role, index) in roles.Select((r, i) => (r, i + 1)))
+                {
+                    <RoleCard Role="role" Order="index" />
+                }
+            </ul>
+        }
+        else
+        {
+            @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+            {
+                <section class="role-group">
+                    <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
+                    <ul class="role-grid">
+                        @foreach (var role in group.OrderBy(r => r.NamePl, PolishOrder))
+                        {
+                            <RoleCard Role="role" />
+                        }
+                    </ul>
+                </section>
+            }
         }
     </div>
 </DataView>
 </div>
 
 @code {
-    [SupplyParameterFromQuery(Name = "q")]
+    private const string QueryName = "q";
+    private const string TeamName = "team";
+    private const string ScriptName = "script";
+    private const string SortName = "sort";
+    private const string FirstNightSort = "first";
+    private const string OtherNightsSort = "other";
+
+    private static readonly StringComparer PolishOrder = StringComparer.Create(new CultureInfo("pl-PL"), true);
+
+    [SupplyParameterFromQuery(Name = QueryName)]
     public string? Q { get; set; }
 
-    [SupplyParameterFromQuery(Name = "team")]
+    [SupplyParameterFromQuery(Name = TeamName)]
     public string? Team { get; set; }
 
-    [SupplyParameterFromQuery(Name = "script")]
+    [SupplyParameterFromQuery(Name = ScriptName)]
     public string? Script { get; set; }
 
+    [SupplyParameterFromQuery(Name = SortName)]
+    public string? Sort { get; set; }
+
     // Filters live in the query string so a filtered list can be shared as a link.
-    private void SetQuery(string? q, string? team, string? script) =>
-        Nav.NavigateTo(Nav.GetUriWithQueryParameters(new Dictionary<string, object?>
-        {
-            ["q"] = string.IsNullOrWhiteSpace(q) ? null : q,
-            ["team"] = string.IsNullOrEmpty(team) ? null : team,
-            ["script"] = string.IsNullOrEmpty(script) ? null : script,
-        }), replace: true);
+    private void SetParameter(string name, string? value) =>
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter(name, string.IsNullOrWhiteSpace(value) ? null : value), replace: true);
 }

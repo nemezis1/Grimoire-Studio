@@ -41,6 +41,25 @@ public static class GameDataQueries
             .ToList();
 
     /// <summary>
+    /// Night order with the first night's minion and demon information steps (when <paramref name="includeInfo"/>).
+    /// </summary>
+    public static IReadOnlyList<NightStep> NightSteps(this GameData data, Script script, bool firstNight, bool includeInfo = true)
+    {
+        var steps = data.NightOrder(script, firstNight)
+            .Select(r => new NightStep(NightStepKind.Role, firstNight ? r.FirstNight : r.OtherNight, r))
+            .ToList();
+
+        if (firstNight && includeInfo)
+        {
+            steps.Add(new NightStep(NightStepKind.MinionInfo, NightStep.MinionInfoOrder));
+            steps.Add(new NightStep(NightStepKind.DemonInfo, NightStep.DemonInfoOrder));
+        }
+
+        // OrderBy is stable: roles sharing a number keep their script order.
+        return steps.OrderBy(s => s.Order).ToList();
+    }
+
+    /// <summary>
     /// Jinxes involving the role in either direction (owned by it, or owned by another role and naming it).
     /// When <paramref name="scope"/> is given, only jinxes with roles on that script are returned.
     /// </summary>

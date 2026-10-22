@@ -53,6 +53,23 @@ public class GameDataQueriesTests
     }
 
     [Fact]
+    public void NightSteps_Should_PlaceMinionAndDemonInfo_When_FirstNight()
+    {
+        var steps = Data.NightSteps(Tb, firstNight: true)
+            .Select(s => s.Role?.Id ?? s.Kind.ToString());
+
+        // poisoner 10, chef 30, minion info 60, demon info 90
+        Assert.Equal(["poisoner", "chef", "MinionInfo", "DemonInfo"], steps);
+    }
+
+    [Fact]
+    public void NightSteps_Should_SkipInfo_When_OtherNightsOrDisabled()
+    {
+        Assert.DoesNotContain(Data.NightSteps(Tb, firstNight: false), s => s.Role is null);
+        Assert.DoesNotContain(Data.NightSteps(Tb, firstNight: true, includeInfo: false), s => s.Role is null);
+    }
+
+    [Fact]
     public void ScriptsWithRole_Should_ReturnEveryScriptListingRole()
     {
         Assert.Equal(["tb", "x"], Data.ScriptsWithRole("chef").Select(s => s.Id));

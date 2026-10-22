@@ -1,0 +1,86 @@
+@using Grimoire_Studio.Components
+
+<section class="print-night @(Flipped ? "print-night--flipped" : null)">
+    <h2>@Title</h2>
+    @if (Steps.Count == 0)
+    {
+        <p class="muted">Nikt się nie budzi.</p>
+    }
+    else
+    {
+        <ol>
+            @foreach (var step in Steps)
+            {
+                @if (step.Role is { } role)
+                {
+                    var reminder = FirstNight ? role.FirstNightReminderPl : role.OtherNightReminderPl;
+                    <li class="team--@TeamText.Slug(role.Team)">
+                        <RoleIcon Role="role" Size="sm" />
+                        <div>
+                            <strong>@role.NamePl</strong>
+                            @if (ShowAbility)
+                            {
+                                <p class="print-night__ability">@role.AbilityPl</p>
+                            }
+                            @if (ShowReminder && !string.IsNullOrWhiteSpace(reminder))
+                            {
+                                <p>@reminder</p>
+                            }
+                        </div>
+                    </li>
+                }
+                else
+                {
+                    var (team, icon, name, text) = Info(step.Kind);
+                    <li class="print-night__info team--@team">
+                        <img class="role-icon role-icon--sm" src="@icon" alt="" />
+                        <div>
+                            <strong>@name</strong>
+                            @if (ShowReminder)
+                            {
+                                <p>@text</p>
+                            }
+                        </div>
+                    </li>
+                }
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<NightStep> Steps { get; set; } = [];
+
+    [Parameter]
+    public bool FirstNight { get; set; }
+
+    /// <summary>Role ability under the name, before the storyteller reminder.</summary>
+    [Parameter]
+    public bool ShowAbility { get; set; }
+
+    /// <summary>Storyteller instructions under each step.</summary>
+    [Parameter]
+    public bool ShowReminder { get; set; } = true;
+
+    /// <summary>Rotated by 180°, for a sheet read from both sides of a table.</summary>
+    [Parameter]
+    public bool Flipped { get; set; }
+
+    private static (string Team, string Icon, string Name, string Text) Info(NightStepKind kind) => kind switch
+    {
+        NightStepKind.MinionInfo => (
+            "minion",
+            "Assets/minion-info.png",
+            "Informacje dla sługusów",
+            "Jeśli gra 7 lub więcej graczy: obudź wszystkie Sługusy. Pokaż kartę „To jest Demon” i wskaż Demona. Jeśli jest więcej niż jeden Sługus, pokaż im, kim są pozostali."),
+        _ => (
+            "demon",
+            "Assets/demon-info.png",
+            "Informacje dla demona",
+            "Jeśli gra 7 lub więcej graczy: obudź Demona. Pokaż kartę „To są twoje Sługusy” i wskaż Sługusy. Pokaż kartę „Tych postaci nie ma w grze” i 3 żetony dobrych postaci spoza gry (blefy)."),
+    };
+}

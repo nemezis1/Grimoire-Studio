@@ -1,0 +1,23 @@
+<li class="role-grid__item">
+    <a class="role-card team--@TeamText.Slug(Role.Team)" href="roles/@Role.Id">
+        @if (Order is not null)
+        {
+            <span class="role-card__order">@Order</span>
+        }
+        <RoleIcon Role="Role" />
+        <div class="role-card__body">
+            <div class="role-card__name">@Role.NamePl <span class="muted">@Role.NameEn</span></div>
+            <p class="role-card__ability">@Role.AbilityPl</p>
+        </div>
+    </a>
+    <WikiLink Role="Role" />
+</li>
+
+@code {
+    [Parameter, EditorRequired]
+    public Role Role { get; set; } = default!;
+
+    /// <summary>Position in the night order, shown when the list is sorted by night.</summary>
+    [Parameter]
+    public int? Order { get; set; }
+}

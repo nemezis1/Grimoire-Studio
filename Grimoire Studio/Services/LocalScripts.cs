@@ -40,22 +40,6 @@ public sealed class LocalScripts(IJSRuntime js)
         return await PersistAsync(scripts);
     }
 
-    /// <summary>Font of the printed script title; it is not used on screen, so it is loaded explicitly.</summary>
-    public const string PrintTitleFont = "Great Vibes";
-
-    public async Task PreloadPrintFontsAsync()
-    {
-        var module = await Module;
-        // Cast keeps the array as one argument instead of being spread as the params array.
-        await module.InvokeVoidAsync("preloadFonts", (object)new[] { PrintTitleFont });
-    }
-
-    public async Task PrintAsync()
-    {
-        var module = await Module;
-        await module.InvokeVoidAsync("print", (object)new[] { PrintTitleFont });
-    }
-
     private async Task<List<Script>> LoadAsync()
     {
         if (_scripts is not null)
