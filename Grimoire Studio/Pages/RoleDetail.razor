@@ -37,67 +37,86 @@
         </div>
 
         <div class="pinned__scroll">
-            <article class="role-detail team--@TeamText.Slug(role.Team)">
-                <section class="panel">
-                    <h2>Zdolność</h2>
-                    <p class="ability">@role.AbilityPl</p>
-                    <p class="ability ability--en" lang="en">@role.AbilityEn</p>
-                    @if (role.Setup)
-                    {
-                        <p class="note">Wpływa na przygotowanie gry.</p>
-                    }
-                </section>
-
-                <section class="panel">
-                    <h2>Noc</h2>
-                    <div class="night-columns">
-                        <div class="night-info">
-                            <h3>Pierwsza noc</h3>
-                            @if (role.WakesFirstNight)
-                            {
-                                <span class="order">#@role.FirstNight</span>
-                                <p>@role.FirstNightReminderPl</p>
-                            }
-                            else
-                            {
-                                <span class="muted">nie budzi się</span>
-                            }
-                        </div>
-                        <div class="night-info">
-                            <h3>Pozostałe noce</h3>
-                            @if (role.WakesOtherNights)
-                            {
-                                <span class="order">#@role.OtherNight</span>
-                                <p>@role.OtherNightReminderPl</p>
-                            }
-                            else
-                            {
-                                <span class="muted">nie budzi się</span>
-                            }
-                        </div>
-                    </div>
-                </section>
-
-                @if (role.RemindersPl.Count > 0 || role.RemindersGlobalPl.Count > 0)
-                {
+            <article class="role-detail team--@TeamText.Slug(role.Team) @(jinxes.Count > 0 ? "role-detail--jinxes" : null)">
+                <div class="role-detail__main">
                     <section class="panel">
-                        <h2>Znaczniki przypomnień</h2>
-                        <ul class="tags">
-                            @foreach (var reminder in role.RemindersPl)
-                            {
-                                <li class="tag">@reminder</li>
-                            }
-                            @foreach (var reminder in role.RemindersGlobalPl)
-                            {
-                                <li class="tag tag--global" title="Znacznik globalny – dostępny zawsze, gdy rola jest na skrypcie">@reminder</li>
-                            }
-                        </ul>
+                        <h2>Zdolność</h2>
+                        <p class="ability">@role.AbilityPl</p>
+                        <p class="ability ability--en" lang="en">@role.AbilityEn</p>
+                        @if (role.Setup)
+                        {
+                            <p class="note">Wpływa na przygotowanie gry.</p>
+                        }
                     </section>
-                }
+
+                    <section class="panel">
+                        <h2>Noc</h2>
+                        <div class="night-columns">
+                            <div class="night-info">
+                                <h3>Pierwsza noc</h3>
+                                @if (role.WakesFirstNight)
+                                {
+                                    <span class="order">#@role.FirstNight</span>
+                                    <p>@role.FirstNightReminderPl</p>
+                                }
+                                else
+                                {
+                                    <span class="muted">nie budzi się</span>
+                                }
+                            </div>
+                            <div class="night-info">
+                                <h3>Pozostałe noce</h3>
+                                @if (role.WakesOtherNights)
+                                {
+                                    <span class="order">#@role.OtherNight</span>
+                                    <p>@role.OtherNightReminderPl</p>
+                                }
+                                else
+                                {
+                                    <span class="muted">nie budzi się</span>
+                                }
+                            </div>
+                        </div>
+                    </section>
+
+                    @if (role.RemindersPl.Count > 0 || role.RemindersGlobalPl.Count > 0)
+                    {
+                        <section class="panel">
+                            <h2>Znaczniki przypomnień</h2>
+                            <ul class="tags">
+                                @foreach (var reminder in role.RemindersPl)
+                                {
+                                    <li class="tag">@reminder</li>
+                                }
+                                @foreach (var reminder in role.RemindersGlobalPl)
+                                {
+                                    <li class="tag tag--global" title="Znacznik globalny – dostępny zawsze, gdy rola jest na skrypcie">@reminder</li>
+                                }
+                            </ul>
+                        </section>
+                    }
+
+                    <section class="panel">
+                        <h2>Skrypty</h2>
+                        @if (scripts.Count == 0)
+                        {
+                            <p class="muted">Rola nie występuje w żadnym skrypcie.</p>
+                        }
+                        else
+                        {
+                            <ul class="tags">
+                                @foreach (var script in scripts)
+                                {
+                                    <li><a class="tag tag--link" href="scripts/@script.Id">@script.Name</a></li>
+                                }
+                            </ul>
+                        }
+                    </section>
+                </div>
 
                 @if (jinxes.Count > 0)
                 {
-                    <section class="panel">
+                    <section class="panel role-detail__jinxes">
                         <h2>Jinxy</h2>
                         <ul class="jinx-list">
                             @foreach (var (other, jinx) in jinxes)
@@ -110,23 +129,6 @@
                         </ul>
                     </section>
                 }
-
-                <section class="panel">
-                    <h2>Skrypty</h2>
-                    @if (scripts.Count == 0)
-                    {
-                        <p class="muted">Rola nie występuje w żadnym skrypcie.</p>
-                    }
-                    else
-                    {
-                        <ul class="tags">
-                            @foreach (var script in scripts)
-                            {
-                                <li><a class="tag tag--link" href="scripts/@script.Id">@script.Name</a></li>
-                            }
-                        </ul>
-                    }
-                </section>
             </article>
         </div>
     }

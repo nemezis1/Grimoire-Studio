@@ -316,11 +316,27 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 /* Role detail */
 /* Panels sit side by side on wide pages so text lines stay readable. */
-.role-detail {
+/* Main panels side by side; jinxes, when there are any, in their own column on the right. */
+.role-detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 1rem; align-items: start; }
+.role-detail--jinxes { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+
+.role-detail__main {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
     gap: 0 1rem;
     align-items: start;
+}
+
+@media (max-width: 900px) {
+    .role-detail--jinxes { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Wide screens: the page does not scroll as a whole; the jinx list (and the main panels if needed) scroll inside. */
+@media (min-width: 1101px) {
+    .pinned__scroll:has(> .role-detail--jinxes) { overflow: hidden; }
+    .role-detail--jinxes { height: 100%; }
+    .role-detail--jinxes > .role-detail__main { max-height: 100%; overflow-y: auto; padding-right: 0.25rem; }
+    .role-detail__jinxes { max-height: 100%; overflow-y: auto; margin-bottom: 0; }
 }
 
 .role-detail__header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-bottom: 1rem; }
