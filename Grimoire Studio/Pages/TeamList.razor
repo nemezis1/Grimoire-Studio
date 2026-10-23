@@ -1,0 +1,229 @@
+@page "/teams"
+@inject GameDataClient Client
+@inject LocalTeams Local
+
+<PageTitle>Drużyny – Grimoire Studio</PageTitle>
+
+<div class="title-row">
+    <h1>Drużyny</h1>
+    @if (_edit is null)
+    {
+        <button class="button" @onclick="StartNew">Nowa drużyna</button>
+    }
+</div>
+<p class="muted">Typy postaci: nazwy, kolor i kolejność na listach i wydrukach. Zmiany są zapisywane tylko w tej przeglądarce.</p>
+
+@if (_data is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else
+{
+    <ul class="form-list form">
+        @if (_edit is not null && _editingId is null)
+        {
+            <li class="panel" style="--team: @_edit.Color">@EditForm()</li>
+        }
+        @foreach (var team in _data.Teams)
+        {
+            var count = _data.AllRoles.Count(r => r.Team == team.Id);
+            var isLocal = _localIds.Contains(team.Id);
+            var isBuiltin = _original!.FindTeam(team.Id) is not null;
+            <li class="panel" style="@Teams.Style(team.Id)">
+                @if (_editingId == team.Id)
+                {
+                    @EditForm()
+                }
+                else
+                {
+                    <div class="form-list__head">
+                        <h2 class="team-heading">
+                            @team.PluralPl <span class="muted">(@count)</span>
+                            @if (isLocal)
+                            {
+                                <span class="local-badge">@(isBuiltin ? "zmieniona lokalnie" : "tylko w tej przeglądarce")</span>
+                            }
+                        </h2>
+                        <div class="script-actions">
+                            <a class="button button--ghost" href="roles?team=@team.Id">Role</a>
+                            <button class="button" @onclick="() => StartEdit(team)">Edytuj</button>
+                            @if (isLocal)
+                            {
+                                <button class="button button--ghost" disabled="@(!isBuiltin && count > 0)"
+                                        title="@(!isBuiltin && count > 0 ? "Najpierw przenieś role do innej drużyny." : null)"
+                                        @onclick="() => RemoveAsync(team.Id)">@(isBuiltin ? "Przywróć oryginał" : "Usuń")</button>
+                            }
+                        </div>
+                    </div>
+                    <p class="muted small">
+                        <code>@team.Id</code> · @team.NamePl / @team.NameEn · @team.PluralEn
+                        · @(team.Extra ? "poza liczbą postaci (osobna strona wydruku)" : "w liczbie postaci")
+                    </p>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private GameData? _data;
+    private GameData? _original;
+    private HashSet<string> _localIds = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Team being edited; <see cref="_editingId"/> is null for a new team.</summary>
+    private TeamForm? _edit;
+    private string? _editingId;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _original = await Client.GetOriginalAsync();
+        _data = await Client.GetAsync();
+        _localIds = (await Local.GetAllAsync()).Select(t => t.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void StartNew()
+    {
+        _editingId = null;
+        _error = null;
+        _edit = new TeamForm { Order = _data!.Teams.Max(t => t.Order) + 10, Color = "#5a7a3a" };
+    }
+
+    private void StartEdit(TeamInfo team)
+    {
+        _editingId = team.Id;
+        _error = null;
+        _edit = TeamForm.From(team);
+    }
+
+    private async Task SaveAsync()
+    {
+        var form = _edit!;
+        var id = (_editingId ?? form.Id).Trim();
+
+        _error =
+            _editingId is null && !DataValidator.IsValidId(id) ? "Identyfikator: tylko małe litery i cyfry, bez spacji." :
+            _editingId is null && _data!.FindTeam(id) is { } taken ? $"Drużyna o identyfikatorze „{id}” już istnieje ({taken.PluralPl})." :
+            string.IsNullOrWhiteSpace(form.NamePl) || string.IsNullOrWhiteSpace(form.PluralPl) ? "Podaj nazwę polską w liczbie pojedynczej i mnogiej." :
+            null;
+        if (_error is not null)
+        {
+            return;
+        }
+
+        if (!await Local.SaveAsync(form.ToTeam(id)))
+        {
+            _error = "Przeglądarka nie pozwoliła zapisać drużyny (tryb prywatny lub brak miejsca).";
+            return;
+        }
+
+        _edit = null;
+        _editingId = null;
+        await ReloadAsync();
+    }
+
+    private async Task RemoveAsync(string id)
+    {
+        await Local.RemoveAsync(id);
+        await ReloadAsync();
+    }
+
+    private void Cancel()
+    {
+        _edit = null;
+        _editingId = null;
+    }
+
+    private RenderFragment EditForm() => __builder =>
+    {
+        var form = _edit!;
+        <h2>@(_editingId is null ? "Nowa drużyna" : $"Edycja: {form.PluralPl}")</h2>
+        @if (_editingId is null)
+        {
+            <label class="field">
+                <span>Identyfikator (małe litery i cyfry)</span>
+                <input type="text" @bind="form.Id" @bind:event="oninput" />
+            </label>
+        }
+        <div class="field-row">
+            <label class="field">
+                <span>Nazwa (PL)</span>
+                <input type="text" @bind="form.NamePl" @bind:event="oninput" placeholder="np. Mieszkaniec" />
+            </label>
+            <label class="field">
+                <span>Liczba mnoga (PL)</span>
+                <input type="text" @bind="form.PluralPl" @bind:event="oninput" placeholder="np. Mieszkańcy" />
+            </label>
+        </div>
+        <div class="field-row">
+            <label class="field">
+                <span>Nazwa (EN)</span>
+                <input type="text" @bind="form.NameEn" @bind:event="oninput" />
+            </label>
+            <label class="field">
+                <span>Liczba mnoga (EN)</span>
+                <input type="text" @bind="form.PluralEn" @bind:event="oninput" />
+            </label>
+        </div>
+        <div class="field-row">
+            <label class="field field--inline">
+                <span>Kolor</span>
+                <input type="color" @bind="form.Color" @bind:event="oninput" />
+            </label>
+            <label class="field">
+                <span>Kolejność (mniejsza = wcześniej)</span>
+                <input type="number" @bind="form.Order" />
+            </label>
+            <label class="field field--inline">
+                <input type="checkbox" @bind="form.Extra" />
+                <span>Poza liczbą postaci (jak Wędrowcy i Legendy, osobna strona wydruku)</span>
+            </label>
+        </div>
+        @if (_error is not null)
+        {
+            <p class="notice notice--error">@_error</p>
+        }
+        <div class="field-row">
+            <button class="button" @onclick="SaveAsync">Zapisz</button>
+            <button class="button button--ghost" @onclick="Cancel">Anuluj</button>
+        </div>
+    };
+
+    private sealed class TeamForm
+    {
+        public string Id { get; set; } = string.Empty;
+        public string NamePl { get; set; } = string.Empty;
+        public string NameEn { get; set; } = string.Empty;
+        public string PluralPl { get; set; } = string.Empty;
+        public string PluralEn { get; set; } = string.Empty;
+        public string Color { get; set; } = "#888888";
+        public int Order { get; set; }
+        public bool Extra { get; set; }
+
+        public static TeamForm From(TeamInfo team) => new()
+        {
+            Id = team.Id,
+            NamePl = team.NamePl,
+            NameEn = team.NameEn,
+            PluralPl = team.PluralPl,
+            PluralEn = team.PluralEn,
+            Color = team.Color,
+            Order = team.Order,
+            Extra = team.Extra,
+        };
+
+        public TeamInfo ToTeam(string id) => new()
+        {
+            Id = id,
+            NamePl = NamePl.Trim(),
+            NameEn = NameEn.Trim(),
+            PluralPl = PluralPl.Trim(),
+            PluralEn = PluralEn.Trim(),
+            Color = Color,
+            Order = Order,
+            Extra = Extra,
+        };
+    }
+}

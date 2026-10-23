@@ -129,12 +129,6 @@ code {
     }
 }
 
-.team--townsfolk { --team: #2f6fd6; }
-.team--outsider { --team: #2aa3c7; }
-.team--minion { --team: #d96a1a; }
-.team--demon { --team: #c42020; }
-.team--traveler { --team: #9a3fc4; }
-.team--fabled { --team: #b8960c; }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -962,7 +956,8 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     align-items: start;
 }
 
-.role-editor input[type="text"], .role-editor input[type="number"], .role-editor select, .role-editor textarea {
+.role-editor input[type="text"], .role-editor input[type="number"], .role-editor select, .role-editor textarea,
+.form input[type="text"], .form input[type="number"], .form select, .form textarea {
     font: inherit;
     width: 100%;
     padding: 0.45rem 0.6rem;
@@ -972,7 +967,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     color: var(--text);
 }
 
-.role-editor textarea { resize: vertical; }
+.role-editor textarea, .form textarea { resize: vertical; }
 .role-editor__icon { display: flex; justify-content: center; margin-bottom: 0.75rem; }
 .role-editor__icon img { width: 128px; height: 128px; object-fit: contain; }
 
@@ -986,3 +981,17 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 @media (max-width: 900px) {
     .role-editor { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Teams, jinxes and local changes ---------- */
+
+.form input[type="color"] { width: 3rem; height: 2.2rem; padding: 0.1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.form-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.form-list > li { border-left: 4px solid var(--team, var(--border)); }
+.form-list__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; }
+.form-list__head h2, .form-list__head h3 { margin: 0; flex: 1 1 auto; }
+.form-list__removed { opacity: 0.55; }
+.change-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.change-list > li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-left: 4px solid var(--team, var(--border)); border-radius: 8px; }
+.change-list__what { flex: 1 1 260px; min-width: 0; }
+.change-list__fields { display: block; font-size: 0.85rem; color: var(--muted); }
+.form-list > li.panel { margin-bottom: 0; }

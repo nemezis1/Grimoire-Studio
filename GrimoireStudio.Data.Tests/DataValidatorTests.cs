@@ -4,7 +4,7 @@ namespace GrimoireStudio.Data.Tests;
 
 public class DataValidatorTests
 {
-    private static Role CreateRole(string id, Team team = Team.Townsfolk) => new()
+    private static Role CreateRole(string id, string team = TeamIds.Townsfolk) => new()
     {
         Id = id,
         NameEn = id,
@@ -19,8 +19,8 @@ public class DataValidatorTests
         IReadOnlyList<Script>? scripts = null,
         IReadOnlyList<RoleJinxes>? jinxes = null) => new()
     {
-        Roles = roles ?? [CreateRole("chef"), CreateRole("imp", Team.Demon)],
-        Fabled = [CreateRole("djinn", Team.Fabled)],
+        Roles = roles ?? [CreateRole("chef"), CreateRole("imp", TeamIds.Demon)],
+        Fabled = [CreateRole("djinn", TeamIds.Fabled)],
         Scripts = new ScriptCatalog { Scripts = scripts ?? [new Script { Id = "tb", Name = "TB", Roles = ["chef", "imp", "djinn"] }] },
         Jinxes = jinxes ?? [],
     };
@@ -85,7 +85,7 @@ public class DataValidatorTests
     [Fact]
     public void Validate_Should_ReportMisplacedFabled_When_FabledIsInRoles()
     {
-        var errors = DataValidator.Validate(CreateData(roles: [CreateRole("spirit", Team.Fabled)], scripts: []));
+        var errors = DataValidator.Validate(CreateData(roles: [CreateRole("spirit", TeamIds.Fabled)], scripts: []));
 
         Assert.Contains(errors, e => e.Contains("fabled belongs in"));
     }

@@ -1,5 +1,5 @@
 <li class="role-grid__item">
-    <a class="role-card team--@TeamText.Slug(Role.Team)" href="roles/@Role.Id">
+    <a class="role-card team--@(Role.Team)" style="@Teams.Style(Role.Team)" href="roles/@Role.Id">
         @if (Order is not null)
         {
             <span class="role-card__order">@Order</span>

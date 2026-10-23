@@ -19,13 +19,13 @@
 
         <PageTitle>@role.NamePl – Grimoire Studio</PageTitle>
 
-        <div class="pinned__top team--@TeamText.Slug(role.Team)">
+        <div class="pinned__top team--@(role.Team)" style="@Teams.Style(role.Team)">
             <header class="role-detail__header">
                 <RoleIcon Role="role" Size="lg" />
                 <div>
                     <h1>@role.NamePl</h1>
                     <p class="role-detail__subtitle">
-                        @role.NameEn · <TeamBadge Team="role.Team" />
+                        @role.NameEn · <TeamBadge Team="@role.Team" />
                         @if (edition is not null)
                         {
                             <span> · <a href="scripts/@edition.Id">@edition.Name</a></span>
@@ -38,6 +38,7 @@
                 </div>
                 <div class="script-actions">
                     <a class="button" href="roles/@role.Id/edit">Edytuj</a>
+                    <a class="button button--ghost" href="roles/@role.Id/jinxes">Jinxy</a>
                     @if (_isLocal)
                     {
                         <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń rolę")</button>
@@ -49,7 +50,7 @@
         </div>
 
         <div class="pinned__scroll">
-            <article class="role-detail team--@TeamText.Slug(role.Team) @(jinxes.Count > 0 ? "role-detail--jinxes" : null)">
+            <article class="role-detail team--@role.Team @(jinxes.Count > 0 ? "role-detail--jinxes" : null)" style="@Teams.Style(role.Team)">
                 <div class="role-detail__main">
                     <section class="panel">
                         <h2>Zdolność</h2>

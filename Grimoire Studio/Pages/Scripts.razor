@@ -6,8 +6,24 @@
 <div class="pinned fill-viewport">
 <div class="pinned__top title-row">
     <h1>Skrypty</h1>
-    <a class="button" href="scripts/new">Nowy skrypt</a>
+    <div class="script-actions">
+        <a class="button" href="scripts/new">Nowy skrypt</a>
+        <label class="button button--ghost button--file" title="Plik JSON ze script.bloodontheclocktower.com">
+            Importuj ze Script Tool…
+            <InputFile accept=".json,application/json" OnChange="ImportAsync" />
+        </label>
+    </div>
 </div>
+@if (_importMessage is not null)
+{
+    <p class="pinned__top notice @(_importFailed ? "notice--error" : null)">
+        @_importMessage
+        @if (_importedId is not null)
+        {
+            @(" ")<a href="scripts/@_importedId">Otwórz skrypt</a>
+        }
+    </p>
+}
 
 <div class="pinned__scroll">
     <DataView Context="data">
@@ -39,10 +55,10 @@
                                     }
                                 </div>
                                 <div class="muted">
-                                    @string.Join(" · ", TeamText.All
-                                        .Select(t => (Team: t, Count: roles.Count(r => r.Team == t)))
+                                    @string.Join(" · ", Teams.All
+                                        .Select(t => (Team: t.Id, Count: roles.Count(r => r.Team == t.Id)))
                                         .Where(x => x.Count > 0)
-                                        .Select(x => $"{x.Count} {TeamText.Plural(x.Team).ToLowerInvariant()}"))
+                                        .Select(x => $"{x.Count} {Teams.Plural(x.Team).ToLowerInvariant()}"))
                                 </div>
                             </div>
                         </a>
@@ -55,8 +71,89 @@
 </div>
 
 @code {
+    private const long MaxImportBytes = 5 * 1024 * 1024;
+
+    [Inject]
+    private GameDataClient Client { get; set; } = default!;
+
+    [Inject]
+    private LocalChanges Changes { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
     private HashSet<string> _localIds = new(StringComparer.OrdinalIgnoreCase);
+    private string? _importMessage;
+    private string? _importedId;
+    private bool _importFailed;
 
     protected override async Task OnInitializedAsync() =>
         _localIds = (await Local.GetAllAsync()).Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Saves the script from a Script Tool file as a local script, together with the homebrew roles, teams and jinxes
+    /// it defines.
+    /// </summary>
+    private async Task ImportAsync(InputFileChangeEventArgs e)
+    {
+        _importedId = null;
+        try
+        {
+            using var reader = new StreamReader(e.File.OpenReadStream(MaxImportBytes));
+            var json = await reader.ReadToEndAsync();
+            var data = await Client.GetAsync();
+
+            var result = ScriptToolFormat.Import(json, data, "x");
+            var id = UniqueId(data, ScriptToolFormat.NormalizeId(result.Script.Name) is { Length: > 0 } slug ? slug : "skrypt");
+
+            var saved = true;
+            foreach (var team in result.NewTeams)
+            {
+                saved &= await Changes.Teams.SaveAsync(team);
+            }
+
+            foreach (var role in result.NewRoles)
+            {
+                saved &= await Changes.Roles.SaveAsync(new LocalRole(role, null));
+            }
+
+            foreach (var jinx in result.NewJinxes)
+            {
+                saved &= await Changes.Jinxes.SaveAsync(jinx);
+            }
+
+            saved &= await Local.SaveAsync(result.Script with { Id = id });
+            if (!saved)
+            {
+                throw new FormatException("Przeglądarka nie pozwoliła zapisać skryptu (tryb prywatny lub brak miejsca).");
+            }
+
+            if (result.UnknownRoles.Count == 0)
+            {
+                Nav.NavigateTo($"scripts/{id}", forceLoad: true);
+                return;
+            }
+
+            _importedId = id;
+            _importFailed = false;
+            _importMessage = $"Zaimportowano „{result.Script.Name}”, ale pominięto nieznane role: {string.Join(", ", result.UnknownRoles)}.";
+            _localIds.Add(id);
+        }
+        catch (Exception ex) when (ex is FormatException or IOException)
+        {
+            _importFailed = true;
+            _importMessage = ex.Message;
+        }
+    }
+
+    private static string UniqueId(GameData data, string baseId)
+    {
+        var id = baseId;
+        for (var i = 2; data.FindScript(id) is not null; i++)
+        {
+            id = $"{baseId}{i}";
+        }
+
+        return id;
+    }
 }

@@ -1,7 +1,7 @@
 @using Grimoire_Studio.Components
 
 <section class="print-group">
-    <h2 class="team-heading team--@TeamText.Slug(Team)">@TeamText.Plural(Team)</h2>
+    <h2 class="team-heading team--@(Team)" style="@Teams.Style(Team)">@Teams.Plural(Team)</h2>
     <ul class="print-roles print-columns--@Columns @(AbilityBesideName ? "print-roles--beside" : null)">
         @foreach (var role in Roles)
         {
@@ -26,7 +26,7 @@
 
 @code {
     [Parameter, EditorRequired]
-    public Team Team { get; set; }
+    public string Team { get; set; } = string.Empty;
 
     [Parameter, EditorRequired]
     public IReadOnlyList<Role> Roles { get; set; } = [];

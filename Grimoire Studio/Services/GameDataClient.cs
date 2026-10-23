@@ -4,17 +4,24 @@ using GrimoireStudio.Data;
 namespace Grimoire_Studio.Services;
 
 /// <summary>
-/// Loads the data folder served at <c>data/</c> once and caches it for the session; roles and scripts saved in this
-/// browser (<see cref="LocalRoles"/>, <see cref="LocalScripts"/>) are applied on every read.
+/// Loads the data folder served at <c>data/</c> once and caches it for the session; changes saved in this browser
+/// (<see cref="LocalChanges"/>) are applied on every read.
 /// </summary>
-public sealed class GameDataClient(HttpClient http, LocalRoles localRoles, LocalScripts localScripts)
+public sealed class GameDataClient(HttpClient http, LocalChanges local, TeamText teamText)
 {
     private Task<GameData>? _load;
 
-    public async Task<GameData> GetAsync() =>
-        (await GetOriginalAsync())
-            .WithRoles((await localRoles.GetAllAsync()).Select(r => r.Role))
-            .WithScripts(await localScripts.GetAllAsync());
+    public async Task<GameData> GetAsync()
+    {
+        var data = (await GetOriginalAsync())
+            .WithTeams(await local.Teams.GetAllAsync())
+            .WithRoles((await local.Roles.GetAllAsync()).Select(r => r.Role))
+            .WithScripts(await local.Scripts.GetAllAsync())
+            .WithJinxes(await local.Jinxes.GetAllAsync());
+
+        teamText.Use(data.Teams);
+        return data;
+    }
 
     /// <summary>Data exactly as in the data folder, without local changes.</summary>
     public Task<GameData> GetOriginalAsync() => _load ??= LoadAsync();

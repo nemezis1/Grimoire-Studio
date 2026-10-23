@@ -48,9 +48,9 @@ else
                     <label class="field">
                         <span>Drużyna</span>
                         <select @bind="_team">
-                            @foreach (var t in TeamText.All)
+                            @foreach (var t in Teams.All)
                             {
-                                <option value="@t">@TeamText.Singular(t)</option>
+                                <option value="@t.Id">@t.NamePl</option>
                             }
                         </select>
                     </label>
@@ -196,7 +196,7 @@ else
     private Role? _existing;
     private string _namePl = string.Empty;
     private string _nameEn = string.Empty;
-    private Team _team = Team.Townsfolk;
+    private string _team = TeamIds.Townsfolk;
     private string _edition = string.Empty;
     private bool _setup;
     private string _abilityPl = string.Empty;
@@ -404,7 +404,7 @@ else
             NamePl = _namePl.Trim(),
             NameEn = string.IsNullOrWhiteSpace(_nameEn) ? _namePl.Trim() : _nameEn.Trim(),
             Team = _team,
-            Edition = _team == Team.Fabled ? string.Empty : _edition,
+            Edition = _team == TeamIds.Fabled ? string.Empty : _edition,
             Setup = _setup,
             AbilityPl = _abilityPl.Trim(),
             AbilityEn = string.IsNullOrWhiteSpace(_abilityEn) ? _abilityPl.Trim() : _abilityEn.Trim(),

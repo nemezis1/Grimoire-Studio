@@ -13,10 +13,10 @@
 <DataView Context="data">
     @{
         var scope = Script is null ? null : data.FindScript(Script);
-        var team = TeamText.Parse(Team);
+        var team = Teams.Parse(Team);
         var roles = data.AllRoles
             .Where(r => scope is null || scope.Roles.Contains(r.Id))
-            .Where(r => team is null || r.Team == team)
+            .Where(r => team is null || r.Team == team.Id)
             .Where(r => SearchText.Matches(Q ?? string.Empty, r.NamePl, r.NameEn, r.AbilityPl, r.AbilityEn, r.Id))
             .ToList();
 
@@ -56,10 +56,10 @@
 
             <div class="chips" role="group" aria-label="Drużyna">
                 <button class="chip @(team is null ? "chip--active" : null)" @onclick="() => SetParameter(TeamName, null)">Wszystkie</button>
-                @foreach (var t in TeamText.All)
+                @foreach (var t in Teams.All)
                 {
-                    <button class="chip team--@TeamText.Slug(t) @(team == t ? "chip--active" : null)"
-                            @onclick="() => SetParameter(TeamName, TeamText.Slug(t))">@TeamText.Plural(t)</button>
+                    <button class="chip team--@(t.Id) @(team?.Id == t.Id ? "chip--active" : null)" style="@Teams.Style(t.Id)"
+                            @onclick="() => SetParameter(TeamName, t.Id)">@t.PluralPl</button>
                 }
             </div>
         </div>
@@ -85,10 +85,10 @@
         }
         else
         {
-            @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+            @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
             {
                 <section class="role-group">
-                    <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
+                    <h2 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
                     <ul class="role-grid">
                         @foreach (var role in group.OrderBy(r => r.NamePl, PolishOrder))
                         {

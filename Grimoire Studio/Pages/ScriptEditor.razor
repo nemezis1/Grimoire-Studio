@@ -20,7 +20,7 @@ else if (!IsNew && _notFound)
 else
 {
     var selected = _selected.Select(_data.FindRole).OfType<Role>().ToList();
-    var team = TeamText.Parse(_team);
+    var team = Teams.Parse(_team);
 
     <div class="script-editor fill-viewport">
         <section class="panel">
@@ -45,22 +45,22 @@ else
             </div>
             <div class="chips">
                 <button class="chip @(team is null ? "chip--active" : null)" @onclick='() => _team = null'>Wszystkie</button>
-                @foreach (var t in TeamText.All)
+                @foreach (var t in Teams.All)
                 {
-                    <button class="chip team--@TeamText.Slug(t) @(team == t ? "chip--active" : null)" @onclick="() => _team = TeamText.Slug(t)">@TeamText.Plural(t)</button>
+                    <button class="chip team--@(t.Id) @(team?.Id == t.Id ? "chip--active" : null)" style="@Teams.Style(t.Id)" @onclick="() => _team = t.Id">@t.PluralPl</button>
                 }
             </div>
 
             <ul class="role-picker">
                 @foreach (var role in _data.AllRoles
-                    .Where(r => team is null || r.Team == team)
+                    .Where(r => team is null || r.Team == team.Id)
                     .Where(r => SearchText.Matches(_query, r.NamePl, r.NameEn, r.Id))
-                    .OrderBy(r => r.Team)
+                    .OrderBy(r => Teams.Get(r.Team).Order)
                     .ThenBy(r => r.NamePl, StringComparer.CurrentCulture))
                 {
                     var isSelected = _selected.Contains(role.Id);
                     <li>
-                        <button class="role-toggle team--@TeamText.Slug(role.Team) @(isSelected ? "role-toggle--on" : null)"
+                        <button class="role-toggle team--@(role.Team) @(isSelected ? "role-toggle--on" : null)" style="@Teams.Style(role.Team)"
                                 aria-pressed="@isSelected" @onclick="() => Toggle(role.Id)">
                             <RoleIcon Role="role" Size="sm" />
                             <span>@role.NamePl</span>
@@ -73,14 +73,14 @@ else
         <aside class="panel script-editor__summary">
             <h2>Wybrane role (@selected.Count)</h2>
             <p class="muted small">
-                @string.Join(" · ", TeamText.All
-                    .Select(t => (Team: t, Count: selected.Count(r => r.Team == t)))
+                @string.Join(" · ", Teams.All
+                    .Select(t => (Team: t.Id, Count: selected.Count(r => r.Team == t.Id)))
                     .Where(x => x.Count > 0)
-                    .Select(x => $"{x.Count} {TeamText.Plural(x.Team).ToLowerInvariant()}"))
+                    .Select(x => $"{x.Count} {Teams.Plural(x.Team).ToLowerInvariant()}"))
             </p>
-            @foreach (var group in selected.GroupBy(r => r.Team).OrderBy(g => g.Key))
+            @foreach (var group in selected.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
             {
-                <h3 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key)</h3>
+                <h3 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key)</h3>
                 <ul class="selected-roles">
                     @foreach (var role in group)
                     {
@@ -201,7 +201,7 @@ else
         var roles = _selected
             .Select(_data!.FindRole)
             .OfType<Role>()
-            .OrderBy(r => r.Team)
+            .OrderBy(r => Teams.Get(r.Team).Order)
             .Select(r => r.Id)
             .ToList();
 

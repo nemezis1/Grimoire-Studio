@@ -1,0 +1,217 @@
+@page "/roles/{Id}/jinxes"
+@inject GameDataClient Client
+@inject LocalJinxes Local
+@inject NavigationManager Nav
+
+<PageTitle>Jinxy: @(_role?.NamePl ?? Id) – Grimoire Studio</PageTitle>
+
+@if (_data is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else if (_role is null)
+{
+    <p>Rola <code>@Id</code> nie istnieje. <a href="roles">Wróć do listy ról</a>.</p>
+}
+else
+{
+    <div class="title-row">
+        <h1>Jinxy: @_role.NamePl</h1>
+        <div class="script-actions">
+            <button class="button" @onclick="SaveAsync">Zapisz</button>
+            <a class="button button--ghost" href="roles/@_role.Id">Anuluj</a>
+        </div>
+    </div>
+    <p class="muted">Zasady specjalne między tą rolą a innymi. Zmiany są zapisywane tylko w tej przeglądarce.</p>
+
+    @if (_error is not null)
+    {
+        <p class="notice notice--error">@_error</p>
+    }
+
+    <ul class="form-list form">
+        @foreach (var row in _rows)
+        {
+            <li class="panel @(row.Removed ? "form-list__removed" : null)" style="@Teams.Style(row.Other.Team)">
+                <div class="form-list__head">
+                    <h3><RoleLink Role="row.Other" /></h3>
+                    @if (row.Original is null)
+                    {
+                        <span class="local-badge">nowy</span>
+                    }
+                    else if (row.IsChanged)
+                    {
+                        <span class="local-badge">zmieniony</span>
+                    }
+                    <div class="script-actions">
+                        @if (row.Original is not null && row.IsChanged)
+                        {
+                            <button class="button button--ghost" @onclick="() => row.Reset()">Przywróć oryginał</button>
+                        }
+                        <button class="button button--ghost" @onclick="() => row.Removed = !row.Removed">@(row.Removed ? "Nie usuwaj" : "Usuń")</button>
+                    </div>
+                </div>
+                @if (!row.Removed)
+                {
+                    <div class="field-row">
+                        <label class="field">
+                            <span>Zasada (PL)</span>
+                            <textarea rows="3" @bind="row.ReasonPl" @bind:event="oninput"></textarea>
+                        </label>
+                        <label class="field">
+                            <span>Zasada (EN)</span>
+                            <textarea rows="3" @bind="row.ReasonEn" @bind:event="oninput"></textarea>
+                        </label>
+                    </div>
+                }
+            </li>
+        }
+
+        <li class="panel">
+            <h3>Nowy jinx</h3>
+            <div class="field-row">
+                <label class="field">
+                    <span>Z rolą</span>
+                    <select @bind="_newOther">
+                        <option value="">— wybierz —</option>
+                        @foreach (var group in _data.GroupByTeam(_data.AllRoles.Where(r => r.Id != _role.Id && _rows.All(x => x.Other.Id != r.Id))))
+                        {
+                            <optgroup label="@group.Team.PluralPl">
+                                @foreach (var role in group.Roles.OrderBy(r => r.NamePl, StringComparer.CurrentCulture))
+                                {
+                                    <option value="@role.Id">@role.NamePl</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                </label>
+                <button class="button button--ghost" disabled="@string.IsNullOrEmpty(_newOther)" @onclick="Add">Dodaj</button>
+            </div>
+        </li>
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private GameData? _data;
+    private GameData? _original;
+    private Role? _role;
+    private List<JinxRow> _rows = [];
+    private string _newOther = string.Empty;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _original = await Client.GetOriginalAsync();
+        _data = await Client.GetAsync();
+        _role = _data.FindRole(Id);
+        if (_role is null)
+        {
+            return;
+        }
+
+        // Every pair keeps the owner it has in the data; removed pairs come from the original data.
+        var removed = (await Local.GetAllAsync()).Where(j => j.Removed).ToList();
+        _rows = _data.JinxesFor(_role.Id)
+            .Select(x => (Owner: OwnerOf(_data, _role.Id, x.Other.Id), x.Other, x.Jinx))
+            .Concat(removed
+                .Where(j => Involves(j, _role.Id))
+                .Select(j => (Owner: j.OwnerId, Other: _data.FindRole(OtherId(j, _role.Id))!, Jinx: FindJinx(_original, j.OwnerId, j.Jinx.Id)!))
+                .Where(x => x.Other is not null && x.Jinx is not null))
+            .Select(x => new JinxRow(x.Owner, x.Other, FindJinx(_original, x.Owner, x.Jinx.Id), x.Jinx))
+            .ToList();
+
+        foreach (var row in _rows.Where(r => removed.Any(j => j.Key == r.Key)))
+        {
+            row.Removed = true;
+        }
+    }
+
+    private void Add()
+    {
+        if (_data!.FindRole(_newOther) is { } other)
+        {
+            _rows.Add(new JinxRow(_role!.Id, other, null, new Jinx { Id = other.Id }));
+        }
+
+        _newOther = string.Empty;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_rows.FirstOrDefault(r => !r.Removed && string.IsNullOrWhiteSpace(r.ReasonPl)) is { } empty)
+        {
+            _error = $"Jinx z rolą {empty.Other.NamePl} nie ma treści po polsku.";
+            return;
+        }
+
+        var saved = true;
+        foreach (var row in _rows)
+        {
+            var change = new JinxOverride
+            {
+                OwnerId = row.OwnerId,
+                Jinx = new Jinx { Id = row.Jinx.Id, ReasonPl = row.ReasonPl.Trim(), ReasonEn = row.ReasonEn.Trim() },
+                Removed = row.Removed,
+            };
+
+            // Only differences from the data folder are stored; a new pair that is removed again leaves nothing.
+            var keep = row.Original is null ? !row.Removed : row.Removed || row.IsChanged;
+            saved &= keep ? await Local.SaveAsync(change) : await Local.RemoveAsync(change.Key);
+        }
+
+        if (!saved)
+        {
+            _error = "Przeglądarka nie pozwoliła zapisać zmian (tryb prywatny lub brak miejsca).";
+            return;
+        }
+
+        Nav.NavigateTo($"roles/{_role!.Id}");
+    }
+
+    private static string OwnerOf(GameData data, string roleId, string otherId) =>
+        data.Jinxes.Any(o => string.Equals(o.Id, roleId, StringComparison.OrdinalIgnoreCase)
+            && o.Jinxes.Any(j => string.Equals(j.Id, otherId, StringComparison.OrdinalIgnoreCase)))
+            ? roleId
+            : otherId;
+
+    private static Jinx? FindJinx(GameData data, string ownerId, string otherId) =>
+        data.Jinxes
+            .Where(o => string.Equals(o.Id, ownerId, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(o => o.Jinxes)
+            .FirstOrDefault(j => string.Equals(j.Id, otherId, StringComparison.OrdinalIgnoreCase));
+
+    private static bool Involves(JinxOverride jinx, string roleId) =>
+        string.Equals(jinx.OwnerId, roleId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(jinx.Jinx.Id, roleId, StringComparison.OrdinalIgnoreCase);
+
+    private static string OtherId(JinxOverride jinx, string roleId) =>
+        string.Equals(jinx.OwnerId, roleId, StringComparison.OrdinalIgnoreCase) ? jinx.Jinx.Id : jinx.OwnerId;
+
+    private sealed class JinxRow(string ownerId, Role other, Jinx? original, Jinx current)
+    {
+        public string OwnerId { get; } = ownerId;
+        public Role Other { get; } = other;
+
+        /// <summary>The jinx in the data folder; null for a pair added locally.</summary>
+        public Jinx? Original { get; } = original;
+
+        public Jinx Jinx { get; } = current;
+        public string ReasonPl { get; set; } = current.ReasonPl;
+        public string ReasonEn { get; set; } = current.ReasonEn;
+        public bool Removed { get; set; }
+
+        public string Key => $"{OwnerId}/{Jinx.Id}".ToLowerInvariant();
+
+        public bool IsChanged =>
+            Original is not null && (Original.ReasonPl.Trim() != ReasonPl.Trim() || Original.ReasonEn.Trim() != ReasonEn.Trim());
+
+        public void Reset()
+        {
+            ReasonPl = Original?.ReasonPl ?? string.Empty;
+            ReasonEn = Original?.ReasonEn ?? string.Empty;
+        }
+    }
+}

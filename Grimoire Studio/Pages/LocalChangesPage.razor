@@ -1,0 +1,210 @@
+@page "/changes"
+@inject GameDataClient Client
+@inject LocalChanges Local
+
+<PageTitle>Moje zmiany – Grimoire Studio</PageTitle>
+
+<div class="title-row">
+    <h1>Moje zmiany</h1>
+    <div class="script-actions">
+        <button class="button" disabled="@(_changes?.Count is null or 0)" @onclick="ExportAsync">Eksportuj do pliku</button>
+        <label class="button button--ghost button--file">
+            Importuj z pliku…
+            <InputFile accept=".json,application/json" OnChange="ImportAsync" />
+        </label>
+        @if (_changes?.Count > 0)
+        {
+            <button class="button button--ghost" @onclick="ClearAsync">@(_confirmClear ? "Na pewno usunąć wszystko?" : "Usuń wszystkie zmiany")</button>
+        }
+    </div>
+</div>
+<p class="muted">
+    Role, skrypty, drużyny i jinxy zmienione w tej przeglądarce. Eksport zapisuje je do pliku: to kopia zapasowa i sposób
+    na przeniesienie zmian do innej przeglądarki lub na inny komputer.
+</p>
+<div class="field-row">
+    <label class="field field--inline">
+        <input type="checkbox" @bind="_replaceOnImport" />
+        <span>Import zastępuje wszystkie obecne zmiany (bez zaznaczenia: dopisuje i nadpisuje te same identyfikatory)</span>
+    </label>
+</div>
+
+@if (_message is not null)
+{
+    <p class="notice @(_messageIsError ? "notice--error" : null)">@_message</p>
+}
+
+@if (_data is null || _changes is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else if (_changes.Count == 0)
+{
+    <p>Nie ma lokalnych zmian. Rolę, skrypt lub drużynę zmienisz przyciskiem „Edytuj” na ich stronie.</p>
+}
+else
+{
+    @if (_changes.Roles.Count > 0)
+    {
+        <h2>Role (@_changes.Roles.Count)</h2>
+        <ul class="change-list">
+            @foreach (var local in _changes.Roles.OrderBy(r => r.Role.NamePl, StringComparer.CurrentCulture))
+            {
+                var original = _original!.FindRole(local.Role.Id);
+                <li style="@Teams.Style(local.Role.Team)">
+                    <span class="change-list__what">
+                        <RoleLink Role="local.Role" />
+                        <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
+                        @if (original is not null)
+                        {
+                            <span class="change-list__fields">@Fields(LocalDiff.Role(original, local))</span>
+                        }
+                    </span>
+                    <a class="button button--ghost" href="roles/@local.Role.Id/edit">Edytuj</a>
+                    <button class="button button--ghost" @onclick="() => RemoveAsync(Local.Roles, local.Role.Id)">@(original is null ? "Usuń" : "Przywróć oryginał")</button>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (_changes.Scripts.Count > 0)
+    {
+        <h2>Skrypty (@_changes.Scripts.Count)</h2>
+        <ul class="change-list">
+            @foreach (var local in _changes.Scripts.OrderBy(s => s.Name, StringComparer.CurrentCulture))
+            {
+                var original = _original!.FindScript(local.Id);
+                <li>
+                    <span class="change-list__what">
+                        <a href="scripts/@local.Id">@local.Name</a>
+                        <span class="local-badge">@(original is null ? "nowy" : "zmieniony")</span>
+                        <span class="change-list__fields">@(original is null ? $"{local.Roles.Count} ról" : Fields(LocalDiff.Script(original, local)))</span>
+                    </span>
+                    <a class="button button--ghost" href="scripts/@local.Id/edit">Edytuj</a>
+                    <button class="button button--ghost" @onclick="() => RemoveAsync(Local.Scripts, local.Id)">@(original is null ? "Usuń" : "Przywróć oryginał")</button>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (_changes.Teams.Count > 0)
+    {
+        <h2>Drużyny (@_changes.Teams.Count)</h2>
+        <ul class="change-list">
+            @foreach (var local in _changes.Teams.OrderBy(t => t.Order))
+            {
+                var original = _original!.FindTeam(local.Id);
+                var used = _data.AllRoles.Any(r => r.Team == local.Id);
+                <li style="--team: @local.Color">
+                    <span class="change-list__what">
+                        <a href="teams">@local.PluralPl</a>
+                        <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
+                        @if (original is not null)
+                        {
+                            <span class="change-list__fields">@Fields(LocalDiff.Team(original, local))</span>
+                        }
+                    </span>
+                    <button class="button button--ghost" disabled="@(original is null && used)"
+                            title="@(original is null && used ? "Najpierw przenieś role do innej drużyny." : null)"
+                            @onclick="() => RemoveAsync(Local.Teams, local.Id)">@(original is null ? "Usuń" : "Przywróć oryginał")</button>
+                </li>
+            }
+        </ul>
+    }
+
+    @if (_changes.Jinxes.Count > 0)
+    {
+        <h2>Jinxy (@_changes.Jinxes.Count)</h2>
+        <ul class="change-list">
+            @foreach (var local in _changes.Jinxes)
+            {
+                var owner = _data.FindRole(local.OwnerId);
+                var other = _data.FindRole(local.Jinx.Id);
+                var isNew = !_original!.Jinxes.Any(o => string.Equals(o.Id, local.OwnerId, StringComparison.OrdinalIgnoreCase)
+                    && o.Jinxes.Any(j => string.Equals(j.Id, local.Jinx.Id, StringComparison.OrdinalIgnoreCase)));
+                <li>
+                    <span class="change-list__what">
+                        @(owner?.NamePl ?? local.OwnerId) + @(other?.NamePl ?? local.Jinx.Id)
+                        <span class="local-badge">@(local.Removed ? "usunięty" : isNew ? "nowy" : "zmieniony")</span>
+                    </span>
+                    <a class="button button--ghost" href="roles/@local.OwnerId/jinxes">Edytuj</a>
+                    <button class="button button--ghost" @onclick="() => RemoveAsync(Local.Jinxes, local.Key)">@(isNew ? "Usuń" : "Przywróć oryginał")</button>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private const long MaxImportBytes = 50 * 1024 * 1024;
+
+    [Inject]
+    private LocalStore Store { get; set; } = default!;
+
+    private GameData? _data;
+    private GameData? _original;
+    private LocalBackup? _changes;
+    private bool _replaceOnImport;
+    private bool _confirmClear;
+    private string? _message;
+    private bool _messageIsError;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    private async Task ReloadAsync()
+    {
+        _original = await Client.GetOriginalAsync();
+        _data = await Client.GetAsync();
+        _changes = await Local.GetAllAsync();
+    }
+
+    private static string Fields(IReadOnlyList<string> fields) => fields.Count == 0 ? "bez różnic" : string.Join(", ", fields);
+
+    private async Task RemoveAsync<T>(LocalCollection<T> collection, string id)
+    {
+        await collection.RemoveAsync(id);
+        await ReloadAsync();
+    }
+
+    private async Task ExportAsync()
+    {
+        await Store.DownloadAsync($"grimoire-studio-zmiany-{DateTime.Now:yyyy-MM-dd}.json", await Local.ExportAsync());
+        Show($"Wyeksportowano {_changes!.Count} zmian.");
+    }
+
+    private async Task ImportAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var reader = new StreamReader(e.File.OpenReadStream(MaxImportBytes));
+            var count = await Local.ImportAsync(await reader.ReadToEndAsync(), _replaceOnImport);
+            Show($"Zaimportowano {count} zmian z pliku {e.File.Name}.");
+        }
+        catch (Exception ex) when (ex is FormatException or IOException)
+        {
+            Show(ex.Message, error: true);
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ClearAsync()
+    {
+        if (!_confirmClear)
+        {
+            _confirmClear = true;
+            return;
+        }
+
+        _confirmClear = false;
+        await Local.ClearAsync();
+        Show("Usunięto wszystkie lokalne zmiany.");
+        await ReloadAsync();
+    }
+
+    private void Show(string message, bool error = false)
+    {
+        _message = message;
+        _messageIsError = error;
+    }
+}

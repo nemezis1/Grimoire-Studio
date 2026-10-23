@@ -15,6 +15,7 @@ public static class GameDataQueries
         var byId = overrides.ToDictionary(s => s.Id, StringComparer.OrdinalIgnoreCase);
         var scripts = data.Scripts.Scripts
             .Select(s => byId.Remove(s.Id, out var replacement) ? replacement : s)
+            .ToList() // before reading byId.Values: Remove must have run for every item
             .Concat(byId.Values)
             .ToList();
 
@@ -30,15 +31,89 @@ public static class GameDataQueries
         var byId = overrides.ToDictionary(r => r.Id, StringComparer.OrdinalIgnoreCase);
         var all = data.AllRoles
             .Select(r => byId.Remove(r.Id, out var replacement) ? replacement : r)
+            .ToList() // before reading byId.Values: Remove must have run for every item
             .Concat(byId.Values)
             .ToList();
 
         return data with
         {
-            Roles = all.Where(r => r.Team != Team.Fabled).ToList(),
-            Fabled = all.Where(r => r.Team == Team.Fabled).ToList(),
+            Roles = all.Where(r => r.Team != TeamIds.Fabled).ToList(),
+            Fabled = all.Where(r => r.Team == TeamIds.Fabled).ToList(),
         };
     }
+
+    /// <summary>
+    /// Data with <paramref name="overrides"/> applied: a team with an existing id replaces it, a new id is added.
+    /// Teams are kept sorted by <see cref="TeamInfo.Order"/>.
+    /// </summary>
+    public static GameData WithTeams(this GameData data, IEnumerable<TeamInfo> overrides)
+    {
+        var byId = overrides.ToDictionary(t => t.Id, StringComparer.OrdinalIgnoreCase);
+        var teams = data.Teams
+            .Select(t => byId.Remove(t.Id, out var replacement) ? replacement : t)
+            .ToList() // before reading byId.Values: Remove must have run for every item
+            .Concat(byId.Values)
+            .OrderBy(t => t.Order)
+            .ToList();
+
+        return data with { Teams = teams };
+    }
+
+    /// <summary>Data with jinx <paramref name="overrides"/> applied: each replaces, adds or removes one owner/other pair.</summary>
+    public static GameData WithJinxes(this GameData data, IEnumerable<JinxOverride> overrides)
+    {
+        var owners = data.Jinxes.Select(o => (o.Id, Jinxes: o.Jinxes.ToList())).ToList();
+
+        foreach (var change in overrides)
+        {
+            var index = owners.FindIndex(o => string.Equals(o.Id, change.OwnerId, StringComparison.OrdinalIgnoreCase));
+            if (index < 0)
+            {
+                owners.Add((change.OwnerId, []));
+                index = owners.Count - 1;
+            }
+
+            var jinxes = owners[index].Jinxes;
+            var existing = jinxes.FindIndex(j => string.Equals(j.Id, change.Jinx.Id, StringComparison.OrdinalIgnoreCase));
+            if (change.Removed)
+            {
+                if (existing >= 0)
+                {
+                    jinxes.RemoveAt(existing);
+                }
+            }
+            else if (existing >= 0)
+            {
+                jinxes[existing] = change.Jinx;
+            }
+            else
+            {
+                jinxes.Add(change.Jinx);
+            }
+        }
+
+        return data with
+        {
+            Jinxes = owners
+                .Where(o => o.Jinxes.Count > 0)
+                .Select(o => new RoleJinxes { Id = o.Id, Jinxes = o.Jinxes })
+                .ToList(),
+        };
+    }
+
+    public static TeamInfo? FindTeam(this GameData data, string id) =>
+        data.Teams.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The team of a role; an undefined team id gets a stand-in so it can still be shown.</summary>
+    public static TeamInfo TeamOf(this GameData data, Role role) => data.FindTeam(role.Team) ?? TeamInfo.Unknown(role.Team);
+
+    /// <summary>Roles grouped by team, groups in team order.</summary>
+    public static IReadOnlyList<(TeamInfo Team, IReadOnlyList<Role> Roles)> GroupByTeam(this GameData data, IEnumerable<Role> roles) =>
+        roles
+            .GroupBy(r => r.Team, StringComparer.OrdinalIgnoreCase)
+            .Select(g => (Team: data.FindTeam(g.Key) ?? TeamInfo.Unknown(g.Key), Roles: (IReadOnlyList<Role>)g.ToList()))
+            .OrderBy(g => g.Team.Order)
+            .ToList();
 
     public static Script? FindScript(this GameData data, string id) =>
         data.Scripts.Scripts.FirstOrDefault(s => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));

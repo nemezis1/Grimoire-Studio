@@ -1,6 +1,6 @@
-<span class="team-badge team--@TeamText.Slug(Team)">@TeamText.Singular(Team)</span>
+<span class="team-badge team--@(Team)" style="@Teams.Style(Team)">@Teams.Singular(Team)</span>
 
 @code {
     [Parameter, EditorRequired]
-    public Team Team { get; set; }
+    public string Team { get; set; } = string.Empty;
 }

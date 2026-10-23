@@ -116,3 +116,69 @@ export async function print(families = []) {
     await preloadFonts(families);
     window.print();
 }
+
+// --- Local changes (roles, scripts, teams, jinxes) in IndexedDB: uploaded icons do not fit in localStorage ---------
+
+const LOCAL_DB = 'grimoire-studio-local';
+const LOCAL_STORE = 'kv';
+
+function openLocalDb() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(LOCAL_DB, 1);
+        request.onupgradeneeded = () => request.result.createObjectStore(LOCAL_STORE);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function localRequest(mode, action) {
+    const db = await openLocalDb();
+    try {
+        return await new Promise((resolve, reject) => {
+            const request = action(db.transaction(LOCAL_STORE, mode).objectStore(LOCAL_STORE));
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    } finally {
+        db.close();
+    }
+}
+
+/** Returns the stored text, or null when there is none or IndexedDB is unavailable. */
+export async function dbGet(key) {
+    try {
+        return (await localRequest('readonly', store => store.get(key))) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+/** Returns false when the browser refuses to store (private mode, quota). */
+export async function dbSet(key, value) {
+    try {
+        await localRequest('readwrite', store => store.put(value, key));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export function removeItem(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch {
+        // Nothing to clean up.
+    }
+}
+
+/** Saves text as a file through the browser's download. */
+export function downloadText(fileName, text, type = 'application/json') {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

@@ -59,8 +59,8 @@
         <div class="print-doc" style="--print-scale: @Css(_options.Scale); --preview-zoom: @Css(_options.PreviewZoom)">
             @{
                 var roles = Data.RolesOf(Script);
-                var core = roles.Where(r => r.Team <= Team.Demon).GroupBy(r => r.Team).OrderBy(g => g.Key).ToList();
-                var extras = roles.Where(r => r.Team > Team.Demon).GroupBy(r => r.Team).OrderBy(g => g.Key).ToList();
+                var core = roles.Where(r => !Teams.Get(r.Team).Extra).GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order).ToList();
+                var extras = roles.Where(r => Teams.Get(r.Team).Extra).GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order).ToList();
                 var jinxes = roles
                     .SelectMany(r => Data.JinxesFor(r.Id, Script).Select(j => (Role: r, j.Other, j.Jinx)))
                     .DistinctBy(x => x.Jinx)
@@ -71,7 +71,7 @@
             <PrintPage Title="@Script.Name" Script="Script">
                 @foreach (var group in core)
                 {
-                    <PrintRoleGroup Team="group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
+                    <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
                 }
             </PrintPage>
 
@@ -87,7 +87,7 @@
                     }
                     @foreach (var group in showExtras ? extras : [])
                     {
-                        <PrintRoleGroup Team="group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
+                        <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
                     }
                     @if (showExtras && jinxes.Count > 0)
                     {
@@ -131,16 +131,16 @@
                     <td>@(row.Players == PlayerCount.MaxPlayers ? "15+" : row.Players)</td>
                 }
             </tr>
-            @foreach (var (team, count) in new (Team, Func<PlayerCount, int>)[]
+            @foreach (var (team, count) in new (string, Func<PlayerCount, int>)[]
             {
-                (Team.Townsfolk, c => c.Townsfolk),
-                (Team.Outsider, c => c.Outsiders),
-                (Team.Minion, c => c.Minions),
-                (Team.Demon, c => c.Demons),
+                (TeamIds.Townsfolk, c => c.Townsfolk),
+                (TeamIds.Outsider, c => c.Outsiders),
+                (TeamIds.Minion, c => c.Minions),
+                (TeamIds.Demon, c => c.Demons),
             })
             {
-                <tr class="team--@TeamText.Slug(team)">
-                    <th>@TeamText.Plural(team)</th>
+                <tr class="team--@(team)" style="@Teams.Style(team)">
+                    <th>@Teams.Plural(team)</th>
                     @foreach (var row in PlayerCount.Table)
                     {
                         <td>@count(row)</td>
@@ -192,7 +192,7 @@
 
     private IReadOnlyList<NightStep> NightSteps(bool firstNight) =>
         Data.NightSteps(Script, firstNight, _options.NightShowsEvilInfo)
-            .Where(s => _options.NightIncludesTravellers || s.Role?.Team != Team.Traveler)
+            .Where(s => _options.NightIncludesTravellers || s.Role?.Team != TeamIds.Traveler)
             .ToList();
 
     private async Task Update(Action<ScriptPrintOptions> change)

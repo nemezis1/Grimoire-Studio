@@ -54,9 +54,9 @@
                     <span>Wybierz rolę, aby wypełnić token jej danymi</span>
                     <select value="@(_role?.Id ?? string.Empty)" @onchange="e => SelectRole(e.Value?.ToString())">
                         <option value="">— własny token —</option>
-                        @foreach (var group in _data.AllRoles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+                        @foreach (var group in _data.AllRoles.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
                         {
-                            <optgroup label="@TeamText.Plural(group.Key)">
+                            <optgroup label="@Teams.Plural(group.Key)">
                                 @foreach (var role in group.OrderBy(r => r.NamePl, StringComparer.CurrentCulture))
                                 {
                                     <option value="@role.Id">@role.NamePl (@role.NameEn)</option>

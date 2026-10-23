@@ -10,7 +10,7 @@
             @foreach (var role in Roles)
             {
                 var reminder = FirstNight ? role.FirstNightReminderPl : role.OtherNightReminderPl;
-                <li class="night-order__item team--@TeamText.Slug(role.Team)">
+                <li class="night-order__item team--@(role.Team)" style="@Teams.Style(role.Team)">
                     <RoleLink Role="role" />
                     @if (!string.IsNullOrWhiteSpace(reminder))
                     {

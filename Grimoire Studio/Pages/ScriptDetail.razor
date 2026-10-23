@@ -38,6 +38,7 @@
                 <div class="script-actions">
                     <a class="button" href="scripts/@script.Id/edit">Edytuj</a>
                     <button class="button button--ghost" @onclick="() => _printing = true">Drukuj / PDF</button>
+                    <button class="button button--ghost" title="Plik JSON do script.bloodontheclocktower.com" @onclick="() => ExportAsync(script)">Eksport do Script Tool</button>
                     @if (_isLocal)
                     {
                         <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń skrypt")</button>
@@ -47,10 +48,10 @@
         </div>
 
         <div class="pinned__scroll">
-            @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => g.Key))
+            @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
             {
                 <section class="role-group">
-                    <h2 class="team-heading team--@TeamText.Slug(group.Key)">@TeamText.Plural(group.Key)</h2>
+                    <h2 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key)</h2>
                     <ul class="sheet">
                         @foreach (var role in group)
                         {
@@ -113,6 +114,15 @@
         _isLocal = await Local.IsLocalAsync(Id);
         _hasOriginal = (await Client.GetOriginalAsync()).FindScript(Id) is not null;
         _data = await Client.GetAsync();
+    }
+
+    [Inject]
+    private LocalStore Store { get; set; } = default!;
+
+    private async Task ExportAsync(Script script)
+    {
+        var json = ScriptToolFormat.Export(script, await Client.GetAsync(), await Client.GetOriginalAsync());
+        await Store.DownloadAsync($"{script.Id}.json", json);
     }
 
     private async Task RemoveLocalAsync()

@@ -14,7 +14,7 @@
                 @if (step.Role is { } role)
                 {
                     var reminder = FirstNight ? role.FirstNightReminderPl : role.OtherNightReminderPl;
-                    <li class="team--@TeamText.Slug(role.Team)">
+                    <li class="team--@(role.Team)" style="@Teams.Style(role.Team)">
                         <RoleIcon Role="role" Size="sm" />
                         <div>
                             <strong>@role.NamePl</strong>
@@ -32,7 +32,7 @@
                 else
                 {
                     var (team, icon, name, text) = Info(step.Kind);
-                    <li class="print-night__info team--@team">
+                    <li class="print-night__info team--@(team)" style="@Teams.Style(team)">
                         <img class="role-icon role-icon--sm" src="@icon" alt="" />
                         <div>
                             <strong>@name</strong>

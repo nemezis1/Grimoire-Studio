@@ -23,6 +23,9 @@ public sealed record GameData
     public ScriptCatalog Scripts { get; init; } = new();
     public IReadOnlyList<RoleJinxes> Jinxes { get; init; } = [];
 
+    /// <summary>Teams (character types); not stored in the data folder, the built-in ones come from code.</summary>
+    public IReadOnlyList<TeamInfo> Teams { get; init; } = TeamInfo.Defaults;
+
     public IEnumerable<Role> AllRoles => Roles.Concat(Fabled);
 
     public static GameData Load(string directory) => new()

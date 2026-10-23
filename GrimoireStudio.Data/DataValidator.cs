@@ -17,6 +17,17 @@ public static partial class DataValidator
     {
         var errors = new List<string>();
         var roleIds = new HashSet<string>(StringComparer.Ordinal);
+        var teamIds = data.Teams.Select(t => t.Id).ToHashSet(StringComparer.Ordinal);
+
+        foreach (var team in data.Teams.GroupBy(t => t.Id).Where(g => g.Count() > 1))
+        {
+            errors.Add($"Team '{team.Key}': duplicate id.");
+        }
+
+        foreach (var team in data.Teams.Where(t => !IdPattern().IsMatch(t.Id)))
+        {
+            errors.Add($"Team '{team.Id}': id must be lowercase letters and digits only.");
+        }
 
         foreach (var role in data.AllRoles)
         {
@@ -30,7 +41,7 @@ public static partial class DataValidator
                 errors.Add($"Role '{role.Id}': duplicate id.");
             }
 
-            ValidateRole(role, errors);
+            ValidateRole(role, teamIds, errors);
 
             if (iconsDirectory is not null && !File.Exists(Path.Combine(iconsDirectory, $"{role.Id}.png")))
             {
@@ -38,12 +49,12 @@ public static partial class DataValidator
             }
         }
 
-        foreach (var role in data.Roles.Where(r => r.Team == Team.Fabled))
+        foreach (var role in data.Roles.Where(r => r.Team == TeamIds.Fabled))
         {
             errors.Add($"Role '{role.Id}': fabled belongs in {GameData.FabledFile}.");
         }
 
-        foreach (var role in data.Fabled.Where(r => r.Team != Team.Fabled))
+        foreach (var role in data.Fabled.Where(r => r.Team != TeamIds.Fabled))
         {
             errors.Add($"Role '{role.Id}': {GameData.FabledFile} may only contain team 'fabled'.");
         }
@@ -54,7 +65,7 @@ public static partial class DataValidator
         return errors;
     }
 
-    private static void ValidateRole(Role role, List<string> errors)
+    private static void ValidateRole(Role role, HashSet<string> teamIds, List<string> errors)
     {
         void Require(string value, string field)
         {
@@ -69,7 +80,7 @@ public static partial class DataValidator
         Require(role.AbilityEn, nameof(Role.AbilityEn));
         Require(role.AbilityPl, nameof(Role.AbilityPl));
 
-        if (!Enum.IsDefined(role.Team))
+        if (!teamIds.Contains(role.Team))
         {
             errors.Add($"Role '{role.Id}': unknown team.");
         }

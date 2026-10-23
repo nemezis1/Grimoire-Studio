@@ -119,7 +119,7 @@ public class GameDataQueriesTests
     [Fact]
     public void WithRoles_Should_PutFabledInFabled()
     {
-        var merged = Data.WithRoles([CreateRole("spirit") with { Team = Team.Fabled }]);
+        var merged = Data.WithRoles([CreateRole("spirit") with { Team = TeamIds.Fabled }]);
 
         Assert.Contains(merged.Fabled, r => r.Id == "spirit");
         Assert.DoesNotContain(merged.Roles, r => r.Id == "spirit");
@@ -129,5 +129,41 @@ public class GameDataQueriesTests
     public void FindRole_Should_IgnoreCase()
     {
         Assert.Equal("chef", Data.FindRole("CHEF")?.Id);
+    }
+
+    [Fact]
+    public void WithTeams_Should_ReplaceBuiltinAndAddNewInOrder()
+    {
+        var merged = Data.WithTeams(
+        [
+            TeamInfo.Defaults[0] with { PluralPl = "Mieszczanie" },
+            new TeamInfo { Id = "loric", NamePl = "Loric", NameEn = "Loric", PluralPl = "Loric", PluralEn = "Loric", Order = 55 },
+        ]);
+
+        Assert.Equal("Mieszczanie", merged.FindTeam(TeamIds.Townsfolk)?.PluralPl);
+        Assert.Equal([TeamIds.Townsfolk, TeamIds.Outsider, TeamIds.Minion, TeamIds.Demon, TeamIds.Traveler, "loric", TeamIds.Fabled], merged.Teams.Select(t => t.Id));
+    }
+
+    [Fact]
+    public void TeamOf_Should_ReturnStandIn_When_TeamIsUndefined()
+    {
+        var team = Data.TeamOf(CreateRole("x") with { Team = "gone" });
+
+        Assert.Equal("gone", team.PluralPl);
+    }
+
+    [Fact]
+    public void WithJinxes_Should_ChangeAddAndRemovePairs()
+    {
+        var merged = Data.WithJinxes(
+        [
+            new JinxOverride { OwnerId = "chef", Jinx = new Jinx { Id = "imp", ReasonEn = "new", ReasonPl = "nowy" } },
+            new JinxOverride { OwnerId = "spy", Jinx = new Jinx { Id = "chef" }, Removed = true },
+            new JinxOverride { OwnerId = "monk", Jinx = new Jinx { Id = "imp", ReasonEn = "c", ReasonPl = "c" } },
+        ]);
+
+        Assert.Equal("nowy", Assert.Single(merged.JinxesFor("chef")).Jinx.ReasonPl);
+        Assert.Equal(2, merged.JinxesFor("imp").Count);
+        Assert.DoesNotContain(merged.Jinxes, o => o.Id == "spy");
     }
 }

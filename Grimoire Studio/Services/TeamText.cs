@@ -2,37 +2,30 @@ using GrimoireStudio.Data;
 
 namespace Grimoire_Studio.Services;
 
-/// <summary>Polish team labels (same wording as Blood) and the CSS modifier used for team colours.</summary>
-public static class TeamText
+/// <summary>
+/// Team labels and colours for rendering. Holds the teams of the last loaded game data (built-in plus local), so
+/// components can look them up synchronously.
+/// </summary>
+public sealed class TeamText
 {
-    /// <summary>Teams in sheet order.</summary>
-    public static readonly IReadOnlyList<Team> All =
-        [Team.Townsfolk, Team.Outsider, Team.Minion, Team.Demon, Team.Traveler, Team.Fabled];
+    private IReadOnlyList<TeamInfo> _teams = TeamInfo.Defaults;
 
-    public static string Plural(Team team) => team switch
-    {
-        Team.Townsfolk => "Mieszkańcy",
-        Team.Outsider => "Przybysze",
-        Team.Minion => "Sługusy",
-        Team.Demon => "Demony",
-        Team.Traveler => "Wędrowcy",
-        Team.Fabled => "Legendy",
-        _ => "Nieznani",
-    };
+    /// <summary>Teams in list order.</summary>
+    public IReadOnlyList<TeamInfo> All => _teams;
 
-    public static string Singular(Team team) => team switch
-    {
-        Team.Townsfolk => "Mieszkaniec",
-        Team.Outsider => "Przybysz",
-        Team.Minion => "Sługus",
-        Team.Demon => "Demon",
-        Team.Traveler => "Wędrowiec",
-        Team.Fabled => "Legenda",
-        _ => "Nieznany",
-    };
+    /// <summary>Called by <see cref="GameDataClient"/> whenever it hands out data.</summary>
+    public void Use(IReadOnlyList<TeamInfo> teams) => _teams = teams;
 
-    public static string Slug(Team team) => team.ToString().ToLowerInvariant();
+    public TeamInfo Get(string id) =>
+        _teams.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase)) ?? TeamInfo.Unknown(id);
 
-    public static Team? Parse(string? slug) =>
-        Enum.TryParse<Team>(slug, ignoreCase: true, out var team) && Enum.IsDefined(team) ? team : null;
+    public string Plural(string id) => Get(id).PluralPl;
+
+    public string Singular(string id) => Get(id).NamePl;
+
+    /// <summary>Inline style giving the element its team colour (CSS variable <c>--team</c>).</summary>
+    public string Style(string id) => $"--team: {Get(id).Color}";
+
+    public TeamInfo? Parse(string? id) =>
+        _teams.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
 }
