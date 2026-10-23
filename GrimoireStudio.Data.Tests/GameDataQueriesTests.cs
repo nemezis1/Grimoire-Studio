@@ -104,6 +104,28 @@ public class GameDataQueriesTests
     }
 
     [Fact]
+    public void WithRoles_Should_ReplaceExistingAndAppendNew()
+    {
+        var edited = CreateRole("chef") with { NamePl = "Kucharz (mój)" };
+        var added = CreateRole("baker");
+
+        var merged = Data.WithRoles([added, edited]);
+
+        Assert.Equal("Kucharz (mój)", merged.FindRole("chef")?.NamePl);
+        Assert.Equal("baker", merged.Roles[^1].Id);
+        Assert.Equal(Data.Roles.Count + 1, merged.Roles.Count);
+    }
+
+    [Fact]
+    public void WithRoles_Should_PutFabledInFabled()
+    {
+        var merged = Data.WithRoles([CreateRole("spirit") with { Team = Team.Fabled }]);
+
+        Assert.Contains(merged.Fabled, r => r.Id == "spirit");
+        Assert.DoesNotContain(merged.Roles, r => r.Id == "spirit");
+    }
+
+    [Fact]
     public void FindRole_Should_IgnoreCase()
     {
         Assert.Equal("chef", Data.FindRole("CHEF")?.Id);

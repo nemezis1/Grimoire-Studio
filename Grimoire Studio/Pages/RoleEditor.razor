@@ -1,0 +1,431 @@
+@page "/roles/new"
+@page "/roles/{Id}/edit"
+@inject GameDataClient Client
+@inject LocalRoles Local
+@inject NavigationManager Nav
+
+<PageTitle>@(IsNew ? "Nowa rola" : $"Edycja: {_namePl}") – Grimoire Studio</PageTitle>
+
+<h1>@(IsNew ? "Nowa rola" : "Edycja roli")</h1>
+<p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Rola z danych strony zostaje nietknięta i można do niej wrócić.</p>
+
+@if (_data is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else if (!IsNew && _existing is null)
+{
+    <p>Rola <code>@Id</code> nie istnieje. <a href="roles">Wróć do listy ról</a>.</p>
+}
+else
+{
+    <div class="role-editor fill-viewport">
+        <div class="role-editor__form">
+            <section class="panel">
+                <h2>Podstawowe</h2>
+                <div class="field-row">
+                    <label class="field">
+                        <span>Nazwa (PL)</span>
+                        <input type="text" @bind="_namePl" @bind:event="oninput" />
+                    </label>
+                    <label class="field">
+                        <span>Nazwa (EN)</span>
+                        <input type="text" @bind="_nameEn" @bind:event="oninput" />
+                    </label>
+                </div>
+                @if (IsNew)
+                {
+                    <label class="field">
+                        <span>Identyfikator (małe litery i cyfry)</span>
+                        <input type="text" value="@EffectiveId" @oninput="e => _id = e.Value?.ToString()" />
+                    </label>
+                    @if (IdError() is { } idError)
+                    {
+                        <p class="notice notice--error">@idError</p>
+                    }
+                }
+                <div class="field-row">
+                    <label class="field">
+                        <span>Drużyna</span>
+                        <select @bind="_team">
+                            @foreach (var t in TeamText.All)
+                            {
+                                <option value="@t">@TeamText.Singular(t)</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Edycja</span>
+                        <select @bind="_edition">
+                            <option value="">— brak —</option>
+                            @foreach (var script in _data.Scripts.Scripts)
+                            {
+                                <option value="@script.Id">@script.Name</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+                <label class="field field--inline">
+                    <input type="checkbox" @bind="_setup" />
+                    <span>Wpływa na przygotowanie gry (np. zmienia liczbę Przybyszów)</span>
+                </label>
+            </section>
+
+            <section class="panel">
+                <h2>Zdolność</h2>
+                <label class="field">
+                    <span>Po polsku</span>
+                    <textarea rows="3" @bind="_abilityPl" @bind:event="oninput"></textarea>
+                </label>
+                <label class="field">
+                    <span>Po angielsku (opcjonalnie)</span>
+                    <textarea rows="3" @bind="_abilityEn" @bind:event="oninput"></textarea>
+                </label>
+            </section>
+
+            @foreach (var night in new[] { true, false })
+            {
+                var first = night;
+                <section class="panel">
+                    <h2>@(first ? "Pierwsza noc" : "Pozostałe noce")</h2>
+                    <div class="field-row">
+                        <label class="field">
+                            <span>Pozycja w kolejności (0 = nie budzi się)</span>
+                            <input type="number" min="0" step="1" value="@(first ? _firstNight : _otherNight)"
+                                   @onchange="e => SetOrder(first, e.Value)" />
+                        </label>
+                        <label class="field">
+                            <span>Ustaw po roli</span>
+                            <select value="" @onchange="e => PlaceAfter(first, e.Value?.ToString())">
+                                <option value="">— wybierz —</option>
+                                @foreach (var (role, order) in Waking(first))
+                                {
+                                    <option value="@role.Id">#@order @role.NamePl</option>
+                                }
+                            </select>
+                        </label>
+                    </div>
+                    <p class="muted small">@Neighbours(first)</p>
+                    <div class="field-row">
+                        <label class="field">
+                            <span>Tekst dla narratora (PL)</span>
+                            <textarea rows="3" value="@(first ? _firstReminderPl : _otherReminderPl)"
+                                      @oninput="e => { if (first) _firstReminderPl = e.Value?.ToString() ?? string.Empty; else _otherReminderPl = e.Value?.ToString() ?? string.Empty; }"></textarea>
+                        </label>
+                        <label class="field">
+                            <span>Tekst dla narratora (EN)</span>
+                            <textarea rows="3" value="@(first ? _firstReminderEn : _otherReminderEn)"
+                                      @oninput="e => { if (first) _firstReminderEn = e.Value?.ToString() ?? string.Empty; else _otherReminderEn = e.Value?.ToString() ?? string.Empty; }"></textarea>
+                        </label>
+                    </div>
+                </section>
+            }
+
+            <section class="panel">
+                <h2>Znaczniki przypomnień</h2>
+                <p class="muted small">Po jednym znaczniku w linii. Wersja angielska w tej samej kolejności i z tą samą liczbą linii; puste pole oznacza „jak po polsku”.</p>
+                <div class="field-row">
+                    <label class="field">
+                        <span>Znaczniki (PL)</span>
+                        <textarea rows="4" @bind="_remindersPl" @bind:event="oninput"></textarea>
+                    </label>
+                    <label class="field">
+                        <span>Znaczniki (EN)</span>
+                        <textarea rows="4" @bind="_remindersEn" @bind:event="oninput"></textarea>
+                    </label>
+                </div>
+                @if (Mismatch(_remindersPl, _remindersEn) is { } reminderWarning)
+                {
+                    <p class="notice notice--error">@reminderWarning</p>
+                }
+                <div class="field-row">
+                    <label class="field">
+                        <span>Znaczniki globalne (PL)</span>
+                        <textarea rows="3" @bind="_globalRemindersPl" @bind:event="oninput"></textarea>
+                    </label>
+                    <label class="field">
+                        <span>Znaczniki globalne (EN)</span>
+                        <textarea rows="3" @bind="_globalRemindersEn" @bind:event="oninput"></textarea>
+                    </label>
+                </div>
+                @if (Mismatch(_globalRemindersPl, _globalRemindersEn) is { } globalWarning)
+                {
+                    <p class="notice notice--error">@globalWarning</p>
+                }
+            </section>
+        </div>
+
+        <aside class="panel role-editor__summary">
+            <h2>Ikona</h2>
+            <div class="role-editor__icon">
+                <img src="@IconPreview" alt="" onerror="this.onerror = null; this.src = 'Assets/token.png';" />
+            </div>
+            <div class="field-row">
+                <label class="button button--ghost button--file">
+                    Wczytaj ikonę…
+                    <InputFile accept="image/png,image/jpeg,image/webp" OnChange="UploadIconAsync" />
+                </label>
+                @if (_iconUrl is not null)
+                {
+                    <button class="button button--ghost" @onclick="() => _iconUrl = null">Usuń własną ikonę</button>
+                }
+            </div>
+            <p class="muted small">Ikona jest zmniejszana do 256 px i zapisywana razem z rolą.</p>
+
+            @if (_error is not null)
+            {
+                <p class="notice notice--error">@_error</p>
+            }
+            <div class="field-row">
+                <button class="button" @onclick="SaveAsync">Zapisz</button>
+                <a class="button button--ghost" href="@(IsNew ? "roles" : $"roles/{Id}")">Anuluj</a>
+            </div>
+        </aside>
+    </div>
+}
+
+@code {
+    private const long MaxIconBytes = 5 * 1024 * 1024;
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    private bool IsNew => Id is null;
+
+    private GameData? _data;
+    private Role? _existing;
+    private string _namePl = string.Empty;
+    private string _nameEn = string.Empty;
+    private Team _team = Team.Townsfolk;
+    private string _edition = string.Empty;
+    private bool _setup;
+    private string _abilityPl = string.Empty;
+    private string _abilityEn = string.Empty;
+    private int _firstNight;
+    private int _otherNight;
+    private string _firstReminderPl = string.Empty;
+    private string _otherReminderPl = string.Empty;
+    private string _firstReminderEn = string.Empty;
+    private string _otherReminderEn = string.Empty;
+    private string _remindersPl = string.Empty;
+    private string _globalRemindersPl = string.Empty;
+    private string _remindersEn = string.Empty;
+    private string _globalRemindersEn = string.Empty;
+    private string? _iconUrl;
+    private string? _error;
+
+    /// <summary>Id typed for a new role; null until edited, then the suggestion from the name is used.</summary>
+    private string? _id;
+
+    private string EffectiveId => (_id ?? NewId()).Trim();
+
+    private string IconPreview => _iconUrl ?? (IsNew ? "Assets/token.png" : Local.IconUrl(Id!));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _data = await Client.GetAsync();
+        _existing = Id is null ? null : _data.FindRole(Id);
+        if (_existing is not { } role)
+        {
+            return;
+        }
+
+        _namePl = role.NamePl;
+        _nameEn = role.NameEn;
+        _team = role.Team;
+        _edition = role.Edition;
+        _setup = role.Setup;
+        _abilityPl = role.AbilityPl;
+        _abilityEn = role.AbilityEn;
+        _firstNight = role.FirstNight;
+        _otherNight = role.OtherNight;
+        _firstReminderPl = role.FirstNightReminderPl;
+        _otherReminderPl = role.OtherNightReminderPl;
+        _firstReminderEn = role.FirstNightReminderEn;
+        _otherReminderEn = role.OtherNightReminderEn;
+        _remindersPl = string.Join('\n', role.RemindersPl);
+        _globalRemindersPl = string.Join('\n', role.RemindersGlobalPl);
+        _remindersEn = string.Join('\n', role.RemindersEn);
+        _globalRemindersEn = string.Join('\n', role.RemindersGlobalEn);
+        _iconUrl = (await Local.FindAsync(role.Id))?.IconUrl;
+    }
+
+    private IEnumerable<(Role Role, int Order)> Waking(bool firstNight) =>
+        (_data?.AllRoles ?? [])
+            .Where(r => !string.Equals(r.Id, Id, StringComparison.OrdinalIgnoreCase))
+            .Select(r => (Role: r, Order: firstNight ? r.FirstNight : r.OtherNight))
+            .Where(x => x.Order > 0)
+            .OrderBy(x => x.Order);
+
+    private string Neighbours(bool firstNight)
+    {
+        var order = firstNight ? _firstNight : _otherNight;
+        if (order <= 0)
+        {
+            return "Rola nie budzi się tej nocy.";
+        }
+
+        var waking = Waking(firstNight).ToList();
+        var before = waking.LastOrDefault(x => x.Order <= order);
+        var after = waking.FirstOrDefault(x => x.Order > order);
+        return $"Budzi się po: {(before.Role is null ? "—" : $"{before.Role.NamePl} (#{before.Order})")}, "
+            + $"przed: {(after.Role is null ? "—" : $"{after.Role.NamePl} (#{after.Order})")}.";
+    }
+
+    private void SetOrder(bool firstNight, object? value)
+    {
+        var order = int.TryParse(value?.ToString(), out var parsed) ? Math.Max(0, parsed) : 0;
+        if (firstNight)
+        {
+            _firstNight = order;
+        }
+        else
+        {
+            _otherNight = order;
+        }
+    }
+
+    // Halfway between the chosen role and the next one, so the new position is unique when there is room.
+    private void PlaceAfter(bool firstNight, string? roleId)
+    {
+        var waking = Waking(firstNight).ToList();
+        var index = waking.FindIndex(x => x.Role.Id == roleId);
+        if (index < 0)
+        {
+            return;
+        }
+
+        var order = waking[index].Order;
+        var next = index + 1 < waking.Count ? waking[index + 1].Order : order + 10;
+        SetOrder(firstNight, next - order > 1 ? (order + next) / 2 : order);
+    }
+
+    private async Task UploadIconAsync(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        try
+        {
+            using var stream = e.File.OpenReadStream(MaxIconBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            _iconUrl = await Local.ShrinkIconAsync($"data:{e.File.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}");
+        }
+        catch (IOException)
+        {
+            _error = $"Plik jest za duży (maksymalnie {MaxIconBytes / 1024 / 1024} MB).";
+        }
+    }
+
+    /// <summary>Format and uniqueness of a new role's id (against the data folder and roles saved locally).</summary>
+    private string? IdError()
+    {
+        if (!IsNew)
+        {
+            return null;
+        }
+
+        var id = EffectiveId;
+        if (!DataValidator.IsValidId(id))
+        {
+            return "Identyfikator może zawierać tylko małe litery (bez polskich znaków) i cyfry.";
+        }
+
+        return _data?.FindRole(id) is { } other ? $"Rola o identyfikatorze „{id}” już istnieje ({other.NamePl})." : null;
+    }
+
+    /// <summary>Id for a new role: the English (or Polish) name in lowercase letters and digits, numbered when taken.</summary>
+    private string NewId()
+    {
+        var name = string.IsNullOrWhiteSpace(_nameEn) ? _namePl : _nameEn;
+        var baseId = new string(SearchText.Fold(name).Where(char.IsAsciiLetterOrDigit).ToArray());
+        if (baseId.Length == 0)
+        {
+            baseId = "rola";
+        }
+
+        var id = baseId;
+        for (var n = 2; _data?.FindRole(id) is not null; n++)
+        {
+            id = $"{baseId}{n}";
+        }
+
+        return id;
+    }
+
+    private static List<string> Lines(string text) =>
+        text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    // An empty English list means "same as Polish"; otherwise both lists must have the same number of lines.
+    private static List<string> English(List<string> english, List<string> polish) =>
+        english.Count == 0 ? polish : english;
+
+    private static string? Mismatch(string polish, string english)
+    {
+        var (pl, en) = (Lines(polish).Count, Lines(english).Count);
+        return en > 0 && en != pl
+            ? $"Liczba linii się nie zgadza: {pl} po polsku, {en} po angielsku. Każdy znacznik potrzebuje odpowiednika w tej samej linii."
+            : null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (IdError() is { } idError)
+        {
+            _error = idError;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_namePl) || string.IsNullOrWhiteSpace(_abilityPl))
+        {
+            _error = "Podaj nazwę i zdolność po polsku.";
+            return;
+        }
+
+        if (Mismatch(_remindersPl, _remindersEn) is not null || Mismatch(_globalRemindersPl, _globalRemindersEn) is not null)
+        {
+            _error = "Popraw znaczniki: liczba linii po polsku i po angielsku musi być taka sama.";
+            return;
+        }
+
+        var remindersPl = Lines(_remindersPl);
+        var globalPl = Lines(_globalRemindersPl);
+        var baseRole = _existing ?? new Role
+        {
+            Id = EffectiveId,
+            NameEn = string.Empty,
+            NamePl = string.Empty,
+            AbilityEn = string.Empty,
+            AbilityPl = string.Empty,
+        };
+
+        // English texts stay as they were; for new texts without a translation the Polish one is used.
+        var role = baseRole with
+        {
+            NamePl = _namePl.Trim(),
+            NameEn = string.IsNullOrWhiteSpace(_nameEn) ? _namePl.Trim() : _nameEn.Trim(),
+            Team = _team,
+            Edition = _team == Team.Fabled ? string.Empty : _edition,
+            Setup = _setup,
+            AbilityPl = _abilityPl.Trim(),
+            AbilityEn = string.IsNullOrWhiteSpace(_abilityEn) ? _abilityPl.Trim() : _abilityEn.Trim(),
+            FirstNight = _firstNight,
+            OtherNight = _otherNight,
+            FirstNightReminderPl = _firstReminderPl.Trim(),
+            OtherNightReminderPl = _otherReminderPl.Trim(),
+            FirstNightReminderEn = _firstReminderEn.Trim(),
+            OtherNightReminderEn = _otherReminderEn.Trim(),
+            RemindersPl = remindersPl,
+            RemindersEn = English(Lines(_remindersEn), remindersPl),
+            RemindersGlobalPl = globalPl,
+            RemindersGlobalEn = English(Lines(_globalRemindersEn), globalPl),
+        };
+
+        if (!await Local.SaveAsync(new LocalRole(role, _iconUrl)))
+        {
+            _error = "Przeglądarka nie pozwoliła zapisać roli (tryb prywatny lub brak miejsca).";
+            return;
+        }
+
+        Nav.NavigateTo($"roles/{role.Id}");
+    }
+}

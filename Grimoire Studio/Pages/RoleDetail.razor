@@ -1,4 +1,7 @@
 @page "/roles/{Id}"
+@inject GameDataClient Client
+@inject LocalRoles Local
+@inject NavigationManager Nav
 
 <div class="pinned fill-viewport">
 <DataView Context="data">
@@ -27,9 +30,18 @@
                         {
                             <span> · <a href="scripts/@edition.Id">@edition.Name</a></span>
                         }
+                        @if (_isLocal)
+                        {
+                            <span class="local-badge">@(_hasOriginal ? "zmieniona lokalnie" : "tylko w tej przeglądarce")</span>
+                        }
                     </p>
                 </div>
                 <div class="script-actions">
+                    <a class="button" href="roles/@role.Id/edit">Edytuj</a>
+                    @if (_isLocal)
+                    {
+                        <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń rolę")</button>
+                    }
                     <a class="button button--ghost" href="@WikiLink.Url(role)" target="_blank" rel="noopener noreferrer">Oficjalna wiki ↗</a>
                     <a class="button button--ghost" href="generator?role=@role.Id">Generuj token</a>
                 </div>
@@ -138,4 +150,21 @@
 @code {
     [Parameter]
     public string Id { get; set; } = string.Empty;
+
+    private bool _isLocal;
+    private bool _hasOriginal;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLocal = await Local.FindAsync(Id) is not null;
+        _hasOriginal = (await Client.GetOriginalAsync()).FindRole(Id) is not null;
+    }
+
+    private async Task RemoveLocalAsync()
+    {
+        await Local.RemoveAsync(Id);
+
+        // Reload so the original role (or the role list) is shown with fresh data.
+        Nav.NavigateTo(_hasOriginal ? $"roles/{Id}" : "roles", forceLoad: true);
+    }
 }

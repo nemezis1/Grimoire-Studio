@@ -95,6 +95,23 @@ function fitNightColumns(inner) {
     }
 }
 
+/** Scales an image (data URL) down to fit maxSize × maxSize and returns it as a PNG data URL. */
+export async function resizeImage(dataUrl, maxSize) {
+    // onload rather than decode(): decode() can stay pending while the page is in the background.
+    const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error('Nie można odczytać obrazka.'));
+        image.src = dataUrl;
+    });
+    const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/png');
+}
+
 export async function print(families = []) {
     await preloadFonts(families);
     window.print();

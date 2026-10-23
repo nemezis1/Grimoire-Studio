@@ -95,13 +95,13 @@ public sealed class TokenSettings
     public TokenSettings Clone() => (TokenSettings)MemberwiseClone();
 
     /// <summary>Fills name, ability, icon and leaf markers from a role (player token).</summary>
-    public void ApplyRole(Role role)
+    public void ApplyRole(Role role, string iconUrl)
     {
         TokenType = PlayerType;
         Text = role.NamePl;
         TextVertical = 0;
         Description = role.AbilityPl;
-        ImageUrl = Services.GameDataClient.IconUrl(role.Id);
+        ImageUrl = iconUrl;
         LeafFirstNight = role.WakesFirstNight;
         LeafOtherNights = role.WakesOtherNights;
         LeafSetup = role.Setup;
@@ -112,13 +112,13 @@ public sealed class TokenSettings
     }
 
     /// <summary>Switches to a reminder token for one of the role's reminder texts.</summary>
-    public void ApplyReminder(Role role, string reminder)
+    public void ApplyReminder(Role role, string reminder, string iconUrl)
     {
         TokenType = ReminderType;
         Text = reminder;
 
         TextVertical = ReminderTextVertical;
         Description = string.Empty;
-        ImageUrl = Services.GameDataClient.IconUrl(role.Id);
+        ImageUrl = iconUrl;
     }
 }

@@ -1,4 +1,8 @@
-<img class="role-icon role-icon--@Size" src="@GameDataClient.IconUrl(Role.Id)" alt="" loading="lazy" />
+@inject LocalRoles Local
+
+@* A role created in the browser without its own icon has no file in data/icons; show the token art instead. *@
+<img class="role-icon role-icon--@Size" src="@Local.IconUrl(Role.Id)" alt="" loading="lazy"
+     onerror="this.onerror = null; this.src = 'Assets/token.png';" />
 
 @code {
     [Parameter, EditorRequired]

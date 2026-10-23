@@ -30,7 +30,14 @@ else
             </label>
             @if (IsNew)
             {
-                <p class="muted small">Identyfikator: <code>@NewId()</code></p>
+                <label class="field">
+                    <span>Identyfikator (małe litery i cyfry)</span>
+                    <input type="text" value="@EffectiveId" @oninput="e => _id = e.Value?.ToString()" />
+                </label>
+                @if (IdError() is { } idError)
+                {
+                    <p class="notice notice--error">@idError</p>
+                }
             }
 
             <div class="filters">
@@ -113,6 +120,11 @@ else
     private string? _team;
     private string? _error;
 
+    /// <summary>Id typed for a new script; null until edited, then the suggestion from the name is used.</summary>
+    private string? _id;
+
+    private string EffectiveId => (_id ?? NewId()).Trim();
+
     protected override async Task OnParametersSetAsync()
     {
         _data = await Client.GetAsync();
@@ -128,6 +140,23 @@ else
         {
             _selected.Add(roleId);
         }
+    }
+
+    /// <summary>Format and uniqueness of a new script's id (against the data folder and scripts saved locally).</summary>
+    private string? IdError()
+    {
+        if (!IsNew)
+        {
+            return null;
+        }
+
+        var id = EffectiveId;
+        if (!DataValidator.IsValidId(id))
+        {
+            return "Identyfikator może zawierać tylko małe litery (bez polskich znaków) i cyfry.";
+        }
+
+        return _data?.FindScript(id) is { } other ? $"Skrypt o identyfikatorze „{id}” już istnieje ({other.Name})." : null;
     }
 
     /// <summary>Id for a new script: the name in lowercase letters and digits, numbered when already taken.</summary>
@@ -150,6 +179,12 @@ else
 
     private async Task SaveAsync()
     {
+        if (IdError() is { } idError)
+        {
+            _error = idError;
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_name))
         {
             _error = "Podaj nazwę skryptu.";
@@ -171,7 +206,7 @@ else
             .ToList();
 
         var script = _existing is null
-            ? new Script { Id = NewId(), Name = _name.Trim(), Roles = roles, CustomIcon = "custom" }
+            ? new Script { Id = EffectiveId, Name = _name.Trim(), Roles = roles, CustomIcon = "custom" }
             : _existing with { Name = _name.Trim(), Roles = roles };
 
         if (!await Local.SaveAsync(script))

@@ -79,7 +79,7 @@ public partial class TokenGeneratorPage
     private void ApplyRole(Role role)
     {
         _role = role;
-        _settings.ApplyRole(role);
+        _settings.ApplyRole(role, LocalRoleIcons.IconUrl(role.Id));
     }
 
     private void ToggleSecondColor(ChangeEventArgs e) =>

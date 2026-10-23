@@ -21,6 +21,25 @@ public static class GameDataQueries
         return data with { Scripts = data.Scripts with { Scripts = scripts } };
     }
 
+    /// <summary>
+    /// Data with <paramref name="overrides"/> applied: a role with an existing id replaces it in place (moving between
+    /// roles and fabled if its team changed), a new id is appended to roles or fabled by its team.
+    /// </summary>
+    public static GameData WithRoles(this GameData data, IEnumerable<Role> overrides)
+    {
+        var byId = overrides.ToDictionary(r => r.Id, StringComparer.OrdinalIgnoreCase);
+        var all = data.AllRoles
+            .Select(r => byId.Remove(r.Id, out var replacement) ? replacement : r)
+            .Concat(byId.Values)
+            .ToList();
+
+        return data with
+        {
+            Roles = all.Where(r => r.Team != Team.Fabled).ToList(),
+            Fabled = all.Where(r => r.Team == Team.Fabled).ToList(),
+        };
+    }
+
     public static Script? FindScript(this GameData data, string id) =>
         data.Scripts.Scripts.FirstOrDefault(s => string.Equals(s.Id, id, StringComparison.OrdinalIgnoreCase));
 

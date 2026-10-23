@@ -77,8 +77,14 @@
 
             @if (showExtras || _options.ShowPlayerCount)
             {
-                <PrintPage Title="@Script.Name" Subtitle="@(showExtras ? "Wędrowcy, legendy i zasady specjalne" : "Liczba graczy")" Script="Script">
+                @* Alone on the page the player count goes at the top; next to other content it stays at the bottom. *@
+                <PrintPage Title="@Script.Name" Script="Script"
+                           Bottom="@(showExtras && _options.ShowPlayerCount ? PlayerCountTable : null)">
                     <ChildContent>
+                    @if (!showExtras)
+                    {
+                        @PlayerCountTable
+                    }
                     @foreach (var group in showExtras ? extras : [])
                     {
                         <PrintRoleGroup Team="group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
@@ -99,42 +105,12 @@
                         </section>
                     }
                     </ChildContent>
-                    <Bottom>
-                        @if (_options.ShowPlayerCount)
-                        {
-                            <table class="player-count">
-                                <tr>
-                                    <th>Gracze</th>
-                                    @foreach (var row in PlayerCount.Table)
-                                    {
-                                        <td>@(row.Players == PlayerCount.MaxPlayers ? "15+" : row.Players)</td>
-                                    }
-                                </tr>
-                                @foreach (var (team, count) in new (Team, Func<PlayerCount, int>)[]
-                                {
-                                    (Team.Townsfolk, c => c.Townsfolk),
-                                    (Team.Outsider, c => c.Outsiders),
-                                    (Team.Minion, c => c.Minions),
-                                    (Team.Demon, c => c.Demons),
-                                })
-                                {
-                                    <tr class="team--@TeamText.Slug(team)">
-                                        <th>@TeamText.Plural(team)</th>
-                                        @foreach (var row in PlayerCount.Table)
-                                        {
-                                            <td>@count(row)</td>
-                                        }
-                                    </tr>
-                                }
-                            </table>
-                        }
-                    </Bottom>
                 </PrintPage>
             }
 
             @if (_options.IncludeNightOrder)
             {
-                <PrintPage Title="@Script.Name" Subtitle="Kolejność nocy" Script="Script" FillHeight="true">
+                <PrintPage Title="@Script.Name" Script="Script" FillHeight="true">
                     <div class="print-nights">
                         <PrintNightList Title="Pierwsza noc" Steps="NightSteps(true)" FirstNight="true" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" />
                         <PrintNightList Title="Pozostałe noce" Steps="NightSteps(false)" FirstNight="false" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" Flipped="_options.FlipOtherNights" />
@@ -146,6 +122,33 @@
 </div>
 
 @code {
+    private RenderFragment PlayerCountTable =>
+        @<table class="player-count">
+            <tr>
+                <th>Gracze</th>
+                @foreach (var row in PlayerCount.Table)
+                {
+                    <td>@(row.Players == PlayerCount.MaxPlayers ? "15+" : row.Players)</td>
+                }
+            </tr>
+            @foreach (var (team, count) in new (Team, Func<PlayerCount, int>)[]
+            {
+                (Team.Townsfolk, c => c.Townsfolk),
+                (Team.Outsider, c => c.Outsiders),
+                (Team.Minion, c => c.Minions),
+                (Team.Demon, c => c.Demons),
+            })
+            {
+                <tr class="team--@TeamText.Slug(team)">
+                    <th>@TeamText.Plural(team)</th>
+                    @foreach (var row in PlayerCount.Table)
+                    {
+                        <td>@count(row)</td>
+                    }
+                </tr>
+            }
+        </table>;
+
     [Parameter, EditorRequired]
     public Script Script { get; set; } = default!;
 

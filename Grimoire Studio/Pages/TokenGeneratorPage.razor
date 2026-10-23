@@ -3,6 +3,7 @@
 @using System.Globalization
 @inject GameDataClient Client
 @inject TokenRenderer Renderer
+@inject LocalRoles LocalRoleIcons
 @inject NavigationManager Nav
 
 <PageTitle>Generator tokenów – Grimoire Studio</PageTitle>
@@ -74,7 +75,7 @@
                             @foreach (var reminder in _role.RemindersPl.Concat(_role.RemindersGlobalPl).Distinct())
                             {
                                 <button class="chip @(!_settings.IsPlayer && _settings.Text == reminder ? "chip--active" : null)"
-                                        @onclick="() => _settings.ApplyReminder(_role, reminder)">@reminder</button>
+                                        @onclick="() => _settings.ApplyReminder(_role, reminder, LocalRoleIcons.IconUrl(_role.Id))">@reminder</button>
                             }
                         </div>
                     </div>

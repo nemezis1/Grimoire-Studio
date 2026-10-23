@@ -870,11 +870,10 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .print-page__header { flex: none; display: flex; align-items: center; justify-content: center; gap: 4mm; margin-bottom: 3mm; }
 .print-page__icon { width: 16mm; height: 16mm; object-fit: contain; }
 .print-page__title { margin: 0; font-family: "Great Vibes", Georgia, serif; font-weight: normal; font-size: 34pt; line-height: 1.1; color: #111111; }
-.print-page__subtitle { margin: 0; text-align: center; font-size: 10pt; color: #555555; }
 .print-page__content { flex: 1; min-height: 0; overflow: hidden; }
 .print-page__inner { font-family: system-ui, "Segoe UI", Roboto, sans-serif; font-size: calc(8pt * var(--print-scale, 1)); line-height: 1.25; }
 .print-page__bottom { flex: none; padding-top: 3mm; font-family: system-ui, "Segoe UI", Roboto, sans-serif; font-size: calc(8pt * var(--print-scale, 1)); }
-.print-page__bottom .player-count { margin-top: 0; }
+.print-page__bottom .player-count, .print-page__inner > .player-count:first-child { margin-top: 0; }
 .print-page__footer { flex: none; padding-top: 2mm; text-align: center; font-size: 7pt; color: #777777; }
 
 .print-group + .print-group { margin-top: 5mm; }
@@ -953,3 +952,37 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 }
 .print-slider__step:disabled { opacity: 0.4; cursor: default; }
 .print-slider__value { flex: none; width: 3.25rem; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- Role editor ---------- */
+
+.role-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.role-editor input[type="text"], .role-editor input[type="number"], .role-editor select, .role-editor textarea {
+    font: inherit;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+.role-editor textarea { resize: vertical; }
+.role-editor__icon { display: flex; justify-content: center; margin-bottom: 0.75rem; }
+.role-editor__icon img { width: 128px; height: 128px; object-fit: contain; }
+
+@media (min-width: 1101px) {
+    .role-editor { align-items: stretch; }
+    .role-editor__form, .role-editor__summary { min-height: 0; overflow-y: auto; }
+    .role-editor__form { padding-right: 0.25rem; }
+    .role-editor__summary { margin-bottom: 0; align-self: start; max-height: 100%; }
+}
+
+@media (max-width: 900px) {
+    .role-editor { grid-template-columns: minmax(0, 1fr); }
+}

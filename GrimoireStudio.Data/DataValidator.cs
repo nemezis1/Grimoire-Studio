@@ -10,6 +10,9 @@ public static partial class DataValidator
     [GeneratedRegex("^[a-z0-9]+$")]
     private static partial Regex IdPattern();
 
+    /// <summary>Role and script ids: lowercase letters and digits only.</summary>
+    public static bool IsValidId(string id) => IdPattern().IsMatch(id);
+
     public static IReadOnlyList<string> Validate(GameData data, string? iconsDirectory = null)
     {
         var errors = new List<string>();

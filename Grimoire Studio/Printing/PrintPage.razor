@@ -4,13 +4,7 @@
 <section class="print-page">
     <header class="print-page__header">
         <img class="print-page__icon" src="@GameDataClient.EditionIconUrl(Script)" alt="" />
-        <div>
-            <h1 class="print-page__title">@Title</h1>
-            @if (Subtitle is not null)
-            {
-                <p class="print-page__subtitle">@Subtitle</p>
-            }
-        </div>
+        <h1 class="print-page__title">@Title</h1>
     </header>
     <div class="print-page__content">
         <div class="print-page__inner @(FillHeight ? "print-page__inner--fill" : null)">
@@ -30,9 +24,6 @@
 
     [Parameter, EditorRequired]
     public string Title { get; set; } = string.Empty;
-
-    [Parameter]
-    public string? Subtitle { get; set; }
 
     /// <summary>Content takes the full page height (night order: the flipped column sits at the bottom).</summary>
     [Parameter]
