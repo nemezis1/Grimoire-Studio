@@ -111,6 +111,27 @@ public sealed class TokenSettings
         LeafReminderCount = Math.Clamp(reminders, 1, 5);
     }
 
+    public const string EvilBorderColor = "#B22222";
+
+    /// <summary>
+    /// Default border for the role's team, in the team colours set on the teams page: good roles take the townsfolk
+    /// colour, evil roles the demon colour, travellers half and half; every other team (fabled, local teams) its own
+    /// colour.
+    /// </summary>
+    public void ApplyTeamBorder(GameData data, Role role)
+    {
+        var good = data.FindTeam(TeamIds.Townsfolk)?.Color ?? "#1E90FF";
+        var evil = data.FindTeam(TeamIds.Demon)?.Color ?? EvilBorderColor;
+
+        (BorderColor, BorderColor2) = role.Team switch
+        {
+            TeamIds.Townsfolk or TeamIds.Outsider => (good, (string?)null),
+            TeamIds.Minion or TeamIds.Demon => (evil, null),
+            TeamIds.Traveler => (good, evil),
+            _ => (data.TeamOf(role).Color, null),
+        };
+    }
+
     /// <summary>Switches to a reminder token for one of the role's reminder texts.</summary>
     public void ApplyReminder(Role role, string reminder, string iconUrl)
     {

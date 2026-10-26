@@ -26,15 +26,27 @@ public partial class TokenGeneratorPage
     private SheetItem? _editing;
     private CancellationTokenSource? _sheetRefresh;
     private bool _sheetSaveFailed;
+    private string _bulkScript = string.Empty;
+    private string _bulkPlayerPreset = string.Empty;
+    private string _bulkReminderPreset = string.Empty;
+    private bool _bulkPlayers = true;
+    private bool _bulkReminders = true;
+    private bool _bulkReplace;
+    private string? _bulkProgress;
 
     /// <summary>Role id to preload, e.g. /generator?role=imp (linked from the role page).</summary>
     [SupplyParameterFromQuery(Name = "role")]
     public string? RoleId { get; set; }
 
+    /// <summary>Script to preselect in "Cały skrypt", e.g. /generator?script=tb (linked from the script page).</summary>
+    [SupplyParameterFromQuery(Name = "script")]
+    public string? ScriptId { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         _presets = await Renderer.LoadPresetsAsync();
         _data = await Client.GetAsync();
+        _bulkScript = _data.FindScript(ScriptId ?? string.Empty)?.Id ?? string.Empty;
         if (RoleId is not null && _data.FindRole(RoleId) is { } role)
         {
             ApplyRole(role);
@@ -83,7 +95,7 @@ public partial class TokenGeneratorPage
     }
 
     private void ToggleSecondColor(ChangeEventArgs e) =>
-        _settings.BorderColor2 = e.Value is true ? "#B22222" : null;
+        _settings.BorderColor2 = e.Value is true ? TokenSettings.EvilBorderColor : null;
 
     private void ClearImages()
     {
@@ -135,6 +147,10 @@ public partial class TokenGeneratorPage
         if (type == TokenSettings.ReminderType)
         {
             _settings.TextVertical = TokenSettings.ReminderTextVertical;
+        }
+        else if (_role is not null && _data is not null)
+        {
+            _settings.ApplyTeamBorder(_data, _role);
         }
 
         _selectedPreset = string.Empty;
@@ -205,6 +221,99 @@ public partial class TokenGeneratorPage
 
         _settings = _settings.Clone();
         _editing = null;
+    }
+
+    /// <summary>
+    /// Tokens for the whole script chosen in "Cały skrypt": player tokens first, then reminders (each listed reminder
+    /// once per entry, global reminders included), so the sheet packs same-sized tokens together.
+    /// </summary>
+    private List<(TokenSettings Settings, string RoleId)> BulkTokens()
+    {
+        if (_data?.FindScript(_bulkScript) is not { } script)
+        {
+            return [];
+        }
+
+        var roles = _data.GroupByTeam(_data.RolesOf(script)).SelectMany(g => g.Roles).ToList();
+        var tokens = new List<(TokenSettings, string)>();
+
+        if (_bulkPlayers)
+        {
+            foreach (var role in roles)
+            {
+                var settings = Styled(_bulkPlayerPreset, TokenSettings.PlayerType);
+                var textVertical = settings.TextVertical;
+                settings.ApplyRole(role, LocalRoleIcons.IconUrl(role.Id));
+                settings.TextVertical = textVertical;
+                if (_bulkPlayerPreset.Length == 0)
+                {
+                    settings.ApplyTeamBorder(_data, role);
+                }
+
+                tokens.Add((settings, role.Id));
+            }
+        }
+
+        if (_bulkReminders)
+        {
+            foreach (var role in roles)
+            {
+                foreach (var reminder in role.RemindersPl.Concat(role.RemindersGlobalPl))
+                {
+                    var settings = Styled(_bulkReminderPreset, TokenSettings.ReminderType);
+                    var textVertical = settings.TextVertical;
+                    settings.ApplyReminder(role, reminder, LocalRoleIcons.IconUrl(role.Id));
+                    settings.TextVertical = textVertical;
+                    tokens.Add((settings, role.Id));
+                }
+            }
+        }
+
+        return tokens;
+    }
+
+    /// <summary>Empty token with the look of a saved preset, or the default look when none is chosen.</summary>
+    private TokenSettings Styled(string presetName, string tokenType)
+    {
+        var settings = new TokenSettings();
+        if (_presets.FirstOrDefault(p => p.Name == presetName) is { } preset)
+        {
+            preset.ApplyTo(settings);
+        }
+        else if (tokenType == TokenSettings.ReminderType)
+        {
+            settings.TextVertical = TokenSettings.ReminderTextVertical;
+        }
+
+        settings.TokenType = tokenType;
+        return settings;
+    }
+
+    private async Task AddScriptAsync()
+    {
+        var tokens = BulkTokens();
+        if (_bulkReplace)
+        {
+            await ClearSheetAsync();
+        }
+
+        try
+        {
+            for (var i = 0; i < tokens.Count; i++)
+            {
+                _bulkProgress = $"Generowanie {i + 1} / {tokens.Count}…";
+                StateHasChanged();
+
+                var item = new SheetItem(tokens[i].Settings, tokens[i].RoleId);
+                _sheet.Add(item);
+                await RefreshAsync(item);
+            }
+        }
+        finally
+        {
+            _bulkProgress = null;
+            await SaveSheetAsync();
+        }
     }
 
     private async Task DuplicateAsync(SheetItem item)

@@ -38,6 +38,7 @@
                 <div class="script-actions">
                     <a class="button" href="scripts/@script.Id/edit">Edytuj</a>
                     <button class="button button--ghost" @onclick="() => _printing = true">Drukuj / PDF</button>
+                    <a class="button button--ghost" href="generator?script=@script.Id">Generuj tokeny</a>
                     <button class="button button--ghost" title="Plik JSON do script.bloodontheclocktower.com" @onclick="() => ExportAsync(script)">Eksport do Script Tool</button>
                     @if (_isLocal)
                     {

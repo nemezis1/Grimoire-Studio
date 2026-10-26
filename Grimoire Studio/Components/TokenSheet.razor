@@ -3,6 +3,11 @@
 
 @* A4 pages at real size (mm). On screen they are scaled down; when printed they come out 1:1. *@
 <div class="sheet-pages">
+    @if (Items.Count == 0)
+    {
+        @* An empty page keeps the panel as wide as with tokens, so its buttons stay in place. *@
+        <div class="sheet-page sheet-page--empty" aria-label="Pusta strona"></div>
+    }
     @{ var pageNumber = 0; }
     @foreach (var page in SheetLayout.Pack(Items))
     {

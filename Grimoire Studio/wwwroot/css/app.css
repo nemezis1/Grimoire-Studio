@@ -508,7 +508,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 /* Text and buttons wrap to the width of the page and never widen the panel themselves. */
 .generator .sheet-panel > :not(.sheet-pages) { width: 0; min-width: 100%; flex: none; }
-.generator .sheet-panel:not(:has(.sheet-pages)) { justify-self: stretch; min-width: min(100%, 320px); }
+
 
 /* Medium screens: three narrower columns, smaller sheet pages. */
 @media (max-width: 1400px) {
@@ -619,6 +619,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     zoom: 0.7;
 }
 
+.sheet-page--empty { opacity: 0.25; }
 .sheet-token { position: absolute; border-radius: 50%; }
 .sheet-token img { display: block; width: 100%; height: 100%; }
 .sheet-token--editing { outline: 6px solid var(--accent); outline-offset: 4px; }
@@ -686,6 +687,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     html:has(.fill-viewport), body:has(.fill-viewport), body:has(.fill-viewport) #app,
     html, body, #app, .site-main, .page, .page:has(.fill-viewport), .fill-viewport, .pinned__scroll { display: block; height: auto; overflow: visible; }
     .sheet-page, .generator .sheet-page { page: tokens; zoom: 1; box-shadow: none; break-after: page; }
+    .sheet-page--empty { display: none; }
     .sheet-token__actions { display: none !important; }
     .sheet-token--editing { outline: none; }
 }

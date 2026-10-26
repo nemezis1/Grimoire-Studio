@@ -83,6 +83,64 @@
             }
         </section>
 
+        @if (_data is not null)
+        {
+            var bulk = BulkTokens();
+            <section class="panel">
+                <h2>Cały skrypt</h2>
+                <p class="muted small">Dodaje do arkusza tokeny wszystkich postaci ze skryptu i ich przypominajki, każde w wybranym presecie.</p>
+                <label class="field">
+                    <span>Skrypt</span>
+                    <select @bind="_bulkScript">
+                        <option value="">— wybierz —</option>
+                        @foreach (var script in _data.Scripts.Scripts)
+                        {
+                            <option value="@script.Id">@script.Name</option>
+                        }
+                    </select>
+                </label>
+                <div class="field-row">
+                    <label class="field">
+                        <span>Preset tokenów postaci</span>
+                        <select @bind="_bulkPlayerPreset">
+                            <option value="">— domyślny (kolory drużyn) —</option>
+                            @foreach (var preset in _presets)
+                            {
+                                <option value="@preset.Name">@preset.Name</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Preset przypominajek</span>
+                        <select @bind="_bulkReminderPreset">
+                            <option value="">— domyślny —</option>
+                            @foreach (var preset in _presets)
+                            {
+                                <option value="@preset.Name">@preset.Name</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+                <div class="field-row">
+                    <label class="field field--inline">
+                        <input type="checkbox" @bind="_bulkPlayers" />
+                        <span>Postacie</span>
+                    </label>
+                    <label class="field field--inline">
+                        <input type="checkbox" @bind="_bulkReminders" />
+                        <span>Przypominajki</span>
+                    </label>
+                    <label class="field field--inline">
+                        <input type="checkbox" @bind="_bulkReplace" />
+                        <span>Wyczyść arkusz przed dodaniem</span>
+                    </label>
+                </div>
+                <button class="button button--wide" disabled="@(bulk.Count == 0 || _bulkProgress is not null)" @onclick="AddScriptAsync">
+                    @(_bulkProgress ?? (bulk.Count == 0 ? "Dodaj do arkusza" : $"Dodaj do arkusza ({bulk.Count} {TokenWord(bulk.Count)})"))
+                </button>
+            </section>
+        }
+
         <section class="panel">
             <h2>Nazwa</h2>
             <div class="field-row">
@@ -244,7 +302,7 @@
         else
         {
             <p class="muted small">Najedź na token, aby go edytować, zduplikować lub usunąć. Wydruk w skali 100% daje tokeny w ustawionych średnicach.</p>
-            <TokenSheet Items="_sheet" Editing="_editing" OnEdit="EditItem" OnDuplicate="DuplicateAsync" OnRemove="RemoveAsync" />
         }
+        <TokenSheet Items="_sheet" Editing="_editing" OnEdit="EditItem" OnDuplicate="DuplicateAsync" OnRemove="RemoveAsync" />
     </section>
 </div>
