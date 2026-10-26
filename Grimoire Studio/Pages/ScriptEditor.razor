@@ -41,7 +41,21 @@ else
             }
 
             <div class="filters">
-                <input class="filters__search" type="search" placeholder="Szukaj roli…" @bind="_query" @bind:event="oninput" />
+                <input class="filters__search" type="search" placeholder="Szukaj roli lub zdolności…" @bind="_query" @bind:event="oninput" />
+                <details class="multi-select">
+                    <summary>Filtry@(_filters.Count > 0 ? $" ({_filters.Count})" : null)</summary>
+                    <div class="multi-select__menu">
+                        @foreach (var (label, _) in RoleFilters)
+                        {
+                            <label class="field field--inline">
+                                <input type="checkbox" checked="@_filters.Contains(label)" @onchange="e => ToggleFilter(label, e.Value is true)" />
+                                <span>@label</span>
+                            </label>
+                        }
+                        <p class="muted small">Pokazuje role spełniające wszystkie zaznaczone warunki.</p>
+                        <button class="button button--ghost" disabled="@(_filters.Count == 0)" @onclick="() => _filters.Clear()">Wyczyść filtry</button>
+                    </div>
+                </details>
             </div>
             <div class="chips">
                 <button class="chip @(team is null ? "chip--active" : null)" @onclick='() => _team = null'>Wszystkie</button>
@@ -54,7 +68,8 @@ else
             <ul class="role-picker">
                 @foreach (var role in _data.AllRoles
                     .Where(r => team is null || r.Team == team.Id)
-                    .Where(r => SearchText.Matches(_query, r.NamePl, r.NameEn, r.Id))
+                    .Where(r => SearchText.Matches(_query, r.NamePl, r.NameEn, r.Id, r.AbilityPl, r.AbilityEn))
+                    .Where(r => RoleFilters.Where(f => _filters.Contains(f.Label)).All(f => f.Matches(r)))
                     .OrderBy(r => Teams.Get(r.Team).Order)
                     .ThenBy(r => r.NamePl, StringComparer.CurrentCulture))
                 {
@@ -63,7 +78,10 @@ else
                         <button class="role-toggle team--@(role.Team) @(isSelected ? "role-toggle--on" : null)" style="@Teams.Style(role.Team)"
                                 aria-pressed="@isSelected" @onclick="() => Toggle(role.Id)">
                             <RoleIcon Role="role" Size="sm" />
-                            <span>@role.NamePl</span>
+                            <span class="role-toggle__text">
+                                <span class="role-toggle__name">@role.NamePl</span>
+                                <span class="role-toggle__ability">@role.AbilityPl</span>
+                            </span>
                         </button>
                     </li>
                 }
@@ -119,6 +137,31 @@ else
     private string _query = string.Empty;
     private string? _team;
     private string? _error;
+    private readonly HashSet<string> _filters = [];
+
+    /// <summary>Conditions offered in the "Filtry" dropdown; checked ones must all hold.</summary>
+    private IReadOnlyList<(string Label, Func<Role, bool> Matches)> RoleFilters =>
+    [
+        ("Budzi się pierwszej nocy", r => r.WakesFirstNight),
+        ("Budzi się w pozostałe noce", r => r.WakesOtherNights),
+        ("Nie budzi się", r => !r.WakesFirstNight && !r.WakesOtherNights),
+        ("Zmienia przygotowanie gry", r => r.Setup),
+        ("Ma przypominajki", r => r.RemindersPl.Count + r.RemindersGlobalPl.Count > 0),
+        ("Ma jinxy", r => _data!.JinxesFor(r.Id).Count > 0),
+        ("Niewybrane w skrypcie", r => !_selected.Contains(r.Id)),
+    ];
+
+    private void ToggleFilter(string label, bool on)
+    {
+        if (on)
+        {
+            _filters.Add(label);
+        }
+        else
+        {
+            _filters.Remove(label);
+        }
+    }
 
     /// <summary>Id typed for a new script; null until edited, then the suggestion from the name is used.</summary>
     private string? _id;

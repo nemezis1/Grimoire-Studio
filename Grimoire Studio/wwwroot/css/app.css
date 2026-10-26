@@ -766,6 +766,43 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 .role-toggle--on { background: var(--team); border-color: var(--team); color: #ffffff; font-weight: 600; }
 
+.role-toggle { align-items: flex-start; }
+.role-toggle__text { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.role-toggle__name { font-weight: 600; }
+.role-toggle__ability { font-size: 0.78rem; line-height: 1.3; color: var(--muted); font-weight: normal; }
+.role-toggle--on .role-toggle__ability { color: rgba(255, 255, 255, 0.85); }
+.script-editor .role-picker { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+
+/* Dropdown with checkboxes (several options at once). */
+.multi-select { position: relative; }
+.multi-select > summary {
+    list-style: none;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    cursor: pointer;
+    user-select: none;
+}
+.multi-select > summary::-webkit-details-marker { display: none; }
+.multi-select > summary::after { content: " ▾"; color: var(--muted); }
+.multi-select__menu {
+    position: absolute;
+    right: 0;
+    z-index: 10;
+    min-width: 260px;
+    margin-top: 0.25rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    display: grid;
+    gap: 0.4rem;
+}
+.multi-select__menu .field { margin: 0; }
+.multi-select__menu p { margin: 0.25rem 0; }
+
 .selected-roles { list-style: none; margin: 0; padding: 0; }
 .selected-roles li { display: flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0; }
 .selected-roles span { flex: 1; }
