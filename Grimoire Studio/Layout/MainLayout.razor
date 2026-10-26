@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @inject ChangeSets ChangeSets
+@inject NavigationManager Nav
 @implements IDisposable
 
 <header class="site-header">
@@ -14,6 +15,7 @@
             @if (ChangeSets.IsAdmin)
             {
                 <NavLink href="admin">Admin</NavLink>
+                <button class="site-nav__exit" title="Wyjdź z trybu administratora" @onclick="LeaveAdminAsync">Wyjdź z admina</button>
             }
         </nav>
     </div>
@@ -41,10 +43,43 @@
     protected override async Task OnInitializedAsync()
     {
         ChangeSets.Changed += OnChanged;
+        Nav.LocationChanged += OnLocationChanged;
         await ChangeSets.LoadAsync();
+        await EnterAdminFromAddressAsync();
     }
 
     private void OnChanged() => InvokeAsync(StateHasChanged);
 
-    public void Dispose() => ChangeSets.Changed -= OnChanged;
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
+        await InvokeAsync(EnterAdminFromAddressAsync);
+
+    /// <summary>
+    /// An address with ?admin opens the admin mode for this browsing session; the parameter is then removed from the
+    /// address, so links and reloads do not carry it.
+    /// </summary>
+    private async Task EnterAdminFromAddressAsync()
+    {
+        if (!ChangeSets.HasAdminParameter(Nav.Uri))
+        {
+            return;
+        }
+
+        await ChangeSets.SetAdminAsync(true);
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter(ChangeSets.AdminParameter, (string?)null), replace: true);
+    }
+
+    private async Task LeaveAdminAsync()
+    {
+        await ChangeSets.SetAdminAsync(false);
+        if (Nav.ToBaseRelativePath(Nav.Uri).StartsWith("admin", StringComparison.OrdinalIgnoreCase))
+        {
+            Nav.NavigateTo("");
+        }
+    }
+
+    public void Dispose()
+    {
+        ChangeSets.Changed -= OnChanged;
+        Nav.LocationChanged -= OnLocationChanged;
+    }
 }

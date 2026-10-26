@@ -2,28 +2,20 @@
 @inject GameDataClient Client
 @inject ChangeSets ChangeSets
 @inject Proposals Proposals
+@inject NavigationManager Nav
 @implements IDisposable
+
+@if (!_loaded || !ChangeSets.IsAdmin)
+{
+    @* Nothing is shown without the admin mode; the page sends the visitor to the home page. *@
+    return;
+}
 
 <PageTitle>Panel administratora – Grimoire Studio</PageTitle>
 
 <h1>Panel administratora</h1>
 
-@if (!_loaded)
-{
-    <p class="notice">Wczytywanie…</p>
-}
-else if (!ChangeSets.IsAdmin)
-{
-    <section class="panel">
-        <p>
-            Panel służy do zatwierdzania zgłoszonych zmian i do bezpośredniej edycji wiki. Na razie wszystko działa tylko
-            w tej przeglądarce: wiki to warstwa zmian zapisana lokalnie, a zgłoszenia trafiają do kolejki w tej samej
-            przeglądarce lub z plików. Docelowo zatwierdzone zmiany będą trafiać do repozytorium na GitHubie.
-        </p>
-        <button class="button" @onclick="() => ChangeSets.SetAdminAsync(true)">Włącz tryb administratora</button>
-    </section>
-}
-else if (_data is null || _wiki is null || _original is null || _wikiChanges is null)
+@if (_data is null || _wiki is null || _original is null || _wikiChanges is null)
 {
     <p class="notice">Wczytywanie…</p>
 }
@@ -36,7 +28,7 @@ else
             <span>Edytuję wiki bezpośrednio: edytory ról, skryptów, drużyn i jinxów zapisują do wiki zamiast do „Moich zmian”</span>
         </label>
         <div class="field-row">
-            <button class="button button--ghost" @onclick="() => ChangeSets.SetAdminAsync(false)">Wyłącz tryb administratora</button>
+            <button class="button button--ghost" @onclick="LeaveAdminAsync">Wyjdź z trybu administratora</button>
         </div>
     </section>
 
@@ -141,18 +133,32 @@ else
         await ChangeSets.LoadAsync();
         ChangeSets.Changed += OnChangeSetsChanged;
         _loaded = true;
+
+        // With ?admin in the address the layout is just turning the mode on; otherwise there is nothing to show here.
+        if (!ChangeSets.IsAdmin && !ChangeSets.HasAdminParameter(Nav.Uri))
+        {
+            Nav.NavigateTo("", replace: true);
+            return;
+        }
+
         await ReloadAsync();
     }
 
     private async void OnChangeSetsChanged()
     {
+        if (!ChangeSets.IsAdmin && !ChangeSets.HasAdminParameter(Nav.Uri))
+        {
+            Nav.NavigateTo("", replace: true);
+            return;
+        }
+
         await ReloadAsync();
         await InvokeAsync(StateHasChanged);
     }
 
     private async Task ReloadAsync()
     {
-        if (!ChangeSets.IsAdmin)
+        if (!ChangeSets.IsAdmin && !ChangeSets.HasAdminParameter(Nav.Uri))
         {
             return;
         }
@@ -171,6 +177,12 @@ else
         {
             _selection[proposal.Id] = proposal.Changes.Keys().ToHashSet();
         }
+    }
+
+    private async Task LeaveAdminAsync()
+    {
+        await ChangeSets.SetAdminAsync(false);
+        Nav.NavigateTo("");
     }
 
     private async Task SetEditingWikiAsync(bool on)

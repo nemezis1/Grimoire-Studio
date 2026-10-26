@@ -182,3 +182,25 @@ export function downloadText(fileName, text, type = 'application/json') {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// --- Per-tab session values (sessionStorage): kept while browsing, gone when the tab is closed ---------------------
+
+export function sessionGet(key) {
+    try {
+        return sessionStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+export function sessionSet(key, value) {
+    try {
+        if (value === null) {
+            sessionStorage.removeItem(key);
+        } else {
+            sessionStorage.setItem(key, value);
+        }
+    } catch {
+        // Without sessionStorage the value lasts until the page is reloaded.
+    }
+}

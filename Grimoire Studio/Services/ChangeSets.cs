@@ -7,17 +7,20 @@ namespace Grimoire_Studio.Services;
 /// </summary>
 public sealed class ChangeSets(LocalStore store)
 {
+    /// <summary>Query parameter that opens the admin mode, e.g. <c>/?admin</c>.</summary>
+    public const string AdminParameter = "admin";
+
     private const string AdminKey = "grimoire-studio.admin";
     private const string EditingWikiKey = "grimoire-studio.editing-wiki";
 
-    private bool _loaded;
+    private Task? _load;
 
     public LocalChanges Personal { get; } = new(store, "grimoire-studio.local");
     public LocalChanges Wiki { get; } = new(store, "grimoire-studio.wiki");
 
     /// <summary>
-    /// Admin panel enabled in this browser. Only a switch for now: everything stays in this browser, so there is
-    /// nothing to protect until changes are sent to GitHub.
+    /// Admin mode: opened with <see cref="AdminParameter"/> in the address and kept for this tab's browsing session
+    /// (sessionStorage) until left. Not a protection yet: everything stays in this browser until changes go to GitHub.
     /// </summary>
     public bool IsAdmin { get; private set; }
 
@@ -36,23 +39,24 @@ public sealed class ChangeSets(LocalStore store)
     /// <summary>Raised when the admin switches change; the layout shows the editing mode.</summary>
     public event Action? Changed;
 
-    public async Task LoadAsync()
-    {
-        if (_loaded)
-        {
-            return;
-        }
+    public Task LoadAsync() => _load ??= LoadCoreAsync();
 
-        IsAdmin = await store.GetSettingAsync(AdminKey) == "1";
-        EditingWiki = IsAdmin && await store.GetSettingAsync(EditingWikiKey) == "1";
-        _loaded = true;
+    private async Task LoadCoreAsync()
+    {
+        IsAdmin = await store.GetSessionAsync(AdminKey) == "1";
+        EditingWiki = IsAdmin && await store.GetSessionAsync(EditingWikiKey) == "1";
+
+        // Earlier versions kept these switches in localStorage, i.e. forever.
+        await store.RemoveSettingAsync(AdminKey);
+        await store.RemoveSettingAsync(EditingWikiKey);
         Changed?.Invoke();
     }
 
     public async Task SetAdminAsync(bool on)
     {
+        await LoadAsync();
         IsAdmin = on;
-        await store.SetSettingAsync(AdminKey, on ? "1" : "0");
+        await store.SetSessionAsync(AdminKey, on ? "1" : null);
         if (!on)
         {
             await SetEditingWikiAsync(false);
@@ -64,8 +68,18 @@ public sealed class ChangeSets(LocalStore store)
     public async Task SetEditingWikiAsync(bool on)
     {
         EditingWiki = on && IsAdmin;
-        await store.SetSettingAsync(EditingWikiKey, EditingWiki ? "1" : "0");
+        await store.SetSessionAsync(EditingWikiKey, EditingWiki ? "1" : null);
         Changed?.Invoke();
+    }
+
+    /// <summary>True when the address has <see cref="AdminParameter"/> (any value except 0 / false).</summary>
+    public static bool HasAdminParameter(string uri)
+    {
+        var query = new Uri(uri).Query.TrimStart('?');
+        return query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2))
+            .Any(kv => string.Equals(kv[0], AdminParameter, StringComparison.OrdinalIgnoreCase)
+                && (kv.Length == 1 || kv[1] is not ("0" or "false")));
     }
 
     /// <summary>Icon of a role: personal upload, then wiki upload, then the data folder's file.</summary>

@@ -36,6 +36,14 @@ public sealed class LocalStore(IJSRuntime js)
 
     public async Task SetSettingAsync(string key, string value) => await (await Module).InvokeAsync<bool>("setItem", key, value);
 
+    /// <summary>Value kept while browsing in this tab (sessionStorage); gone when the tab is closed.</summary>
+    public async Task<string?> GetSessionAsync(string key) => await (await Module).InvokeAsync<string?>("sessionGet", key);
+
+    /// <summary>Stores a session value; null removes it.</summary>
+    public async Task SetSessionAsync(string key, string? value) => await (await Module).InvokeVoidAsync("sessionSet", key, value);
+
+    public async Task RemoveSettingAsync(string key) => await (await Module).InvokeVoidAsync("removeItem", key);
+
     public async Task<string> ResizeImageAsync(string dataUrl, int maxSize) =>
         await (await Module).InvokeAsync<string>("resizeImage", dataUrl, maxSize);
 

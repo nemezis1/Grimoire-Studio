@@ -1,4 +1,6 @@
-﻿@page "/"
+@page "/"
+@inject ChangeSets ChangeSets
+@implements IDisposable
 
 <PageTitle>Grimoire Studio</PageTitle>
 
@@ -9,5 +11,23 @@
         <a class="button" href="roles">Przeglądaj role</a>
         <a class="button button--ghost" href="scripts">Skrypty</a>
         <a class="button button--ghost" href="generator">Generator tokenów</a>
+        <a class="button button--ghost" href="teams">Drużyny</a>
+        <a class="button button--ghost" href="changes">Moje zmiany</a>
+        @if (ChangeSets.IsAdmin)
+        {
+            <a class="button button--ghost" href="admin">Panel administratora</a>
+        }
     </div>
 </section>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeSets.Changed += OnChanged;
+        await ChangeSets.LoadAsync();
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ChangeSets.Changed -= OnChanged;
+}

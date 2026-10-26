@@ -178,7 +178,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     text-decoration: none;
 }
 
-.site-nav { display: flex; gap: 0.25rem; }
+.site-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
 
 .site-nav a {
     padding: 0.4rem 0.75rem;
@@ -1077,3 +1077,13 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     .script-editor__selected { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
 }
 .proposal-changes__part { margin: 0.75rem 0 0.25rem; font-size: 0.9rem; color: var(--muted); }
+.site-nav__exit {
+    padding: 0.25rem 0.6rem;
+    border: 1px dashed var(--accent);
+    border-radius: 999px;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
