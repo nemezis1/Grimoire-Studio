@@ -1,6 +1,6 @@
 @page "/roles/{Id}"
 @inject GameDataClient Client
-@inject LocalRoles Local
+@inject ChangeSets Changes
 @inject NavigationManager Nav
 
 <div class="pinned fill-viewport">
@@ -32,7 +32,7 @@
                         }
                         @if (_isLocal)
                         {
-                            <span class="local-badge">@(_hasOriginal ? "zmieniona lokalnie" : "tylko w tej przeglądarce")</span>
+                            <span class="local-badge">@(_hasOriginal ? (Changes.EditingWiki ? "zmieniona w wiki" : "zmieniona lokalnie") : (Changes.EditingWiki ? "nowa w wiki" : "tylko w tej przeglądarce"))</span>
                         }
                     </p>
                 </div>
@@ -157,13 +157,14 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        _isLocal = await Local.FindAsync(Id) is not null;
-        _hasOriginal = (await Client.GetOriginalAsync()).FindRole(Id) is not null;
+        await Client.GetAsync(); // drops saved-but-unchanged roles before the badge is decided
+        _isLocal = await (await Changes.GetCurrentAsync()).Roles.FindAsync(Id) is not null;
+        _hasOriginal = (await Client.GetBaseAsync()).FindRole(Id) is not null;
     }
 
     private async Task RemoveLocalAsync()
     {
-        await Local.RemoveAsync(Id);
+        await (await Changes.GetCurrentAsync()).Roles.RemoveAsync(Id);
 
         // Reload so the original role (or the role list) is shown with fresh data.
         Nav.NavigateTo(_hasOriginal ? $"roles/{Id}" : "roles", forceLoad: true);

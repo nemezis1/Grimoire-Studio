@@ -18,7 +18,8 @@ public abstract class LocalCollection<T>(LocalStore store, string key)
 
     protected abstract string IdOf(T item);
 
-    public async Task<IReadOnlyList<T>> GetAllAsync() => await LoadAsync();
+    /// <summary>A copy: later changes to the collection do not alter lists already handed out (e.g. a proposal).</summary>
+    public async Task<IReadOnlyList<T>> GetAllAsync() => (await LoadAsync()).ToList();
 
     public async Task<T?> FindAsync(string id) =>
         (await LoadAsync()).FirstOrDefault(i => string.Equals(IdOf(i), id, StringComparison.OrdinalIgnoreCase));

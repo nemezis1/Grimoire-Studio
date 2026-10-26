@@ -1,5 +1,5 @@
 @page "/scripts"
-@inject LocalScripts Local
+@inject ChangeSets ChangeSets
 
 <PageTitle>Skrypty – Grimoire Studio</PageTitle>
 
@@ -76,8 +76,8 @@
     [Inject]
     private GameDataClient Client { get; set; } = default!;
 
-    [Inject]
-    private LocalChanges Changes { get; set; } = default!;
+    /// <summary>Imported roles, teams and jinxes go where the script goes: the wiki while editing it, otherwise personal changes.</summary>
+    private LocalChanges Changes => ChangeSets.Current;
 
     [Inject]
     private NavigationManager Nav { get; set; } = default!;
@@ -87,8 +87,11 @@
     private string? _importedId;
     private bool _importFailed;
 
-    protected override async Task OnInitializedAsync() =>
-        _localIds = (await Local.GetAllAsync()).Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    protected override async Task OnInitializedAsync()
+    {
+        await Client.GetAsync(); // drops saved-but-unchanged scripts before the badges are decided
+        _localIds = (await (await ChangeSets.GetCurrentAsync()).Scripts.GetAllAsync()).Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// Saves the script from a Script Tool file as a local script, together with the homebrew roles, teams and jinxes
@@ -122,7 +125,7 @@
                 saved &= await Changes.Jinxes.SaveAsync(jinx);
             }
 
-            saved &= await Local.SaveAsync(result.Script with { Id = id });
+            saved &= await (await ChangeSets.GetCurrentAsync()).Scripts.SaveAsync(result.Script with { Id = id });
             if (!saved)
             {
                 throw new FormatException("Przeglądarka nie pozwoliła zapisać skryptu (tryb prywatny lub brak miejsca).");

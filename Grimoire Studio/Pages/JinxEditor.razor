@@ -1,6 +1,6 @@
 @page "/roles/{Id}/jinxes"
 @inject GameDataClient Client
-@inject LocalJinxes Local
+@inject ChangeSets Changes
 @inject NavigationManager Nav
 
 <PageTitle>Jinxy: @(_role?.NamePl ?? Id) – Grimoire Studio</PageTitle>
@@ -104,7 +104,7 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        _original = await Client.GetOriginalAsync();
+        _original = await Client.GetBaseAsync();
         _data = await Client.GetAsync();
         _role = _data.FindRole(Id);
         if (_role is null)
@@ -113,7 +113,7 @@ else
         }
 
         // Every pair keeps the owner it has in the data; removed pairs come from the original data.
-        var removed = (await Local.GetAllAsync()).Where(j => j.Removed).ToList();
+        var removed = (await (await Changes.GetCurrentAsync()).Jinxes.GetAllAsync()).Where(j => j.Removed).ToList();
         _rows = _data.JinxesFor(_role.Id)
             .Select(x => (Owner: OwnerOf(_data, _role.Id, x.Other.Id), x.Other, x.Jinx))
             .Concat(removed
@@ -159,7 +159,7 @@ else
 
             // Only differences from the data folder are stored; a new pair that is removed again leaves nothing.
             var keep = row.Original is null ? !row.Removed : row.Removed || row.IsChanged;
-            saved &= keep ? await Local.SaveAsync(change) : await Local.RemoveAsync(change.Key);
+            saved &= keep ? await (await Changes.GetCurrentAsync()).Jinxes.SaveAsync(change) : await (await Changes.GetCurrentAsync()).Jinxes.RemoveAsync(change.Key);
         }
 
         if (!saved)

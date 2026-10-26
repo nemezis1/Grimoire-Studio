@@ -1,6 +1,6 @@
 @page "/scripts/{Id}"
 @inject GameDataClient Client
-@inject LocalScripts Local
+@inject ChangeSets Changes
 @inject NavigationManager Nav
 @using Grimoire_Studio.Printing
 
@@ -31,12 +31,13 @@
                         @(script.IsOfficial ? "Skrypt oficjalny" : "Skrypt własny") · @roles.Count ról · <a href="roles?script=@script.Id">filtruj role</a>
                         @if (_isLocal)
                         {
-                            <span class="local-badge">@(_hasOriginal ? "zmieniony lokalnie" : "tylko w tej przeglądarce")</span>
+                            <span class="local-badge">@(_hasOriginal ? (Changes.EditingWiki ? "zmieniony w wiki" : "zmieniony lokalnie") : (Changes.EditingWiki ? "nowy w wiki" : "tylko w tej przeglądarce"))</span>
                         }
                     </p>
                 </div>
                 <div class="script-actions">
                     <a class="button" href="scripts/@script.Id/edit">Edytuj</a>
+                    <a class="button button--ghost" href="scripts/new?from=@script.Id">Duplikuj</a>
                     <button class="button button--ghost" @onclick="() => _printing = true">Drukuj / PDF</button>
                     <a class="button button--ghost" href="generator?script=@script.Id">Generuj tokeny</a>
                     <button class="button button--ghost" title="Plik JSON do script.bloodontheclocktower.com" @onclick="() => ExportAsync(script)">Eksport do Script Tool</button>
@@ -112,9 +113,9 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        _isLocal = await Local.IsLocalAsync(Id);
-        _hasOriginal = (await Client.GetOriginalAsync()).FindScript(Id) is not null;
-        _data = await Client.GetAsync();
+        _data = await Client.GetAsync(); // first: drops saved-but-unchanged scripts before the badge is decided
+        _isLocal = await (await Changes.GetCurrentAsync()).Scripts.IsLocalAsync(Id);
+        _hasOriginal = (await Client.GetBaseAsync()).FindScript(Id) is not null;
     }
 
     [Inject]
@@ -128,7 +129,7 @@
 
     private async Task RemoveLocalAsync()
     {
-        await Local.RemoveAsync(Id);
+        await (await Changes.GetCurrentAsync()).Scripts.RemoveAsync(Id);
 
         // Reload the page so the original (or the script list) is shown.
         Nav.NavigateTo(_hasOriginal ? $"scripts/{Id}" : "scripts", forceLoad: true);

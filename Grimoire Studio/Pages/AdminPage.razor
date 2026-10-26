@@ -1,0 +1,273 @@
+@page "/admin"
+@inject GameDataClient Client
+@inject ChangeSets ChangeSets
+@inject Proposals Proposals
+@implements IDisposable
+
+<PageTitle>Panel administratora – Grimoire Studio</PageTitle>
+
+<h1>Panel administratora</h1>
+
+@if (!_loaded)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else if (!ChangeSets.IsAdmin)
+{
+    <section class="panel">
+        <p>
+            Panel służy do zatwierdzania zgłoszonych zmian i do bezpośredniej edycji wiki. Na razie wszystko działa tylko
+            w tej przeglądarce: wiki to warstwa zmian zapisana lokalnie, a zgłoszenia trafiają do kolejki w tej samej
+            przeglądarce lub z plików. Docelowo zatwierdzone zmiany będą trafiać do repozytorium na GitHubie.
+        </p>
+        <button class="button" @onclick="() => ChangeSets.SetAdminAsync(true)">Włącz tryb administratora</button>
+    </section>
+}
+else if (_data is null || _wiki is null || _original is null || _wikiChanges is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else
+{
+    <section class="panel form">
+        <h2>Edycja wiki</h2>
+        <label class="field field--inline">
+            <input type="checkbox" checked="@ChangeSets.EditingWiki" @onchange="e => SetEditingWikiAsync(e.Value is true)" />
+            <span>Edytuję wiki bezpośrednio: edytory ról, skryptów, drużyn i jinxów zapisują do wiki zamiast do „Moich zmian”</span>
+        </label>
+        <div class="field-row">
+            <button class="button button--ghost" @onclick="() => ChangeSets.SetAdminAsync(false)">Wyłącz tryb administratora</button>
+        </div>
+    </section>
+
+    @if (_message is not null)
+    {
+        <p class="notice @(_messageIsError ? "notice--error" : null)">@_message</p>
+    }
+
+    <div class="title-row">
+        <h2>Zgłoszenia do zatwierdzenia (@_pending.Count)</h2>
+        <label class="button button--ghost button--file" title="Plik z eksportu „Moich zmian” od innej osoby">
+            Dodaj zgłoszenie z pliku…
+            <InputFile accept=".json,application/json" OnChange="ImportProposalAsync" />
+        </label>
+    </div>
+    @if (_pending.Count == 0)
+    {
+        <p class="muted">Brak zgłoszeń. Zgłoszenia przychodzą ze strony „Moje zmiany” albo z plików eksportu.</p>
+    }
+    @foreach (var proposal in _pending)
+    {
+        var selected = _selection[proposal.Id];
+        <section class="panel">
+            <div class="form-list__head">
+                <h3>@proposal.Author <span class="muted small">@proposal.CreatedAt.ToLocalTime().ToString("g")</span></h3>
+                <div class="script-actions">
+                    <button class="button" disabled="@(selected.Count == 0)" @onclick="() => ApproveAsync(proposal)">
+                        Zatwierdź @(selected.Count == proposal.Changes.Count ? "wszystko" : $"zaznaczone ({selected.Count})")
+                    </button>
+                    <button class="button button--ghost" @onclick="() => RejectAsync(proposal)">Odrzuć</button>
+                </div>
+            </div>
+            @if (proposal.Comment.Length > 0)
+            {
+                <p>@proposal.Comment</p>
+            }
+            <p class="muted small">Porównanie z obecną wiki. Odznacz pozycje, których nie chcesz przyjąć.</p>
+            <ChangeSetView Changes="proposal.Changes" Base="_wiki" Data="_data" Selected="selected" SelectedChanged="() => { }" DetailsOpen="true" />
+        </section>
+    }
+
+    <div class="title-row">
+        <h2>Zmiany w wiki (@_wikiChanges.Count)</h2>
+        <div class="script-actions">
+            <button class="button button--ghost" disabled="@(_wikiChanges.Count == 0)" @onclick="ExportWikiAsync">Eksportuj do pliku</button>
+            <label class="button button--ghost button--file">
+                Importuj do wiki…
+                <InputFile accept=".json,application/json" OnChange="ImportWikiAsync" />
+            </label>
+        </div>
+    </div>
+    <p class="muted small">
+        Różnice wiki względem danych strony (folderu danych). Na razie zapisane tylko w tej przeglądarce; plik eksportu to
+        kopia zapasowa, a później posłuży do przeniesienia zmian na GitHuba.
+    </p>
+    <ChangeSetView Changes="_wikiChanges" Base="_original" Data="_data" OnRemove="RemoveWikiAsync" ShowJinxText="true">
+        <p class="muted">Wiki nie różni się od danych strony.</p>
+    </ChangeSetView>
+
+    @if (_decided.Count > 0)
+    {
+        <h2>Historia zgłoszeń</h2>
+        <ul class="change-list">
+            @foreach (var proposal in _decided)
+            {
+                <li>
+                    <span class="change-list__what">
+                        @proposal.Author · @proposal.CreatedAt.ToLocalTime().ToString("g") · @ProposalText.Changes(proposal.Changes.Count)
+                        <span class="local-badge">@ProposalText.Status(proposal)</span>
+                        @if (proposal.Comment.Length > 0)
+                        {
+                            <span class="change-list__fields">@proposal.Comment</span>
+                        }
+                    </span>
+                    <button class="button button--ghost" @onclick="() => DeleteProposalAsync(proposal)">Usuń z historii</button>
+                    <ProposalDetails Proposal="proposal" Base="_original" Data="_data" />
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private const long MaxImportBytes = 50 * 1024 * 1024;
+
+    [Inject]
+    private LocalStore Store { get; set; } = default!;
+
+    private bool _loaded;
+    private GameData? _data;
+    private GameData? _wiki;
+    private GameData? _original;
+    private LocalBackup? _wikiChanges;
+    private List<Proposal> _pending = [];
+    private List<Proposal> _decided = [];
+    private readonly Dictionary<string, HashSet<string>> _selection = [];
+    private string? _message;
+    private bool _messageIsError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChangeSets.LoadAsync();
+        ChangeSets.Changed += OnChangeSetsChanged;
+        _loaded = true;
+        await ReloadAsync();
+    }
+
+    private async void OnChangeSetsChanged()
+    {
+        await ReloadAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ReloadAsync()
+    {
+        if (!ChangeSets.IsAdmin)
+        {
+            return;
+        }
+
+        _original = await Client.GetOriginalAsync();
+        _wiki = await Client.GetWikiAsync();
+        _data = await Client.GetAsync();
+        _wikiChanges = await ChangeSets.Wiki.GetAllAsync();
+
+        var proposals = await Proposals.GetAllAsync();
+        _pending = proposals.Where(p => p.Status == ProposalStatus.Pending).OrderBy(p => p.CreatedAt).ToList();
+        _decided = proposals.Where(p => p.Status != ProposalStatus.Pending).OrderByDescending(p => p.DecidedAt).ToList();
+
+        // New proposals start with everything selected; the admin unticks what to leave out.
+        foreach (var proposal in _pending.Where(p => !_selection.ContainsKey(p.Id)))
+        {
+            _selection[proposal.Id] = proposal.Changes.Keys().ToHashSet();
+        }
+    }
+
+    private async Task SetEditingWikiAsync(bool on)
+    {
+        await ChangeSets.SetEditingWikiAsync(on);
+        Show(on
+            ? "Edytujesz wiki: zapisy w edytorach trafiają prosto do wiki."
+            : "Edytory znowu zapisują do „Moich zmian”.");
+    }
+
+    private async Task ApproveAsync(Proposal proposal)
+    {
+        var accepted = proposal.Changes.Only(_selection[proposal.Id]);
+        if (!await ChangeSets.Wiki.MergeAsync(accepted))
+        {
+            Show("Przeglądarka nie pozwoliła zapisać wiki (tryb prywatny lub brak miejsca).", error: true);
+            return;
+        }
+
+        await DecideAsync(proposal with { ApprovedKeys = accepted.Keys().ToList() }, ProposalStatus.Approved, accepted.Count);
+        Show($"Zatwierdzono {accepted.Count} z {proposal.Changes.Count} od: {proposal.Author}.");
+    }
+
+    private async Task RejectAsync(Proposal proposal)
+    {
+        await DecideAsync(proposal, ProposalStatus.Rejected, 0);
+        Show($"Odrzucono zgłoszenie od: {proposal.Author}.");
+    }
+
+    private async Task DecideAsync(Proposal proposal, ProposalStatus status, int approved)
+    {
+        await Proposals.SaveAsync(proposal with { Status = status, DecidedAt = DateTimeOffset.Now, ApprovedCount = approved });
+        _selection.Remove(proposal.Id);
+        await ReloadAsync();
+    }
+
+    private async Task DeleteProposalAsync(Proposal proposal)
+    {
+        await Proposals.RemoveAsync(proposal.Id);
+        await ReloadAsync();
+    }
+
+    /// <summary>A "my changes" export from someone else becomes a pending proposal signed with the file name.</summary>
+    private async Task ImportProposalAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var reader = new StreamReader(e.File.OpenReadStream(MaxImportBytes));
+            var changes = LocalChanges.Parse(await reader.ReadToEndAsync());
+            await Proposals.SaveAsync(new Proposal
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Author = Path.GetFileNameWithoutExtension(e.File.Name),
+                Comment = "Zgłoszenie z pliku",
+                CreatedAt = changes.ExportedAt == default ? DateTimeOffset.Now : changes.ExportedAt,
+                Changes = changes,
+            });
+            Show($"Dodano zgłoszenie z pliku {e.File.Name} ({ProposalText.Changes(changes.Count)}).");
+        }
+        catch (Exception ex) when (ex is FormatException or IOException)
+        {
+            Show(ex.Message, error: true);
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task RemoveWikiAsync(string key)
+    {
+        await ChangeSets.Wiki.RemoveAsync(key);
+        await ReloadAsync();
+    }
+
+    private async Task ExportWikiAsync() =>
+        await Store.DownloadAsync($"grimoire-studio-wiki-{DateTime.Now:yyyy-MM-dd}.json", await ChangeSets.Wiki.ExportAsync());
+
+    private async Task ImportWikiAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var reader = new StreamReader(e.File.OpenReadStream(MaxImportBytes));
+            var count = await ChangeSets.Wiki.ImportAsync(await reader.ReadToEndAsync(), replace: false);
+            Show($"Dodano do wiki: {ProposalText.Changes(count)} z pliku {e.File.Name}.");
+        }
+        catch (Exception ex) when (ex is FormatException or IOException)
+        {
+            Show(ex.Message, error: true);
+        }
+
+        await ReloadAsync();
+    }
+
+    private void Show(string message, bool error = false)
+    {
+        _message = message;
+        _messageIsError = error;
+    }
+
+    public void Dispose() => ChangeSets.Changed -= OnChangeSetsChanged;
+}

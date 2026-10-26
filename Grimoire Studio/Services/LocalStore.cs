@@ -31,6 +31,11 @@ public sealed class LocalStore(IJSRuntime js)
         return json;
     }
 
+    /// <summary>Small per-browser setting (localStorage).</summary>
+    public async Task<string?> GetSettingAsync(string key) => await (await Module).InvokeAsync<string?>("getItem", key);
+
+    public async Task SetSettingAsync(string key, string value) => await (await Module).InvokeAsync<bool>("setItem", key, value);
+
     public async Task<string> ResizeImageAsync(string dataUrl, int maxSize) =>
         await (await Module).InvokeAsync<string>("resizeImage", dataUrl, maxSize);
 

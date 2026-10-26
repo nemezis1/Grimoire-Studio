@@ -1,7 +1,7 @@
 @page "/scripts/new"
 @page "/scripts/{Id}/edit"
 @inject GameDataClient Client
-@inject LocalScripts Local
+@inject ChangeSets Changes
 @inject NavigationManager Nav
 
 <PageTitle>@(IsNew ? "Nowy skrypt" : $"Edycja: {_name}") – Grimoire Studio</PageTitle>
@@ -40,6 +40,22 @@ else
                 }
             }
 
+            <span class="field-label">Obrazek</span>
+            <div class="script-image">
+                <img class="script-image__preview" src="@(_image ?? GameDataClient.EditionIconUrl(_iconName))" alt="" />
+                <div>
+                    <div class="field-row">
+                        <label class="button button--ghost button--file" title="Zmniejszany do @MaxImageSize px; widoczny na liście skryptów, stronie skryptu i wydruku">
+                            Wczytaj obrazek…
+                            <InputFile accept="image/png,image/jpeg,image/webp" OnChange="UploadImageAsync" />
+                        </label>
+                        @if (_image is not null)
+                        {
+                            <button class="button button--ghost" @onclick="() => _image = null">Usuń własny</button>
+                        }
+                    </div>
+                </div>
+            </div>
             <div class="filters">
                 <input class="filters__search" type="search" placeholder="Szukaj roli lub zdolności…" @bind="_query" @bind:event="oninput" />
                 <details class="multi-select">
@@ -96,28 +112,32 @@ else
                     .Where(x => x.Count > 0)
                     .Select(x => $"{x.Count} {Teams.Plural(x.Team).ToLowerInvariant()}"))
             </p>
-            @foreach (var group in selected.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
-            {
-                <h3 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key)</h3>
-                <ul class="selected-roles">
-                    @foreach (var role in group)
-                    {
-                        <li>
-                            <RoleIcon Role="role" Size="sm" />
-                            <span>@role.NamePl</span>
-                            <button title="Usuń ze skryptu" @onclick="() => Toggle(role.Id)">✕</button>
-                        </li>
-                    }
-                </ul>
-            }
+            <div class="script-editor__selected">
+                @foreach (var group in selected.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
+                {
+                    <h3 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key)</h3>
+                    <ul class="selected-roles">
+                        @foreach (var role in group)
+                        {
+                            <li>
+                                <RoleIcon Role="role" Size="sm" />
+                                <span>@role.NamePl</span>
+                                <button title="Usuń ze skryptu" @onclick="() => Toggle(role.Id)">✕</button>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
 
-            @if (_error is not null)
-            {
-                <p class="notice notice--error">@_error</p>
-            }
-            <div class="field-row">
-                <button class="button" @onclick="SaveAsync">Zapisz</button>
-                <a class="button button--ghost" href="@(IsNew ? "scripts" : $"scripts/{Id}")">Anuluj</a>
+            <div class="script-editor__actions">
+                @if (_error is not null)
+                {
+                    <p class="notice notice--error">@_error</p>
+                }
+                <div class="field-row">
+                    <button class="button" @onclick="SaveAsync">Zapisz</button>
+                    <a class="button button--ghost" href="@(IsNew ? "scripts" : $"scripts/{Id}")">Anuluj</a>
+                </div>
             </div>
         </aside>
     </div>
@@ -168,13 +188,52 @@ else
 
     private string EffectiveId => (_id ?? NewId()).Trim();
 
+    private const int MaxImageSize = 512;
+    private const long MaxUploadBytes = 10 * 1024 * 1024;
+
+    /// <summary>Script to copy into a new one, e.g. /scripts/new?from=tb (the "Duplikuj" button).</summary>
+    [SupplyParameterFromQuery(Name = "from")]
+    public string? From { get; set; }
+
+    [Inject]
+    private LocalStore Store { get; set; } = default!;
+
+    private string _iconName = "custom";
+
+    /// <summary>Uploaded picture (data URL); null shows the edition icon <see cref="_iconName"/>.</summary>
+    private string? _image;
+
     protected override async Task OnParametersSetAsync()
     {
         _data = await Client.GetAsync();
         _existing = Id is null ? null : _data.FindScript(Id);
         _notFound = Id is not null && _existing is null;
-        _name = _existing?.Name ?? string.Empty;
-        _selected = _existing?.Roles.ToList() ?? [];
+
+        var source = _existing ?? (IsNew && From is not null ? _data.FindScript(From) : null);
+        _name = _existing?.Name ?? (source is null ? string.Empty : $"{source.Name} (kopia)");
+        _selected = source?.Roles.ToList() ?? [];
+        _iconName = source?.IconName ?? "custom";
+        _image = source?.Image;
+    }
+
+    private async Task UploadImageAsync(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        try
+        {
+            using var stream = e.File.OpenReadStream(MaxUploadBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            _image = await Store.ResizeImageAsync($"data:{e.File.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}", MaxImageSize);
+        }
+        catch (IOException)
+        {
+            _error = $"Plik jest za duży (maksymalnie {MaxUploadBytes / 1024 / 1024} MB).";
+        }
+        catch (JSException)
+        {
+            _error = "Nie można odczytać obrazka.";
+        }
     }
 
     private void Toggle(string roleId)
@@ -248,11 +307,18 @@ else
             .Select(r => r.Id)
             .ToList();
 
-        var script = _existing is null
-            ? new Script { Id = EffectiveId, Name = _name.Trim(), Roles = roles, CustomIcon = "custom" }
-            : _existing with { Name = _name.Trim(), Roles = roles };
+        var id = _existing?.Id ?? EffectiveId;
+        var script = (_existing ?? new Script { Id = id, Name = string.Empty }) with
+        {
+            Name = _name.Trim(),
+            Roles = roles,
 
-        if (!await Local.SaveAsync(script))
+            // An edition icon named like the script (tb for tb) needs no override.
+            CustomIcon = _iconName == id ? string.Empty : _iconName,
+            Image = _image,
+        };
+
+        if (!await (await Changes.GetCurrentAsync()).Scripts.SaveAsync(script))
         {
             _error = "Przeglądarka nie pozwoliła zapisać skryptu (tryb prywatny lub brak miejsca).";
             return;

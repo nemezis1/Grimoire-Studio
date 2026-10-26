@@ -1,7 +1,7 @@
 @page "/roles/new"
 @page "/roles/{Id}/edit"
 @inject GameDataClient Client
-@inject LocalRoles Local
+@inject ChangeSets Changes
 @inject NavigationManager Nav
 
 <PageTitle>@(IsNew ? "Nowa rola" : $"Edycja: {_namePl}") – Grimoire Studio</PageTitle>
@@ -219,7 +219,7 @@ else
 
     private string EffectiveId => (_id ?? NewId()).Trim();
 
-    private string IconPreview => _iconUrl ?? (IsNew ? "Assets/token.png" : Local.IconUrl(Id!));
+    private string IconPreview => _iconUrl ?? (IsNew ? "Assets/token.png" : Changes.IconUrl(Id!));
 
     protected override async Task OnParametersSetAsync()
     {
@@ -247,7 +247,7 @@ else
         _globalRemindersPl = string.Join('\n', role.RemindersGlobalPl);
         _remindersEn = string.Join('\n', role.RemindersEn);
         _globalRemindersEn = string.Join('\n', role.RemindersGlobalEn);
-        _iconUrl = (await Local.FindAsync(role.Id))?.IconUrl;
+        _iconUrl = (await (await Changes.GetCurrentAsync()).Roles.FindAsync(role.Id))?.IconUrl;
     }
 
     private IEnumerable<(Role Role, int Order)> Waking(bool firstNight) =>
@@ -308,7 +308,7 @@ else
             using var stream = e.File.OpenReadStream(MaxIconBytes);
             using var memory = new MemoryStream();
             await stream.CopyToAsync(memory);
-            _iconUrl = await Local.ShrinkIconAsync($"data:{e.File.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}");
+            _iconUrl = await (await Changes.GetCurrentAsync()).Roles.ShrinkIconAsync($"data:{e.File.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}");
         }
         catch (IOException)
         {
@@ -420,7 +420,7 @@ else
             RemindersGlobalEn = English(Lines(_globalRemindersEn), globalPl),
         };
 
-        if (!await Local.SaveAsync(new LocalRole(role, _iconUrl)))
+        if (!await (await Changes.GetCurrentAsync()).Roles.SaveAsync(new LocalRole(role, _iconUrl)))
         {
             _error = "Przeglądarka nie pozwoliła zapisać roli (tryb prywatny lub brak miejsca).";
             return;

@@ -3,34 +3,40 @@ using GrimoireStudio.Data;
 
 namespace Grimoire_Studio.Services;
 
-/// <summary>All changes saved in this browser, with export to and import from a file.</summary>
-public sealed class LocalChanges(LocalRoles roles, LocalScripts scripts, LocalTeams teams, LocalJinxes jinxes)
+/// <summary>
+/// One set of changes over the data folder kept in this browser (see <see cref="ChangeSets"/>): roles, scripts, teams
+/// and jinxes, with export to and import from a file.
+/// </summary>
+public sealed class LocalChanges(LocalStore store, string prefix)
 {
     private static readonly JsonSerializerOptions FileOptions = new(GameData.JsonOptions) { WriteIndented = true };
 
-    public LocalRoles Roles => roles;
-    public LocalScripts Scripts => scripts;
-    public LocalTeams Teams => teams;
-    public LocalJinxes Jinxes => jinxes;
+    public LocalRoles Roles { get; } = new(store, prefix);
+    public LocalScripts Scripts { get; } = new(store, prefix);
+    public LocalTeams Teams { get; } = new(store, prefix);
+    public LocalJinxes Jinxes { get; } = new(store, prefix);
 
     public async Task<LocalBackup> GetAllAsync() => new()
     {
         ExportedAt = DateTimeOffset.Now,
-        Roles = await roles.GetAllAsync(),
-        Scripts = await scripts.GetAllAsync(),
-        Teams = await teams.GetAllAsync(),
-        Jinxes = await jinxes.GetAllAsync(),
+        Roles = await Roles.GetAllAsync(),
+        Scripts = await Scripts.GetAllAsync(),
+        Teams = await Teams.GetAllAsync(),
+        Jinxes = await Jinxes.GetAllAsync(),
     };
+
+    /// <summary>Data with this change set applied on top of <paramref name="data"/>.</summary>
+    public async Task<GameData> ApplyToAsync(GameData data) =>
+        data
+            .WithTeams(await Teams.GetAllAsync())
+            .WithRoles((await Roles.GetAllAsync()).Select(r => r.Role))
+            .WithScripts(await Scripts.GetAllAsync())
+            .WithJinxes(await Jinxes.GetAllAsync());
 
     public async Task<string> ExportAsync() => JsonSerializer.Serialize(await GetAllAsync(), FileOptions);
 
-    /// <summary>
-    /// Reads an export. With <paramref name="replace"/> everything local is replaced, otherwise items from the file
-    /// replace local items with the same id and the rest stays.
-    /// </summary>
-    /// <returns>Number of imported items.</returns>
-    /// <exception cref="FormatException">The file is not an export of local changes.</exception>
-    public async Task<int> ImportAsync(string json, bool replace)
+    /// <exception cref="FormatException">The text is not an export of local changes.</exception>
+    public static LocalBackup Parse(string json)
     {
         LocalBackup? backup;
         try
@@ -42,25 +48,99 @@ public sealed class LocalChanges(LocalRoles roles, LocalScripts scripts, LocalTe
             throw new FormatException($"Niepoprawny JSON: {e.Message}");
         }
 
-        if (backup is null || backup.Format != LocalBackup.FormatName)
-        {
-            throw new FormatException("To nie jest plik z eksportu lokalnych zmian Grimoire Studio.");
-        }
+        return backup is not null && backup.Format == LocalBackup.FormatName
+            ? backup
+            : throw new FormatException("To nie jest plik z eksportu zmian Grimoire Studio.");
+    }
 
+    /// <summary>
+    /// Reads an export. With <paramref name="replace"/> the whole change set is replaced, otherwise items from the file
+    /// replace items with the same id and the rest stays.
+    /// </summary>
+    /// <returns>Number of imported items.</returns>
+    /// <exception cref="FormatException">The file is not an export of local changes, or saving failed.</exception>
+    public async Task<int> ImportAsync(string json, bool replace)
+    {
+        var backup = Parse(json);
+        return await MergeAsync(backup, replace)
+            ? backup.Count
+            : throw new FormatException("Przeglądarka nie pozwoliła zapisać zmian (tryb prywatny lub brak miejsca).");
+    }
+
+    /// <summary>Adds <paramref name="changes"/> to this set; an item replaces the item with the same id.</summary>
+    /// <returns>false when the browser refused to store.</returns>
+    public async Task<bool> MergeAsync(LocalBackup changes, bool replace = false)
+    {
         var current = replace ? new LocalBackup() : await GetAllAsync();
-        var saved = await roles.ReplaceAllAsync(Merge(current.Roles, backup.Roles, r => r.Role.Id))
-            & await scripts.ReplaceAllAsync(Merge(current.Scripts, backup.Scripts, s => s.Id))
-            & await teams.ReplaceAllAsync(Merge(current.Teams, backup.Teams, t => t.Id))
-            & await jinxes.ReplaceAllAsync(Merge(current.Jinxes, backup.Jinxes, j => j.Key));
+        return await Roles.ReplaceAllAsync(Merge(current.Roles, changes.Roles, r => r.Role.Id))
+            & await Scripts.ReplaceAllAsync(Merge(current.Scripts, changes.Scripts, s => s.Id))
+            & await Teams.ReplaceAllAsync(Merge(current.Teams, changes.Teams, t => t.Id))
+            & await Jinxes.ReplaceAllAsync(Merge(current.Jinxes, changes.Jinxes, j => j.Key));
+    }
 
-        return saved ? backup.Count : throw new FormatException("Przeglądarka nie pozwoliła zapisać zmian (tryb prywatny lub brak miejsca).");
+    /// <summary>Removes one item by its <see cref="LocalBackup.Keys"/> key: a new item disappears, a changed one is restored.</summary>
+    public Task<bool> RemoveAsync(string key)
+    {
+        var (kind, id) = (key[..key.IndexOf(':')], key[(key.IndexOf(':') + 1)..]);
+        return kind switch
+        {
+            "role" => Roles.RemoveAsync(id),
+            "script" => Scripts.RemoveAsync(id),
+            "team" => Teams.RemoveAsync(id),
+            "jinx" => Jinxes.RemoveAsync(id),
+            _ => Task.FromResult(false),
+        };
+    }
+
+    /// <summary>
+    /// Drops items that no longer differ from <paramref name="baseData"/> (saved without changes, or the same change is
+    /// already in the base), so lists of changes show only real differences.
+    /// </summary>
+    public async Task PruneAsync(GameData baseData)
+    {
+        var all = await GetAllAsync();
+        var stale = all.Roles
+            .Where(r => r.IconUrl is null && baseData.FindRole(r.Role.Id) is { } b && Same(b, r.Role))
+            .Select(r => LocalBackup.RoleKey(r.Role.Id))
+            .Concat(all.Scripts
+                .Where(s => baseData.FindScript(s.Id) is { } b && Same(b, s))
+                .Select(s => LocalBackup.ScriptKey(s.Id)))
+            .Concat(all.Teams
+                .Where(t => baseData.FindTeam(t.Id) is { } b && Same(b, t))
+                .Select(t => LocalBackup.TeamKey(t.Id)))
+            .Concat(all.Jinxes
+                .Where(j => IsUnchanged(baseData, j))
+                .Select(LocalBackup.JinxKey))
+            .ToList();
+
+        foreach (var key in stale)
+        {
+            await RemoveAsync(key);
+        }
+    }
+
+    private static bool Same<T>(T a, T b) =>
+        JsonSerializer.Serialize(a, GameData.JsonOptions) == JsonSerializer.Serialize(b, GameData.JsonOptions);
+
+    private static bool IsUnchanged(GameData baseData, JinxOverride change)
+    {
+        var existing = baseData.Jinxes
+            .Where(o => string.Equals(o.Id, change.OwnerId, StringComparison.OrdinalIgnoreCase))
+            .SelectMany(o => o.Jinxes)
+            .FirstOrDefault(j => string.Equals(j.Id, change.Jinx.Id, StringComparison.OrdinalIgnoreCase));
+
+        return change.Removed
+            ? existing is null
+            : existing is not null
+                && existing.ReasonPl.Trim() == change.Jinx.ReasonPl.Trim()
+                && existing.ReasonEn.Trim() == change.Jinx.ReasonEn.Trim();
     }
 
     public async Task<bool> ClearAsync() =>
-        await roles.ReplaceAllAsync([])
-            & await scripts.ReplaceAllAsync([])
-            & await teams.ReplaceAllAsync([])
-            & await jinxes.ReplaceAllAsync([]);
+        await Roles.ReplaceAllAsync([])
+            & await Scripts.ReplaceAllAsync([])
+            & await Teams.ReplaceAllAsync([])
+            & await Jinxes.ReplaceAllAsync([]);
 
     private static List<T> Merge<T>(IEnumerable<T> current, IEnumerable<T> incoming, Func<T, string> id)
     {

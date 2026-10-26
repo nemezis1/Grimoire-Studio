@@ -1,4 +1,6 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject ChangeSets ChangeSets
+@implements IDisposable
 
 <header class="site-header">
     <div class="site-header__inner">
@@ -9,9 +11,21 @@
             <NavLink href="generator">Generator</NavLink>
             <NavLink href="teams">Drużyny</NavLink>
             <NavLink href="changes">Moje zmiany</NavLink>
+            @if (ChangeSets.IsAdmin)
+            {
+                <NavLink href="admin">Admin</NavLink>
+            }
         </nav>
     </div>
 </header>
+
+@if (ChangeSets.EditingWiki)
+{
+    <div class="wiki-banner">
+        Edytujesz wiki bezpośrednio: zapisy w edytorach trafiają do wiki, nie do „Moich zmian”.
+        <a href="admin">Zmień w panelu administratora</a>
+    </div>
+}
 
 <main class="site-main">
     <div class="page">
@@ -22,3 +36,15 @@
 <footer class="site-footer">
     Projekt fanowski, niezwiązany z The Pandemonium Institute. Blood on the Clocktower jest znakiem towarowym The Pandemonium Institute.
 </footer>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeSets.Changed += OnChanged;
+        await ChangeSets.LoadAsync();
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => ChangeSets.Changed -= OnChanged;
+}

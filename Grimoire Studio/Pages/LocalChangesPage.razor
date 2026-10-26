@@ -1,13 +1,14 @@
 @page "/changes"
 @inject GameDataClient Client
-@inject LocalChanges Local
+@inject ChangeSets ChangeSets
+@inject Proposals Proposals
 
 <PageTitle>Moje zmiany – Grimoire Studio</PageTitle>
 
 <div class="title-row">
     <h1>Moje zmiany</h1>
     <div class="script-actions">
-        <button class="button" disabled="@(_changes?.Count is null or 0)" @onclick="ExportAsync">Eksportuj do pliku</button>
+        <button class="button button--ghost" disabled="@(_changes?.Count is null or 0)" @onclick="ExportAsync">Eksportuj do pliku</button>
         <label class="button button--ghost button--file">
             Importuj z pliku…
             <InputFile accept=".json,application/json" OnChange="ImportAsync" />
@@ -19,8 +20,9 @@
     </div>
 </div>
 <p class="muted">
-    Role, skrypty, drużyny i jinxy zmienione w tej przeglądarce. Eksport zapisuje je do pliku: to kopia zapasowa i sposób
-    na przeniesienie zmian do innej przeglądarki lub na inny komputer.
+    Role, skrypty, drużyny i jinxy zmienione w tej przeglądarce, widoczne tylko dla Ciebie. Możesz je zgłosić do wiki:
+    po zatwierdzeniu przez administratora staną się częścią wiki. Eksport zapisuje je do pliku: to kopia zapasowa i sposób
+    na przeniesienie zmian do innej przeglądarki.
 </p>
 <div class="field-row">
     <label class="field field--inline">
@@ -34,101 +36,62 @@
     <p class="notice @(_messageIsError ? "notice--error" : null)">@_message</p>
 }
 
-@if (_data is null || _changes is null)
+@if (_data is null || _base is null || _changes is null)
 {
     <p class="notice">Wczytywanie…</p>
 }
-else if (_changes.Count == 0)
-{
-    <p>Nie ma lokalnych zmian. Rolę, skrypt lub drużynę zmienisz przyciskiem „Edytuj” na ich stronie.</p>
-}
 else
 {
-    @if (_changes.Roles.Count > 0)
+    @if (_changes.Count > 0)
     {
-        <h2>Role (@_changes.Roles.Count)</h2>
-        <ul class="change-list">
-            @foreach (var local in _changes.Roles.OrderBy(r => r.Role.NamePl, StringComparer.CurrentCulture))
-            {
-                var original = _original!.FindRole(local.Role.Id);
-                <li style="@Teams.Style(local.Role.Team)">
-                    <span class="change-list__what">
-                        <RoleLink Role="local.Role" />
-                        <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
-                        @if (original is not null)
-                        {
-                            <span class="change-list__fields">@Fields(LocalDiff.Role(original, local))</span>
-                        }
-                    </span>
-                    <a class="button button--ghost" href="roles/@local.Role.Id/edit">Edytuj</a>
-                    <button class="button button--ghost" @onclick="() => RemoveAsync(Local.Roles, local.Role.Id)">@(original is null ? "Usuń" : "Przywróć oryginał")</button>
-                </li>
-            }
-        </ul>
+        <section class="panel form">
+            <h2>Zgłoś do wiki</h2>
+            <div class="field-row">
+                <label class="field">
+                    <span>Podpis</span>
+                    <input type="text" @bind="_author" @bind:event="oninput" placeholder="np. nick z Discorda" />
+                </label>
+                <label class="field">
+                    <span>Komentarz dla administratora</span>
+                    <input type="text" @bind="_comment" @bind:event="oninput" placeholder="co i dlaczego" />
+                </label>
+            </div>
+            <div class="field-row">
+                <label class="field field--inline">
+                    <input type="checkbox" @bind="_clearAfterSubmit" />
+                    <span>Po zgłoszeniu usuń zgłoszone zmiany z moich (zobaczysz je w wiki po zatwierdzeniu)</span>
+                </label>
+            </div>
+            <div class="field-row">
+                <span class="muted small">Zgłoszone zostaną zmiany zaznaczone na liście poniżej.</span>
+                <button class="button button--ghost" @onclick="() => _selected.UnionWith(_changes.Keys())">Zaznacz wszystkie</button>
+                <button class="button button--ghost" @onclick="() => _selected.Clear()">Odznacz wszystkie</button>
+                <button class="button" disabled="@(string.IsNullOrWhiteSpace(_author) || _selected.Count == 0)" @onclick="SubmitAsync">Zgłoś do wiki (@ProposalText.Changes(_selected.Count))</button>
+            </div>
+        </section>
     }
 
-    @if (_changes.Scripts.Count > 0)
+    <ChangeSetView Changes="_changes" Base="_base" Data="_data" EditLinks="true" OnRemove="RemoveAsync"
+                   Selected="_changes.Count > 0 ? _selected : null" SelectedChanged="() => { }">
+        <p>Nie ma lokalnych zmian. Rolę, skrypt lub drużynę zmienisz przyciskiem „Edytuj” na ich stronie.</p>
+    </ChangeSetView>
+
+    @if (_mine.Count > 0)
     {
-        <h2>Skrypty (@_changes.Scripts.Count)</h2>
+        <h2>Moje zgłoszenia</h2>
         <ul class="change-list">
-            @foreach (var local in _changes.Scripts.OrderBy(s => s.Name, StringComparer.CurrentCulture))
+            @foreach (var proposal in _mine)
             {
-                var original = _original!.FindScript(local.Id);
                 <li>
                     <span class="change-list__what">
-                        <a href="scripts/@local.Id">@local.Name</a>
-                        <span class="local-badge">@(original is null ? "nowy" : "zmieniony")</span>
-                        <span class="change-list__fields">@(original is null ? $"{local.Roles.Count} ról" : Fields(LocalDiff.Script(original, local)))</span>
-                    </span>
-                    <a class="button button--ghost" href="scripts/@local.Id/edit">Edytuj</a>
-                    <button class="button button--ghost" @onclick="() => RemoveAsync(Local.Scripts, local.Id)">@(original is null ? "Usuń" : "Przywróć oryginał")</button>
-                </li>
-            }
-        </ul>
-    }
-
-    @if (_changes.Teams.Count > 0)
-    {
-        <h2>Drużyny (@_changes.Teams.Count)</h2>
-        <ul class="change-list">
-            @foreach (var local in _changes.Teams.OrderBy(t => t.Order))
-            {
-                var original = _original!.FindTeam(local.Id);
-                var used = _data.AllRoles.Any(r => r.Team == local.Id);
-                <li style="--team: @local.Color">
-                    <span class="change-list__what">
-                        <a href="teams">@local.PluralPl</a>
-                        <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
-                        @if (original is not null)
+                        @proposal.CreatedAt.ToLocalTime().ToString("g") · @ProposalText.Changes(proposal.Changes.Count)
+                        <span class="local-badge">@ProposalText.Status(proposal)</span>
+                        @if (proposal.Comment.Length > 0)
                         {
-                            <span class="change-list__fields">@Fields(LocalDiff.Team(original, local))</span>
+                            <span class="change-list__fields">@proposal.Comment</span>
                         }
                     </span>
-                    <button class="button button--ghost" disabled="@(original is null && used)"
-                            title="@(original is null && used ? "Najpierw przenieś role do innej drużyny." : null)"
-                            @onclick="() => RemoveAsync(Local.Teams, local.Id)">@(original is null ? "Usuń" : "Przywróć oryginał")</button>
-                </li>
-            }
-        </ul>
-    }
-
-    @if (_changes.Jinxes.Count > 0)
-    {
-        <h2>Jinxy (@_changes.Jinxes.Count)</h2>
-        <ul class="change-list">
-            @foreach (var local in _changes.Jinxes)
-            {
-                var owner = _data.FindRole(local.OwnerId);
-                var other = _data.FindRole(local.Jinx.Id);
-                var isNew = !_original!.Jinxes.Any(o => string.Equals(o.Id, local.OwnerId, StringComparison.OrdinalIgnoreCase)
-                    && o.Jinxes.Any(j => string.Equals(j.Id, local.Jinx.Id, StringComparison.OrdinalIgnoreCase)));
-                <li>
-                    <span class="change-list__what">
-                        @(owner?.NamePl ?? local.OwnerId) + @(other?.NamePl ?? local.Jinx.Id)
-                        <span class="local-badge">@(local.Removed ? "usunięty" : isNew ? "nowy" : "zmieniony")</span>
-                    </span>
-                    <a class="button button--ghost" href="roles/@local.OwnerId/jinxes">Edytuj</a>
-                    <button class="button button--ghost" @onclick="() => RemoveAsync(Local.Jinxes, local.Key)">@(isNew ? "Usuń" : "Przywróć oryginał")</button>
+                    <ProposalDetails Proposal="proposal" Base="@(proposal.Status == ProposalStatus.Pending ? _base : _original!)" Data="_data" />
                 </li>
             }
         </ul>
@@ -137,39 +100,93 @@ else
 
 @code {
     private const long MaxImportBytes = 50 * 1024 * 1024;
+    private const string AuthorKey = "grimoire-studio.author";
 
     [Inject]
     private LocalStore Store { get; set; } = default!;
 
+    private LocalChanges Personal => ChangeSets.Personal;
+
     private GameData? _data;
+    private GameData? _base;
     private GameData? _original;
     private LocalBackup? _changes;
+    private List<Proposal> _mine = [];
     private bool _replaceOnImport;
     private bool _confirmClear;
+    private bool _clearAfterSubmit = true;
+
+    /// <summary>Keys of the changes ticked for the proposal (<see cref="LocalBackup.Keys"/>).</summary>
+    private readonly HashSet<string> _selected = [];
+    private HashSet<string> _known = [];
+    private string _author = string.Empty;
+    private string _comment = string.Empty;
     private string? _message;
     private bool _messageIsError;
 
-    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        _author = await Store.GetSettingAsync(AuthorKey) ?? string.Empty;
+        await ReloadAsync();
+    }
 
     private async Task ReloadAsync()
     {
-        _original = await Client.GetOriginalAsync();
         _data = await Client.GetAsync();
-        _changes = await Local.GetAllAsync();
+        _base = await Client.GetWikiAsync();
+        _original = await Client.GetOriginalAsync();
+        _changes = await Personal.GetAllAsync();
+
+        // Changes seen for the first time start selected; unticked ones stay unticked, removed ones drop out.
+        var keys = _changes.Keys().ToHashSet();
+        _selected.IntersectWith(keys);
+        _selected.UnionWith(keys.Except(_known));
+        _known = keys;
+
+        _mine = (await Proposals.GetAllAsync()).OrderByDescending(p => p.CreatedAt).ToList();
     }
 
-    private static string Fields(IReadOnlyList<string> fields) => fields.Count == 0 ? "bez różnic" : string.Join(", ", fields);
-
-    private async Task RemoveAsync<T>(LocalCollection<T> collection, string id)
+    private async Task RemoveAsync(string key)
     {
-        await collection.RemoveAsync(id);
+        await Personal.RemoveAsync(key);
+        await ReloadAsync();
+    }
+
+    private async Task SubmitAsync()
+    {
+        var proposal = new Proposal
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Author = _author.Trim(),
+            Comment = _comment.Trim(),
+            CreatedAt = DateTimeOffset.Now,
+            Changes = _changes!.Only(_selected),
+        };
+
+        if (!await Proposals.SaveAsync(proposal))
+        {
+            Show("Przeglądarka nie pozwoliła zapisać zgłoszenia (tryb prywatny lub brak miejsca).", error: true);
+            return;
+        }
+
+        await Store.SetSettingAsync(AuthorKey, proposal.Author);
+        if (_clearAfterSubmit)
+        {
+            foreach (var key in proposal.Changes.Keys())
+            {
+                await Personal.RemoveAsync(key);
+            }
+        }
+
+        _comment = string.Empty;
+        Show($"Zgłoszono: {ProposalText.Changes(proposal.Changes.Count)}. Czekają na zatwierdzenie w panelu administratora.");
         await ReloadAsync();
     }
 
     private async Task ExportAsync()
     {
-        await Store.DownloadAsync($"grimoire-studio-zmiany-{DateTime.Now:yyyy-MM-dd}.json", await Local.ExportAsync());
-        Show($"Wyeksportowano {_changes!.Count} zmian.");
+        await Store.DownloadAsync($"grimoire-studio-zmiany-{DateTime.Now:yyyy-MM-dd}.json", await Personal.ExportAsync());
+        Show($"Wyeksportowano: {ProposalText.Changes(_changes!.Count)}.");
     }
 
     private async Task ImportAsync(InputFileChangeEventArgs e)
@@ -177,8 +194,8 @@ else
         try
         {
             using var reader = new StreamReader(e.File.OpenReadStream(MaxImportBytes));
-            var count = await Local.ImportAsync(await reader.ReadToEndAsync(), _replaceOnImport);
-            Show($"Zaimportowano {count} zmian z pliku {e.File.Name}.");
+            var count = await Personal.ImportAsync(await reader.ReadToEndAsync(), _replaceOnImport);
+            Show($"Zaimportowano: {ProposalText.Changes(count)} z pliku {e.File.Name}.");
         }
         catch (Exception ex) when (ex is FormatException or IOException)
         {
@@ -197,7 +214,7 @@ else
         }
 
         _confirmClear = false;
-        await Local.ClearAsync();
+        await Personal.ClearAsync();
         Show("Usunięto wszystkie lokalne zmiany.");
         await ReloadAsync();
     }

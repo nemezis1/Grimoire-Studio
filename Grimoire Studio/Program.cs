@@ -10,11 +10,8 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<LocalStore>();
-builder.Services.AddScoped<LocalRoles>();
-builder.Services.AddScoped<LocalScripts>();
-builder.Services.AddScoped<LocalTeams>();
-builder.Services.AddScoped<LocalJinxes>();
-builder.Services.AddScoped<LocalChanges>();
+builder.Services.AddScoped<ChangeSets>();
+builder.Services.AddScoped<Proposals>();
 builder.Services.AddScoped<TeamText>();
 builder.Services.AddScoped<GameDataClient>();
 builder.Services.AddScoped<TokenRenderer>();

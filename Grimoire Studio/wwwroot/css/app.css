@@ -458,7 +458,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 @media (min-width: 1101px) {
     html, body { height: 100%; overflow: hidden; }
     #app { height: 100%; display: flex; flex-direction: column; }
-    .site-header, .site-footer { flex: none; }
+    .site-header, .site-footer, .wiki-banner { flex: none; }
     .site-footer { padding-block: 0.5rem; }
     .site-main { flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
 
@@ -1034,3 +1034,46 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .change-list__what { flex: 1 1 260px; min-width: 0; }
 .change-list__fields { display: block; font-size: 0.85rem; color: var(--muted); }
 .form-list > li.panel { margin-bottom: 0; }
+
+/* ---------- Admin ---------- */
+
+.wiki-banner {
+    padding: 0.4rem 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+    background: var(--accent);
+    color: var(--accent-text);
+}
+.wiki-banner a { color: inherit; font-weight: 600; margin-left: 0.5rem; }
+.change-list > li > input[type="checkbox"] { width: 1.1rem; height: 1.1rem; flex: none; }
+@media print { .wiki-banner { display: none; } }
+
+.change-details { flex: 1 1 100%; margin-top: 0.25rem; font-size: 0.85rem; }
+.change-details > summary { cursor: pointer; color: var(--muted); }
+.change-details table { width: 100%; margin-top: 0.4rem; border-collapse: collapse; table-layout: fixed; }
+.change-details th, .change-details td { padding: 0.3rem 0.5rem; border-top: 1px solid var(--border); text-align: left; vertical-align: top; white-space: pre-line; overflow-wrap: anywhere; }
+.change-details thead th { border-top: 0; color: var(--muted); font-weight: normal; }
+.change-details tbody th { width: 11rem; color: var(--muted); font-weight: normal; }
+.change-details__before { background: rgba(196, 32, 32, 0.12); }
+.change-details__after { background: rgba(42, 160, 80, 0.14); }
+.change-details img { width: 48px; height: 48px; object-fit: contain; }
+@media (max-width: 700px) { .change-details tbody th { width: 6.5rem; } }
+.proposal-changes { flex: 1 1 100%; }
+.proposal-changes > summary { cursor: pointer; color: var(--muted); font-size: 0.9rem; }
+.proposal-changes h3 { font-size: 1rem; margin: 0.75rem 0 0.4rem; }
+
+.field-label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+.script-image { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; }
+.script-image > div { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.script-image .field-row { margin: 0; }
+.script-image__preview { width: 56px; height: 56px; object-fit: contain; flex: none; }
+
+/* Script editor: Save / Cancel stay visible; only the list of chosen roles scrolls. */
+.script-editor__actions { position: sticky; bottom: 0; padding-block: 0.5rem; background: var(--surface); border-top: 1px solid var(--border); }
+.script-editor__actions .field-row { margin-bottom: 0; }
+@media (min-width: 1101px) {
+    .script-editor__summary { display: flex; flex-direction: column; overflow: hidden; }
+    .script-editor__summary > :not(.script-editor__selected) { flex: none; }
+    .script-editor__selected { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
+}
+.proposal-changes__part { margin: 0.75rem 0 0.25rem; font-size: 0.9rem; color: var(--muted); }

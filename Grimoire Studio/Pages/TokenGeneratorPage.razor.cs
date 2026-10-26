@@ -91,7 +91,7 @@ public partial class TokenGeneratorPage
     private void ApplyRole(Role role)
     {
         _role = role;
-        _settings.ApplyRole(role, LocalRoleIcons.IconUrl(role.Id));
+        _settings.ApplyRole(role, Changes.IconUrl(role.Id));
     }
 
     private void ToggleSecondColor(ChangeEventArgs e) =>
@@ -243,7 +243,7 @@ public partial class TokenGeneratorPage
             {
                 var settings = Styled(_bulkPlayerPreset, TokenSettings.PlayerType);
                 var textVertical = settings.TextVertical;
-                settings.ApplyRole(role, LocalRoleIcons.IconUrl(role.Id));
+                settings.ApplyRole(role, Changes.IconUrl(role.Id));
                 settings.TextVertical = textVertical;
                 if (_bulkPlayerPreset.Length == 0)
                 {
@@ -262,7 +262,7 @@ public partial class TokenGeneratorPage
                 {
                     var settings = Styled(_bulkReminderPreset, TokenSettings.ReminderType);
                     var textVertical = settings.TextVertical;
-                    settings.ApplyReminder(role, reminder, LocalRoleIcons.IconUrl(role.Id));
+                    settings.ApplyReminder(role, reminder, Changes.IconUrl(role.Id));
                     settings.TextVertical = textVertical;
                     tokens.Add((settings, role.Id));
                 }

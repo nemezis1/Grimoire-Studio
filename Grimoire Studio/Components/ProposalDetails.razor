@@ -1,0 +1,34 @@
+@* Folded list of a proposal's changes; a partly approved one is split into accepted and rejected items. *@
+
+<details class="proposal-changes">
+    <summary>Pokaż zmiany</summary>
+    @* Older proposals did not record the accepted items; they are shown as one list. *@
+    @if (Proposal.Status == ProposalStatus.Approved && Proposal.ApprovedKeys.Count > 0 && Proposal.ApprovedKeys.Count < Proposal.Changes.Count)
+    {
+        var approved = Proposal.ApprovedKeys.ToHashSet();
+        var rejected = Proposal.Changes.Keys().Where(k => !approved.Contains(k)).ToHashSet();
+        <h4 class="proposal-changes__part">Przyjęte</h4>
+        <ChangeSetView Changes="Proposal.Changes.Only(approved)" Base="Base" Data="Data" DetailsOpen="true" />
+        <h4 class="proposal-changes__part">Odrzucone</h4>
+        <ChangeSetView Changes="Proposal.Changes.Only(rejected)" Base="Base" Data="Data" DetailsOpen="true" />
+    }
+    else
+    {
+        <ChangeSetView Changes="Proposal.Changes" Base="Base" Data="Data" DetailsOpen="true" />
+    }
+</details>
+
+@code {
+    [Parameter, EditorRequired]
+    public Proposal Proposal { get; set; } = default!;
+
+    /// <summary>
+    /// Data to compare with. For a decided proposal pass the data folder: the wiki may already contain the changes, so
+    /// comparing with it would show no differences.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public GameData Base { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public GameData Data { get; set; } = default!;
+}

@@ -1,6 +1,6 @@
 @page "/teams"
 @inject GameDataClient Client
-@inject LocalTeams Local
+@inject ChangeSets Changes
 
 <PageTitle>Drużyny – Grimoire Studio</PageTitle>
 
@@ -41,7 +41,7 @@ else
                             @team.PluralPl <span class="muted">(@count)</span>
                             @if (isLocal)
                             {
-                                <span class="local-badge">@(isBuiltin ? "zmieniona lokalnie" : "tylko w tej przeglądarce")</span>
+                                <span class="local-badge">@(isBuiltin ? (Changes.EditingWiki ? "zmieniona w wiki" : "zmieniona lokalnie") : (Changes.EditingWiki ? "nowa w wiki" : "tylko w tej przeglądarce"))</span>
                             }
                         </h2>
                         <div class="script-actions">
@@ -79,9 +79,9 @@ else
 
     private async Task ReloadAsync()
     {
-        _original = await Client.GetOriginalAsync();
+        _original = await Client.GetBaseAsync();
         _data = await Client.GetAsync();
-        _localIds = (await Local.GetAllAsync()).Select(t => t.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _localIds = (await (await Changes.GetCurrentAsync()).Teams.GetAllAsync()).Select(t => t.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     private void StartNew()
@@ -113,7 +113,7 @@ else
             return;
         }
 
-        if (!await Local.SaveAsync(form.ToTeam(id)))
+        if (!await (await Changes.GetCurrentAsync()).Teams.SaveAsync(form.ToTeam(id)))
         {
             _error = "Przeglądarka nie pozwoliła zapisać drużyny (tryb prywatny lub brak miejsca).";
             return;
@@ -126,7 +126,7 @@ else
 
     private async Task RemoveAsync(string id)
     {
-        await Local.RemoveAsync(id);
+        await (await Changes.GetCurrentAsync()).Teams.RemoveAsync(id);
         await ReloadAsync();
     }
 
