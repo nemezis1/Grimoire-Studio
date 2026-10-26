@@ -16,7 +16,7 @@ public sealed record TokenPreset
     public string TextColor { get; init; } = "#000000";
 
     public string DescriptionFont { get; init; } = TokenFonts.DefaultDescription;
-    public int DescriptionFontSize { get; init; } = 20;
+    public int DescriptionFontSize { get; init; } = 25;
     public double DescriptionVertical { get; init; }
 
     public double ImageScale { get; init; } = 1.0;

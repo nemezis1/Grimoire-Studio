@@ -26,7 +26,7 @@ public sealed class TokenSettings
 
     public string Description { get; set; } = string.Empty;
     public string DescriptionFont { get; set; } = TokenFonts.DefaultDescription;
-    public int DescriptionFontSize { get; set; } = 20;
+    public int DescriptionFontSize { get; set; } = 25;
 
     /// <summary>Shift (fraction of the radius) from the automatic position below the border and top leaves.</summary>
     public double DescriptionVertical { get; set; }

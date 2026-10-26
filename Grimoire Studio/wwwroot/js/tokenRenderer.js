@@ -314,7 +314,9 @@ function layoutReminder(s, assets, r, k) {
 
 function fitImage(img, s, r, centerY, maxH, maxW) {
     const box = trimmed(img);
-    const scale = Math.min(maxW / box.w, maxH / box.h) * s.imageScale;
+    // Player tokens: 100% is 85% of the free space, which leaves room around the picture.
+    const base = s.tokenType === 'player' ? 0.85 : 1;
+    const scale = Math.min(maxW / box.w, maxH / box.h) * base * s.imageScale;
     const w = box.w * scale;
     const h = box.h * scale;
     return {
