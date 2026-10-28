@@ -26,6 +26,12 @@ public partial class TokenGeneratorPage
     private SheetItem? _editing;
     private CancellationTokenSource? _sheetRefresh;
     private bool _sheetSaveFailed;
+
+    // CMYK: the sheet goes out as a PDF for a print shop instead of through the browser's print dialog (always RGB).
+    private string _colors = "rgb";
+    private bool _exportingPdf;
+
+    private bool Cmyk => _colors == "cmyk";
     private string _bulkScript = string.Empty;
     private string _bulkPlayerPreset = string.Empty;
     private string _bulkReminderPreset = string.Empty;
@@ -351,7 +357,24 @@ public partial class TokenGeneratorPage
     // The sheet is kept in this browser (IndexedDB) so it survives a page reload.
     private async Task SaveSheetAsync() => _sheetSaveFailed = !await Renderer.SaveSheetAsync(_sheet);
 
-    private async Task PrintAsync() => await Renderer.PrintAsync();
+    private async Task PrintAsync()
+    {
+        if (!Cmyk)
+        {
+            await Renderer.PrintAsync();
+            return;
+        }
+
+        _exportingPdf = true;
+        try
+        {
+            await Renderer.DownloadCmykPdfAsync(_sheet, $"tokeny-cmyk-{DateTime.Now:yyyy-MM-dd}.pdf");
+        }
+        finally
+        {
+            _exportingPdf = false;
+        }
+    }
 
     private static string Snapshot(TokenSettings settings) => JsonSerializer.Serialize(settings);
 

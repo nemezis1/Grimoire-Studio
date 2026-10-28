@@ -287,7 +287,13 @@
         <div class="sheet-toolbar">
             <h2>Arkusz A4 <span class="muted">(@_sheet.Count @TokenWord(_sheet.Count), stron: @SheetLayout.Pack(_sheet).Count)</span></h2>
             <div class="field-row">
-                <button class="button" disabled="@(_sheet.Count == 0)" @onclick="PrintAsync">Drukuj / zapisz PDF</button>
+                <select class="sheet-colors" aria-label="Kolory wydruku" title="RGB: drukarka domowa. CMYK: plik PDF dla drukarni." @bind="_colors">
+                    <option value="rgb">RGB</option>
+                    <option value="cmyk">CMYK</option>
+                </select>
+                <button class="button" disabled="@(_sheet.Count == 0 || _exportingPdf)" @onclick="PrintAsync">
+                    @(Cmyk ? _exportingPdf ? "Tworzenie PDF…" : "Pobierz PDF (CMYK)" : "Drukuj / zapisz PDF")
+                </button>
                 <button class="button button--ghost" disabled="@(_sheet.Count == 0)" @onclick="ClearSheetAsync">Wyczyść arkusz</button>
             </div>
         </div>
@@ -302,6 +308,10 @@
         else
         {
             <p class="muted small">Najedź na token, aby go edytować, zduplikować lub usunąć. Wydruk w skali 100% daje tokeny w ustawionych średnicach.</p>
+            @if (Cmyk)
+            {
+                <p class="muted small">CMYK: PDF z tym samym układem stron dla drukarni. Kolory są przeliczone bez profilu barwnego, więc mogą się nieco różnić od ekranu.</p>
+            }
         }
         <TokenSheet Items="_sheet" Editing="_editing" OnEdit="EditItem" OnDuplicate="DuplicateAsync" OnRemove="RemoveAsync" />
     </section>

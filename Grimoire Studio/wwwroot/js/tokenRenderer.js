@@ -582,6 +582,110 @@ export function print() {
     window.print();
 }
 
+// --- CMYK PDF (for print shops) ----------------------------------------------------------------------------------
+
+const PT_PER_MM = 72 / 25.4;
+
+/**
+ * Plain RGB to CMYK with full black generation. There is no colour profile in the browser, so the print shop's
+ * profile decides the final look; this only gives them CMYK data instead of RGB.
+ */
+function toCmyk(rgba) {
+    const pixels = rgba.length / 4;
+    const cmyk = new Uint8Array(pixels * 4);
+    const alpha = new Uint8Array(pixels);
+    for (let i = 0; i < pixels; i++) {
+        const r = rgba[i * 4] / 255, g = rgba[i * 4 + 1] / 255, b = rgba[i * 4 + 2] / 255;
+        const k = 1 - Math.max(r, g, b);
+        const rest = k < 1 ? 1 - k : 1;
+        cmyk[i * 4] = Math.round(((1 - r - k) / rest) * 255);
+        cmyk[i * 4 + 1] = Math.round(((1 - g - k) / rest) * 255);
+        cmyk[i * 4 + 2] = Math.round(((1 - b - k) / rest) * 255);
+        cmyk[i * 4 + 3] = Math.round(k * 255);
+        alpha[i] = rgba[i * 4 + 3];
+    }
+    return { cmyk, alpha };
+}
+
+/** zlib stream, which is what PDF's FlateDecode expects. */
+async function deflate(bytes) {
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/**
+ * Builds an A4 PDF with every token as a DeviceCMYK image (with its round edge as a soft mask) at the given
+ * positions in millimetres, and downloads it. pages: [[{ x, y, diameter, settings, size }]].
+ */
+export async function downloadCmykPdf(pages, fileName) {
+    const encoder = new TextEncoder();
+    const parts = [];
+    const offsets = [];
+    let length = 0;
+    const write = chunk => {
+        const bytes = typeof chunk === 'string' ? encoder.encode(chunk) : chunk;
+        parts.push(bytes);
+        length += bytes.length;
+    };
+    const object = (id, dictionary, stream) => {
+        offsets[id] = length;
+        if (stream) {
+            write(`${id} 0 obj\n<< ${dictionary} /Length ${stream.length} >>\nstream\n`);
+            write(stream);
+            write('\nendstream\nendobj\n');
+        } else {
+            write(`${id} 0 obj\n${dictionary}\nendobj\n`);
+        }
+    };
+
+    write('%PDF-1.4\n%\xe2\xe3\xcf\xd3\n');
+    let nextId = 3; // 1: catalog, 2: page tree
+    const pageIds = [];
+    const width = 210 * PT_PER_MM, height = 297 * PT_PER_MM;
+
+    for (const page of pages) {
+        const images = [];
+        let content = '';
+        for (const token of page) {
+            const canvas = document.createElement('canvas');
+            draw(canvas, token.settings, token.size, await prepare(token.settings));
+            const { cmyk, alpha } = toCmyk(canvas.getContext('2d').getImageData(0, 0, token.size, token.size).data);
+
+            const maskId = nextId++, imageId = nextId++;
+            object(maskId, `/Type /XObject /Subtype /Image /Width ${token.size} /Height ${token.size} /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode`, await deflate(alpha));
+            object(imageId, `/Type /XObject /Subtype /Image /Width ${token.size} /Height ${token.size} /ColorSpace /DeviceCMYK /BitsPerComponent 8 /SMask ${maskId} 0 R /Filter /FlateDecode`, await deflate(cmyk));
+
+            const name = `Im${images.length}`;
+            images.push(`/${name} ${imageId} 0 R`);
+            const d = token.diameter * PT_PER_MM;
+            const x = token.x * PT_PER_MM;
+            const y = height - (token.y + token.diameter) * PT_PER_MM; // PDF counts from the bottom
+            content += `q ${d.toFixed(3)} 0 0 ${d.toFixed(3)} ${x.toFixed(3)} ${y.toFixed(3)} cm /${name} Do Q\n`;
+        }
+
+        const contentId = nextId++, pageId = nextId++;
+        object(contentId, '', encoder.encode(content));
+        object(pageId, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width.toFixed(3)} ${height.toFixed(3)}] /Resources << /XObject << ${images.join(' ')} >> >> /Contents ${contentId} 0 R >>`);
+        pageIds.push(pageId);
+    }
+
+    object(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    object(2, `<< /Type /Pages /Kids [${pageIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`);
+
+    const xref = length;
+    write(`xref\n0 ${nextId}\n0000000000 65535 f \n`);
+    for (let id = 1; id < nextId; id++) {
+        write(`${String(offsets[id]).padStart(10, '0')} 00000 n \n`);
+    }
+    write(`trailer\n<< /Size ${nextId} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob(parts, { type: 'application/pdf' }));
+    link.download = fileName;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
 // --- Token sheet (per browser, IndexedDB: uploaded pictures can be too big for localStorage) ---------------------
 
 const SHEET_DB = 'grimoire-studio';

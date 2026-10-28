@@ -48,6 +48,22 @@ public sealed class TokenRenderer(IJSRuntime js) : IAsyncDisposable
         await module.InvokeVoidAsync("print");
     }
 
+    /// <summary>Downloads the sheet as an A4 PDF with CMYK images, laid out like the printed sheet.</summary>
+    public async Task DownloadCmykPdfAsync(IEnumerable<SheetItem> items, string fileName)
+    {
+        var pages = SheetLayout.Pack(items)
+            .Select(page => page.Select(p => new
+            {
+                x = p.X,
+                y = p.Y,
+                diameter = p.Diameter,
+                settings = p.Item.Settings,
+                size = p.Item.Settings.ExportPixels,
+            }));
+        var module = await Module;
+        await module.InvokeVoidAsync("downloadCmykPdf", pages, fileName);
+    }
+
     /// <summary>Sheet saved in this browser's IndexedDB; a missing or damaged entry yields an empty list.</summary>
     public async Task<List<SavedSheetItem>> LoadSheetAsync()
     {
