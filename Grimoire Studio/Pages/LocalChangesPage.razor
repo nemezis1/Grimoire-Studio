@@ -71,6 +71,11 @@ else
         </section>
     }
 
+    @if (ProposalText.Outdated(_changes, _base.Version) is { } outdated)
+    {
+        <p class="notice notice--warning">@outdated</p>
+    }
+
     <ChangeSetView Changes="_changes" Base="_base" Data="_data" EditLinks="true" OnRemove="RemoveAsync"
                    Selected="_changes.Count > 0 ? _selected : null" SelectedChanged="() => { }">
         <p>Nie ma lokalnych zmian. Rolę, skrypt lub drużynę zmienisz przyciskiem „Edytuj” na ich stronie.</p>

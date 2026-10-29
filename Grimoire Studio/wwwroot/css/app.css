@@ -201,6 +201,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 .notice { color: var(--muted); }
 .notice--error { color: #c42020; }
+.notice--warning { color: #d96a1a; }
 
 /* Home */
 .hero { padding: 3rem 0; text-align: center; }

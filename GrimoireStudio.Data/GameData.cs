@@ -12,6 +12,9 @@ public sealed record GameData
     public const string JinxesFile = "hatred.json";
     public const string TeamsFile = "teams.json";
 
+    /// <summary>Written at build time next to the served data (not in the repository's data folder).</summary>
+    public const string VersionFile = "version.txt";
+
     /// <summary>Role icons, <c>icons/&lt;role id&gt;.png</c>.</summary>
     public const string IconsFolder = "icons";
 
@@ -33,6 +36,12 @@ public sealed record GameData
     /// <summary>Teams (character types) in list order.</summary>
     public IReadOnlyList<TeamInfo> Teams { get; init; } = [];
 
+    /// <summary>
+    /// Version of the data folder, empty when unknown. Changes record it so a later change of the same data can be
+    /// noticed. For now the time the data was last built (a placeholder); on GitHub it will be the commit id.
+    /// </summary>
+    public string Version { get; init; } = string.Empty;
+
     public IEnumerable<Role> AllRoles => Roles.Concat(Fabled);
 
     public static GameData Load(string directory) => new()
@@ -42,6 +51,9 @@ public sealed record GameData
         Scripts = Read<ScriptCatalog>(directory, ScriptsFile),
         Jinxes = Read<List<RoleJinxes>>(directory, JinxesFile),
         Teams = Read<List<TeamInfo>>(directory, TeamsFile),
+        Version = File.Exists(Path.Combine(directory, VersionFile))
+            ? File.ReadAllText(Path.Combine(directory, VersionFile)).Trim()
+            : string.Empty,
     };
 
     private static T Read<T>(string directory, string file)

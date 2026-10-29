@@ -66,6 +66,10 @@ else
             {
                 <p>@proposal.Comment</p>
             }
+            @if (ProposalText.Outdated(proposal.Changes, _original.Version) is { } outdated)
+            {
+                <p class="notice notice--warning">@outdated</p>
+            }
             <p class="muted small">Porównanie z obecną wiki. Odznacz pozycje, których nie chcesz przyjąć.</p>
             <ChangeSetView Changes="proposal.Changes" Base="_wiki" Data="_data" Selected="selected" SelectedChanged="() => { }" DetailsOpen="true" />
         </section>
@@ -90,6 +94,10 @@ else
         kopia zapasowa. „Pobierz pliki danych” daje zmienione pliki (JSON i obrazki) gotowe do rozpakowania w głównym
         katalogu repozytorium.
     </p>
+    @if (ProposalText.Outdated(_wikiChanges, _original.Version) is { } wikiOutdated)
+    {
+        <p class="notice notice--warning">@wikiOutdated</p>
+    }
     <ChangeSetView Changes="_wikiChanges" Base="_original" Data="_data" OnRemove="RemoveWikiAsync" ShowJinxText="true">
         <p class="muted">Wiki nie różni się od danych strony.</p>
     </ChangeSetView>

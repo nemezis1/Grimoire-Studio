@@ -131,8 +131,18 @@ public static partial class DataValidator
 
     private static void ValidateJinxes(GameData data, HashSet<string> roleIds, List<string> errors)
     {
+        foreach (var owner in data.Jinxes.GroupBy(o => o.Id).Where(g => g.Count() > 1))
+        {
+            errors.Add($"Jinx owner '{owner.Key}': listed {owner.Count()} times.");
+        }
+
         foreach (var owner in data.Jinxes)
         {
+            foreach (var pair in owner.Jinxes.GroupBy(j => j.Id).Where(g => g.Count() > 1))
+            {
+                errors.Add($"Jinx '{owner.Id}' / '{pair.Key}': listed {pair.Count()} times.");
+            }
+
             if (!roleIds.Contains(owner.Id))
             {
                 errors.Add($"Jinx owner '{owner.Id}': unknown role.");

@@ -14,6 +14,15 @@ public sealed record LocalBackup
     public int Version { get; init; } = 1;
     public DateTimeOffset ExportedAt { get; init; }
 
+    /// <summary>
+    /// <see cref="GameData.Version"/> of the data the changes were made on (the oldest, when made over several
+    /// versions); empty when unknown (exports from before versions were recorded).
+    /// </summary>
+    public string BaseVersion { get; init; } = string.Empty;
+
+    /// <summary>True when the changes were made on another data version than <paramref name="current"/>.</summary>
+    public bool IsOutdated(string current) => BaseVersion.Length > 0 && current.Length > 0 && BaseVersion != current;
+
     public IReadOnlyList<LocalRole> Roles { get; init; } = [];
     public IReadOnlyList<Script> Scripts { get; init; } = [];
     public IReadOnlyList<TeamInfo> Teams { get; init; } = [];

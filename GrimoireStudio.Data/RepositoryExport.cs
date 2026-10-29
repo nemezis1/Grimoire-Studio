@@ -14,11 +14,26 @@ public static class RepositoryExport
     private static readonly byte[] PngSignature = [0x89, (byte)'P', (byte)'N', (byte)'G', 0x0D, 0x0A, 0x1A, 0x0A];
 
     /// <summary>Files that differ once <paramref name="changes"/> are applied to <paramref name="original"/>.</summary>
-    /// <exception cref="InvalidDataException">An uploaded picture is not a PNG, is too big, or its file name is taken.</exception>
+    /// <exception cref="InvalidDataException">
+    /// The changes break the data (<see cref="DataValidator"/> finds new errors), or an uploaded picture is not a PNG,
+    /// is too big, or its file name is taken.
+    /// </exception>
     public static IReadOnlyList<DataFile> ChangedFiles(GameData original, LocalBackup changes)
     {
         var updated = changes.ApplyTo(original);
         var files = new List<DataFile>();
+
+        // Only errors the changes bring in: the data folder itself is guarded by the repository tests.
+        var known = DataValidator.Validate(original).ToHashSet();
+        var errors = DataValidator.Validate(updated).Where(e => !known.Contains(e))
+            .Concat(changes.Roles
+                .Where(r => r.IconUrl is null && original.FindRole(r.Role.Id) is null)
+                .Select(r => $"Role '{r.Role.Id}': new role needs an icon."))
+            .ToList();
+        if (errors.Count > 0)
+        {
+            throw new InvalidDataException("Zmiany psują dane: " + string.Join(" ", errors));
+        }
 
         foreach (var role in changes.Roles.Where(r => r.IconUrl is not null))
         {

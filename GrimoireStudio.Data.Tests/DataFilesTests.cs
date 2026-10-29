@@ -79,6 +79,26 @@ public class DataFilesTests
         Assert.Throws<InvalidDataException>(() => RepositoryExport.ChangedFiles(Data, changes));
     }
 
+    [Fact]
+    public void ChangedFiles_Should_Reject_When_ChangesBreakData()
+    {
+        var script = new Script { Id = "zly", Name = "Zły", Roles = ["nieistnieje"] };
+
+        var error = Assert.Throws<InvalidDataException>(() => RepositoryExport.ChangedFiles(Data, new LocalBackup { Scripts = [script] }));
+
+        Assert.Contains("unknown role 'nieistnieje'", error.Message);
+    }
+
+    [Fact]
+    public void ChangedFiles_Should_Reject_When_NewRoleHasNoIcon()
+    {
+        var role = Data.FindRole("chef")! with { Id = "nowarola" };
+
+        var error = Assert.Throws<InvalidDataException>(() => RepositoryExport.ChangedFiles(Data, new LocalBackup { Roles = [new LocalRole(role, null)] }));
+
+        Assert.Contains("needs an icon", error.Message);
+    }
+
     private static ScriptCatalog ReadScripts(DataFile file) =>
         System.Text.Json.JsonSerializer.Deserialize<ScriptCatalog>(file.Content, GameData.JsonOptions)!;
 }

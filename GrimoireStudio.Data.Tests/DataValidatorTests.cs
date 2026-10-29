@@ -90,4 +90,19 @@ public class DataValidatorTests
 
         Assert.Contains(errors, e => e.Contains("fabled belongs in"));
     }
+
+    [Fact]
+    public void Validate_Should_ReportDuplicate_When_JinxPairRepeats()
+    {
+        var jinx = new Jinx { Id = "imp", ReasonEn = "a", ReasonPl = "a" };
+
+        var errors = DataValidator.Validate(CreateData(jinxes:
+        [
+            new RoleJinxes { Id = "chef", Jinxes = [jinx, jinx] },
+            new RoleJinxes { Id = "chef", Jinxes = [] },
+        ]));
+
+        Assert.Contains(errors, e => e.Contains("'chef' / 'imp': listed 2 times"));
+        Assert.Contains(errors, e => e.Contains("owner 'chef': listed 2 times"));
+    }
 }

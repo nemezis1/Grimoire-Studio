@@ -56,6 +56,7 @@ public sealed class GameDataClient(HttpClient http, ChangeSets changes, TeamText
         var scripts = ReadAsync<ScriptCatalog>(GameData.ScriptsFile);
         var jinxes = ReadAsync<List<RoleJinxes>>(GameData.JinxesFile);
         var teams = ReadAsync<List<TeamInfo>>(GameData.TeamsFile);
+        var version = ReadVersionAsync();
 
         return new GameData
         {
@@ -64,7 +65,20 @@ public sealed class GameDataClient(HttpClient http, ChangeSets changes, TeamText
             Scripts = await scripts,
             Jinxes = await jinxes,
             Teams = await teams,
+            Version = await version,
         };
+    }
+
+    private async Task<string> ReadVersionAsync()
+    {
+        try
+        {
+            return (await http.GetStringAsync($"data/{GameData.VersionFile}")).Trim();
+        }
+        catch (HttpRequestException)
+        {
+            return string.Empty;
+        }
     }
 
     private async Task<T> ReadAsync<T>(string file) =>

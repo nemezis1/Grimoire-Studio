@@ -16,9 +16,12 @@ public sealed class LocalChanges(LocalStore store, string prefix)
     public LocalTeams Teams { get; } = new(store, prefix);
     public LocalJinxes Jinxes { get; } = new(store, prefix);
 
+    private string BaseVersionKey => $"{prefix}-base";
+
     public async Task<LocalBackup> GetAllAsync() => new()
     {
         ExportedAt = DateTimeOffset.Now,
+        BaseVersion = await store.GetAsync(BaseVersionKey) ?? string.Empty,
         Roles = await Roles.GetAllAsync(),
         Scripts = await Scripts.GetAllAsync(),
         Teams = await Teams.GetAllAsync(),
@@ -67,7 +70,9 @@ public sealed class LocalChanges(LocalStore store, string prefix)
     public async Task<bool> MergeAsync(LocalBackup changes, bool replace = false)
     {
         var current = replace ? new LocalBackup() : await GetAllAsync();
-        return await Roles.ReplaceAllAsync(Merge(current.Roles, changes.Roles, r => r.Role.Id))
+        var baseVersion = current.Count == 0 && changes.BaseVersion.Length > 0 ? changes.BaseVersion : current.BaseVersion;
+        return await store.SetAsync(BaseVersionKey, baseVersion)
+            & await Roles.ReplaceAllAsync(Merge(current.Roles, changes.Roles, r => r.Role.Id))
             & await Scripts.ReplaceAllAsync(Merge(current.Scripts, changes.Scripts, s => s.Id))
             & await Teams.ReplaceAllAsync(Merge(current.Teams, changes.Teams, t => t.Id))
             & await Jinxes.ReplaceAllAsync(Merge(current.Jinxes, changes.Jinxes, j => j.Key));
@@ -89,7 +94,9 @@ public sealed class LocalChanges(LocalStore store, string prefix)
 
     /// <summary>
     /// Drops items that no longer differ from <paramref name="baseData"/> (saved without changes, or the same change is
-    /// already in the base), so lists of changes show only real differences.
+    /// already in the base), so lists of changes show only real differences. Also keeps
+    /// <see cref="LocalBackup.BaseVersion"/>: taken from <paramref name="baseData"/> when changes appear, cleared when
+    /// none are left.
     /// </summary>
     public async Task PruneAsync(GameData baseData)
     {
@@ -112,6 +119,13 @@ public sealed class LocalChanges(LocalStore store, string prefix)
         {
             await RemoveAsync(key);
         }
+
+        var left = all.Count - stale.Count;
+        var baseVersion = left == 0 ? string.Empty : all.BaseVersion.Length > 0 ? all.BaseVersion : baseData.Version;
+        if (baseVersion != all.BaseVersion)
+        {
+            await store.SetAsync(BaseVersionKey, baseVersion);
+        }
     }
 
     private static bool Same<T>(T a, T b) =>
@@ -132,7 +146,8 @@ public sealed class LocalChanges(LocalStore store, string prefix)
     }
 
     public async Task<bool> ClearAsync() =>
-        await Roles.ReplaceAllAsync([])
+        await store.SetAsync(BaseVersionKey, string.Empty)
+            & await Roles.ReplaceAllAsync([])
             & await Scripts.ReplaceAllAsync([])
             & await Teams.ReplaceAllAsync([])
             & await Jinxes.ReplaceAllAsync([]);

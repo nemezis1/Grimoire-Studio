@@ -16,14 +16,15 @@
     <ProjectReference Include="..\GrimoireStudio.Data\GrimoireStudio.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <RepositoryData Include="..\data\**\*" />
+  </ItemGroup>
+
   <!--
     Serve the repository data folder (JSON + icons) as wwwroot/data. Static web assets ignore linked files,
     so the folder is copied before build; wwwroot/data is git-ignored and must not be edited by hand.
   -->
-  <Target Name="CopyRepositoryData" BeforeTargets="BeforeBuild">
-    <ItemGroup>
-      <RepositoryData Include="..\data\**\*" />
-    </ItemGroup>
+  <Target Name="CopyRepositoryData" BeforeTargets="BeforeBuild" DependsOnTargets="WriteDataVersion">
     <Copy SourceFiles="@(RepositoryData)"
           DestinationFiles="@(RepositoryData->'wwwroot\data\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
@@ -31,6 +32,17 @@
       <Content Remove="wwwroot\data\**" />
       <Content Include="wwwroot\data\**" />
     </ItemGroup>
+  </Target>
+
+  <!--
+    Data version: for now the time the data folder last changed (rewritten only when a data file is newer than it);
+    on GitHub it will be the commit id.
+  -->
+  <Target Name="WriteDataVersion" Inputs="@(RepositoryData)" Outputs="wwwroot\data\version.txt">
+    <MakeDir Directories="wwwroot\data" />
+    <WriteLinesToFile File="wwwroot\data\version.txt"
+                      Lines="$([System.DateTime]::UtcNow.ToString(&quot;yyyy-MM-ddTHH:mm:ssZ&quot;))"
+                      Overwrite="true" />
   </Target>
 
 </Project>
