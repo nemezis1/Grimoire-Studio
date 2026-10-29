@@ -1,4 +1,5 @@
 @page "/admin"
+@using System.IO.Compression
 @inject GameDataClient Client
 @inject ChangeSets ChangeSets
 @inject Proposals Proposals
@@ -73,6 +74,10 @@ else
     <div class="title-row">
         <h2>Zmiany w wiki (@_wikiChanges.Count)</h2>
         <div class="script-actions">
+            <button class="button" disabled="@(_wikiChanges.Count == 0)" @onclick="DownloadDataFilesAsync"
+                    title="Archiwum ZIP z plikami folderu data/, które zmienia wiki">
+                Pobierz pliki danych (.zip)
+            </button>
             <button class="button button--ghost" disabled="@(_wikiChanges.Count == 0)" @onclick="ExportWikiAsync">Eksportuj do pliku</button>
             <label class="button button--ghost button--file">
                 Importuj do wiki…
@@ -82,7 +87,8 @@ else
     </div>
     <p class="muted small">
         Różnice wiki względem danych strony (folderu danych). Na razie zapisane tylko w tej przeglądarce; plik eksportu to
-        kopia zapasowa, a później posłuży do przeniesienia zmian na GitHuba.
+        kopia zapasowa. „Pobierz pliki danych” daje zmienione pliki (JSON i obrazki) gotowe do rozpakowania w głównym
+        katalogu repozytorium.
     </p>
     <ChangeSetView Changes="_wikiChanges" Base="_original" Data="_data" OnRemove="RemoveWikiAsync" ShowJinxText="true">
         <p class="muted">Wiki nie różni się od danych strony.</p>
@@ -254,6 +260,40 @@ else
     {
         await ChangeSets.Wiki.RemoveAsync(key);
         await ReloadAsync();
+    }
+
+    /// <summary>The data folder files the wiki changes, zipped under data/ so they unpack over the repository.</summary>
+    private async Task DownloadDataFilesAsync()
+    {
+        IReadOnlyList<DataFile> files;
+        try
+        {
+            files = RepositoryExport.ChangedFiles(await Client.GetOriginalAsync(), await ChangeSets.Wiki.GetAllAsync());
+        }
+        catch (InvalidDataException ex)
+        {
+            Show(ex.Message, error: true);
+            return;
+        }
+
+        if (files.Count == 0)
+        {
+            Show("Wiki nie zmienia żadnego pliku danych.");
+            return;
+        }
+
+        using var zip = new MemoryStream();
+        using (var archive = new ZipArchive(zip, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var file in files)
+            {
+                await using var entry = archive.CreateEntry($"data/{file.Path}").Open();
+                await entry.WriteAsync(file.Content);
+            }
+        }
+
+        await Store.DownloadAsync($"grimoire-studio-data-{DateTime.Now:yyyy-MM-dd}.zip", zip.ToArray(), "application/zip");
+        Show($"Pobrano pliki danych: {string.Join(", ", files.Select(f => f.Path))}.");
     }
 
     private async Task ExportWikiAsync() =>

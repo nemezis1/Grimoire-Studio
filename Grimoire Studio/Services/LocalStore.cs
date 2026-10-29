@@ -49,4 +49,7 @@ public sealed class LocalStore(IJSRuntime js)
 
     public async Task DownloadAsync(string fileName, string text) =>
         await (await Module).InvokeVoidAsync("downloadText", fileName, text);
+
+    public async Task DownloadAsync(string fileName, byte[] content, string type) =>
+        await (await Module).InvokeVoidAsync("downloadBytes", fileName, content, type);
 }

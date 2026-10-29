@@ -1,9 +1,11 @@
 using System.Text.Json.Serialization;
-using GrimoireStudio.Data;
 
-namespace Grimoire_Studio.Services;
+namespace GrimoireStudio.Data;
 
-/// <summary>File format of an export of all local changes.</summary>
+/// <summary>
+/// A set of changes over the data folder (a browser's change set, a proposal, or its export file). Applied with
+/// <see cref="ApplyTo"/>; written to the data folder with <see cref="RepositoryExport"/>.
+/// </summary>
 public sealed record LocalBackup
 {
     public const string FormatName = "grimoire-studio-local";
@@ -31,6 +33,14 @@ public sealed record LocalBackup
             .Concat(Scripts.Select(s => ScriptKey(s.Id)))
             .Concat(Teams.Select(t => TeamKey(t.Id)))
             .Concat(Jinxes.Select(JinxKey));
+
+    /// <summary>Data with these changes applied on top of <paramref name="data"/>.</summary>
+    public GameData ApplyTo(GameData data) =>
+        data
+            .WithTeams(Teams)
+            .WithRoles(Roles.Select(r => r.Role))
+            .WithScripts(Scripts)
+            .WithJinxes(Jinxes);
 
     /// <summary>The items whose keys are in <paramref name="keys"/>.</summary>
     public LocalBackup Only(IReadOnlySet<string> keys) => this with

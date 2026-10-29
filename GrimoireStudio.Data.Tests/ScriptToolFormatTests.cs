@@ -16,6 +16,7 @@ public class ScriptToolFormatTests
 
     private static readonly GameData Data = new()
     {
+        Teams = DataFolder.Teams,
         Roles = [CreateRole("fortuneteller"), CreateRole("chef"), CreateRole("imp", TeamIds.Demon)],
     };
 

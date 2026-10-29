@@ -1,6 +1,6 @@
 namespace GrimoireStudio.Data;
 
-/// <summary>Ids of the built-in teams, as written in roles.json and fabled.json.</summary>
+/// <summary>Ids of the standard teams in teams.json, as written in roles.json and fabled.json.</summary>
 public static class TeamIds
 {
     public const string Townsfolk = "townsfolk";

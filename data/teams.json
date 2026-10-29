@@ -1,0 +1,62 @@
+[
+  {
+    "id": "townsfolk",
+    "namePl": "Mieszkaniec",
+    "nameEn": "Townsfolk",
+    "pluralPl": "Mieszkańcy",
+    "pluralEn": "Townsfolk",
+    "color": "#2f6fd6",
+    "order": 10,
+    "extra": false
+  },
+  {
+    "id": "outsider",
+    "namePl": "Przybysz",
+    "nameEn": "Outsider",
+    "pluralPl": "Przybysze",
+    "pluralEn": "Outsiders",
+    "color": "#2aa3c7",
+    "order": 20,
+    "extra": false
+  },
+  {
+    "id": "minion",
+    "namePl": "Sługus",
+    "nameEn": "Minion",
+    "pluralPl": "Sługusy",
+    "pluralEn": "Minions",
+    "color": "#d96a1a",
+    "order": 30,
+    "extra": false
+  },
+  {
+    "id": "demon",
+    "namePl": "Demon",
+    "nameEn": "Demon",
+    "pluralPl": "Demony",
+    "pluralEn": "Demons",
+    "color": "#c42020",
+    "order": 40,
+    "extra": false
+  },
+  {
+    "id": "traveler",
+    "namePl": "Wędrowiec",
+    "nameEn": "Traveller",
+    "pluralPl": "Wędrowcy",
+    "pluralEn": "Travellers",
+    "color": "#9a3fc4",
+    "order": 50,
+    "extra": true
+  },
+  {
+    "id": "fabled",
+    "namePl": "Legenda",
+    "nameEn": "Fabled",
+    "pluralPl": "Legendy",
+    "pluralEn": "Fabled",
+    "color": "#b8960c",
+    "order": 60,
+    "extra": true
+  }
+]

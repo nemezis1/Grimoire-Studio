@@ -183,6 +183,11 @@ export function downloadText(fileName, text, type = 'application/json') {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** Saves bytes (a Uint8Array from .NET) as a file through the browser's download. */
+export function downloadBytes(fileName, bytes, type) {
+    downloadText(fileName, bytes, type);
+}
+
 // --- Per-tab session values (sessionStorage): kept while browsing, gone when the tab is closed ---------------------
 
 export function sessionGet(key) {

@@ -10,6 +10,13 @@ public sealed record GameData
     public const string FabledFile = "fabled.json";
     public const string ScriptsFile = "scripts.json";
     public const string JinxesFile = "hatred.json";
+    public const string TeamsFile = "teams.json";
+
+    /// <summary>Role icons, <c>icons/&lt;role id&gt;.png</c>.</summary>
+    public const string IconsFolder = "icons";
+
+    /// <summary>Script pictures, <c>editions/&lt;icon name&gt;.png</c> (see <see cref="Script.IconName"/>).</summary>
+    public const string EditionsFolder = "editions";
 
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -23,8 +30,8 @@ public sealed record GameData
     public ScriptCatalog Scripts { get; init; } = new();
     public IReadOnlyList<RoleJinxes> Jinxes { get; init; } = [];
 
-    /// <summary>Teams (character types); not stored in the data folder, the built-in ones come from code.</summary>
-    public IReadOnlyList<TeamInfo> Teams { get; init; } = TeamInfo.Defaults;
+    /// <summary>Teams (character types) in list order.</summary>
+    public IReadOnlyList<TeamInfo> Teams { get; init; } = [];
 
     public IEnumerable<Role> AllRoles => Roles.Concat(Fabled);
 
@@ -34,6 +41,7 @@ public sealed record GameData
         Fabled = Read<List<Role>>(directory, FabledFile),
         Scripts = Read<ScriptCatalog>(directory, ScriptsFile),
         Jinxes = Read<List<RoleJinxes>>(directory, JinxesFile),
+        Teams = Read<List<TeamInfo>>(directory, TeamsFile),
     };
 
     private static T Read<T>(string directory, string file)

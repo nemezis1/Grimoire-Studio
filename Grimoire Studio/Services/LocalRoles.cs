@@ -1,3 +1,5 @@
+using GrimoireStudio.Data;
+
 namespace Grimoire_Studio.Services;
 
 /// <summary>Roles created or changed in one change set; they override roles with the same id.</summary>

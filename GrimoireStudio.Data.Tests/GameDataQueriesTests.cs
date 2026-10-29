@@ -20,6 +20,7 @@ public class GameDataQueriesTests
 
     private static readonly GameData Data = new()
     {
+        Teams = DataFolder.Teams,
         Roles =
         [
             CreateRole("chef", firstNight: 30),
@@ -136,7 +137,7 @@ public class GameDataQueriesTests
     {
         var merged = Data.WithTeams(
         [
-            TeamInfo.Defaults[0] with { PluralPl = "Mieszczanie" },
+            Data.Teams[0] with { PluralPl = "Mieszczanie" },
             new TeamInfo { Id = "loric", NamePl = "Loric", NameEn = "Loric", PluralPl = "Loric", PluralEn = "Loric", Order = 55 },
         ]);
 

@@ -23,6 +23,7 @@ public class DataValidatorTests
         Fabled = [CreateRole("djinn", TeamIds.Fabled)],
         Scripts = new ScriptCatalog { Scripts = scripts ?? [new Script { Id = "tb", Name = "TB", Roles = ["chef", "imp", "djinn"] }] },
         Jinxes = jinxes ?? [],
+        Teams = DataFolder.Teams,
     };
 
     [Fact]

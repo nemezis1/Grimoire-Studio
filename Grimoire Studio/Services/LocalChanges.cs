@@ -26,12 +26,7 @@ public sealed class LocalChanges(LocalStore store, string prefix)
     };
 
     /// <summary>Data with this change set applied on top of <paramref name="data"/>.</summary>
-    public async Task<GameData> ApplyToAsync(GameData data) =>
-        data
-            .WithTeams(await Teams.GetAllAsync())
-            .WithRoles((await Roles.GetAllAsync()).Select(r => r.Role))
-            .WithScripts(await Scripts.GetAllAsync())
-            .WithJinxes(await Jinxes.GetAllAsync());
+    public async Task<GameData> ApplyToAsync(GameData data) => (await GetAllAsync()).ApplyTo(data);
 
     public async Task<string> ExportAsync() => JsonSerializer.Serialize(await GetAllAsync(), FileOptions);
 

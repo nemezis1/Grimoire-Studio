@@ -4,6 +4,7 @@ namespace GrimoireStudio.Data;
 
 /// <summary>
 /// A character. JSON shape matches Blood.Core/Data/roles.json so Blood can consume the same files.
+/// Properties are declared in the order the data files list them (see <see cref="DataFiles"/>).
 /// </summary>
 public sealed record Role
 {
@@ -18,17 +19,15 @@ public sealed record Role
     /// <summary>Team id: one of <see cref="TeamIds"/> or a team added locally.</summary>
     public string Team { get; init; } = TeamIds.Townsfolk;
 
-    public required string AbilityEn { get; init; }
-    public required string AbilityPl { get; init; }
-
     /// <summary>Position in the first-night order; 0 means the role does not wake.</summary>
     public int FirstNight { get; init; }
+
+    public string FirstNightReminderEn { get; init; } = string.Empty;
+    public string FirstNightReminderPl { get; init; } = string.Empty;
 
     /// <summary>Position in the other-nights order; 0 means the role does not wake.</summary>
     public int OtherNight { get; init; }
 
-    public string FirstNightReminderEn { get; init; } = string.Empty;
-    public string FirstNightReminderPl { get; init; } = string.Empty;
     public string OtherNightReminderEn { get; init; } = string.Empty;
     public string OtherNightReminderPl { get; init; } = string.Empty;
 
@@ -40,6 +39,9 @@ public sealed record Role
 
     /// <summary>The role modifies game setup (e.g. Baron changes the outsider count).</summary>
     public bool Setup { get; init; }
+
+    public required string AbilityEn { get; init; }
+    public required string AbilityPl { get; init; }
 
     [JsonIgnore]
     public bool WakesFirstNight => FirstNight > 0;

@@ -55,6 +55,7 @@ public sealed class GameDataClient(HttpClient http, ChangeSets changes, TeamText
         var fabled = ReadAsync<List<Role>>(GameData.FabledFile);
         var scripts = ReadAsync<ScriptCatalog>(GameData.ScriptsFile);
         var jinxes = ReadAsync<List<RoleJinxes>>(GameData.JinxesFile);
+        var teams = ReadAsync<List<TeamInfo>>(GameData.TeamsFile);
 
         return new GameData
         {
@@ -62,6 +63,7 @@ public sealed class GameDataClient(HttpClient http, ChangeSets changes, TeamText
             Fabled = await fabled,
             Scripts = await scripts,
             Jinxes = await jinxes,
+            Teams = await teams,
         };
     }
 

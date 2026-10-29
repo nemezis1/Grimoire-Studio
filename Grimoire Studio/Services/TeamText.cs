@@ -3,12 +3,12 @@ using GrimoireStudio.Data;
 namespace Grimoire_Studio.Services;
 
 /// <summary>
-/// Team labels and colours for rendering. Holds the teams of the last loaded game data (built-in plus local), so
+/// Team labels and colours for rendering. Holds the teams of the last loaded game data (teams.json plus local), so
 /// components can look them up synchronously.
 /// </summary>
 public sealed class TeamText
 {
-    private IReadOnlyList<TeamInfo> _teams = TeamInfo.Defaults;
+    private IReadOnlyList<TeamInfo> _teams = [];
 
     /// <summary>Teams in list order.</summary>
     public IReadOnlyList<TeamInfo> All => _teams;

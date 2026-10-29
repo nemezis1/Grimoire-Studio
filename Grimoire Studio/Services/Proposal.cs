@@ -1,3 +1,5 @@
+using GrimoireStudio.Data;
+
 namespace Grimoire_Studio.Services;
 
 /// <summary>Changes sent for the wiki, waiting for the admin's decision (or already decided).</summary>

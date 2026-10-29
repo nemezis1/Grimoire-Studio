@@ -7,7 +7,10 @@ internal static class DataFolder
 {
     public static string Path { get; } = Find();
 
-    public static string Icons => System.IO.Path.Combine(Path, "icons");
+    public static string Icons => System.IO.Path.Combine(Path, GameData.IconsFolder);
+
+    /// <summary>Teams from the repository's teams.json, for tests that build their own roles.</summary>
+    public static IReadOnlyList<TeamInfo> Teams { get; } = GameData.Load(Path).Teams;
 
     private static string Find()
     {
