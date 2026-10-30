@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Grimoire: a closed book with a clock face on the cover. -->
+  <rect width="64" height="64" rx="14" fill="#1f1c19"/>
+  <path d="M15 12h31a4 4 0 0 1 4 4v36a4 4 0 0 1-4 4H15z" fill="#7a1f1f"/>
+  <rect x="12" y="12" width="7" height="44" rx="2" fill="#c2543f"/>
+  <path d="M46 16v36" stroke="#e8dcc4" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="33" cy="34" r="11" fill="none" stroke="#d4a64a" stroke-width="3"/>
+  <path d="M33 27v7l5 3" fill="none" stroke="#d4a64a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

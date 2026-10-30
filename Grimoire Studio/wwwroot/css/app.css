@@ -383,6 +383,20 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .jinx-list li:first-child { border-top: 0; }
 .jinx-list p { margin: 0.25rem 0 0; }
 .jinx-pair { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+/* All jinxes: cards filling the width, as many columns as fit. */
+.jinx-list--all {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+    gap: 0.75rem;
+}
+.jinx-list--all li,
+.jinx-list--all li:first-child {
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.jinx-list__head { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
 
 /* Scripts */
 .script-grid {

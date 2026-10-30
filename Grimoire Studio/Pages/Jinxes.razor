@@ -1,0 +1,106 @@
+@page "/jinxes"
+@using System.Globalization
+@inject NavigationManager Nav
+
+<PageTitle>Jinxy – Grimoire Studio</PageTitle>
+
+<h1>Jinxy</h1>
+
+<div class="pinned fill-viewport">
+<DataView Context="data">
+    @{
+        var scope = Script is null ? null : data.FindScript(Script);
+        var all = data.Jinxes
+            .SelectMany(owner => owner.Jinxes.Select(jinx => (Owner: data.FindRole(owner.Id), Other: data.FindRole(jinx.Id), Jinx: jinx)))
+            .Where(j => j.Owner is not null && j.Other is not null)
+            .Select(j => (Owner: j.Owner!, Other: j.Other!, j.Jinx))
+            .ToList();
+        var jinxes = all
+            .Where(j => scope is null || (scope.Roles.Contains(j.Owner.Id) && scope.Roles.Contains(j.Other.Id)))
+            .Where(j => !ToReview || IsMachineTranslated(j.Jinx))
+            .Where(j => SearchText.Matches(Q ?? string.Empty,
+                j.Owner.NamePl, j.Owner.NameEn, j.Other.NamePl, j.Other.NameEn, j.Jinx.ReasonPl, j.Jinx.ReasonEn))
+            .OrderBy(j => SortName(j.Owner), PolishOrder)
+            .ThenBy(j => SortName(j.Other), PolishOrder)
+            .ToList();
+    }
+
+    <div class="pinned__top">
+        <div class="filters">
+            <input class="filters__search" type="search" placeholder="Szukaj po roli lub treści…"
+                   value="@Q" @oninput="e => SetParameter(QueryName, e.Value?.ToString())" />
+
+            <select class="filters__select" value="@(scope?.Id ?? string.Empty)"
+                    @onchange="e => SetParameter(ScriptName, e.Value?.ToString())">
+                <option value="">Wszystkie skrypty</option>
+                @foreach (var script in data.Scripts.Scripts)
+                {
+                    <option value="@script.Id">@script.Name</option>
+                }
+            </select>
+
+            <div class="chips" role="group" aria-label="Tłumaczenie">
+                <button class="chip @(ToReview ? null : "chip--active")" @onclick="() => SetParameter(ReviewName, null)">Wszystkie</button>
+                <button class="chip @(ToReview ? "chip--active" : null)" @onclick="() => SetParameter(ReviewName, ReviewValue)"
+                        title="Polski tekst przetłumaczony maszynowo, oznaczony « »">
+                    Do sprawdzenia (@all.Count(j => IsMachineTranslated(j.Jinx)))
+                </button>
+            </div>
+        </div>
+
+        <p class="muted">
+            Znaleziono: @jinxes.Count z @all.Count
+            @if (scope is not null)
+            {
+                <span> · tylko pary, w których obie role są w skrypcie</span>
+            }
+        </p>
+    </div>
+
+    <div class="pinned__scroll">
+        <ul class="jinx-list jinx-list--all">
+            @foreach (var (owner, other, jinx) in jinxes)
+            {
+                <li>
+                    <div class="jinx-list__head">
+                        <span class="jinx-pair"><RoleLink Role="owner" /> + <RoleLink Role="other" /></span>
+                        <a class="wiki-link" href="roles/@owner.Id/jinxes">edytuj</a>
+                    </div>
+                    <p>@jinx.ReasonPl</p>
+                    <p class="muted small">@jinx.ReasonEn</p>
+                </li>
+            }
+        </ul>
+    </div>
+</DataView>
+</div>
+
+@code {
+    private const string QueryName = "q";
+    private const string ScriptName = "script";
+    private const string ReviewName = "review";
+    private const string ReviewValue = "1";
+
+    private static readonly StringComparer PolishOrder = StringComparer.Create(new CultureInfo("pl-PL"), true);
+
+    [SupplyParameterFromQuery(Name = QueryName)]
+    public string? Q { get; set; }
+
+    [SupplyParameterFromQuery(Name = ScriptName)]
+    public string? Script { get; set; }
+
+    [SupplyParameterFromQuery(Name = ReviewName)]
+    public string? Review { get; set; }
+
+    private bool ToReview => Review == ReviewValue;
+
+    /// <summary>Machine-translated Polish text is wrapped in « » until someone reviews it.</summary>
+    private static bool IsMachineTranslated(Jinx jinx) => jinx.ReasonPl.Contains('«');
+
+    /// <summary>Polish name without the « » of a machine translation, so those roles sort among the others.</summary>
+    private static string SortName(Role role) => role.NamePl.Trim('«', '»');
+
+    // Filters live in the query string so a filtered list can be shared as a link.
+    private void SetParameter(string name, string? value) =>
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter(name, string.IsNullOrWhiteSpace(value) ? null : value), replace: true);
+}
