@@ -45,7 +45,7 @@ public class ScriptToolFormatTests
     public void Import_Should_CreateHomebrewRoleTeamAndJinx()
     {
         const string json = """
-            [{"id": "big_wig", "name": "Big Wig", "team": "loric", "ability": "Does things.", "firstNight": 12.4,
+            [{"id": "big_wig", "name": "Big Wig", "team": "homebrew", "ability": "Does things.", "firstNight": 12.4,
               "reminders": ["Wig"], "setup": true, "jinxes": [{"id": "chef", "reason": "Because."}]},
              {"id": "hermit", "name": "Hermit", "team": "traveller", "ability": "Hides."}]
             """;
@@ -53,10 +53,10 @@ public class ScriptToolFormatTests
         var result = ScriptToolFormat.Import(json, Data, "x");
 
         var wig = result.NewRoles[0];
-        Assert.Equal(("bigwig", "Big Wig", "loric", 12, true), (wig.Id, wig.NamePl, wig.Team, wig.FirstNight, wig.Setup));
+        Assert.Equal(("bigwig", "Big Wig", "homebrew", 12, true), (wig.Id, wig.NamePl, wig.Team, wig.FirstNight, wig.Setup));
         Assert.Equal(["Wig"], wig.RemindersPl);
         Assert.Equal(TeamIds.Traveler, result.NewRoles[1].Team);
-        Assert.Equal("loric", Assert.Single(result.NewTeams).Id);
+        Assert.Equal("homebrew", Assert.Single(result.NewTeams).Id);
         Assert.Equal("bigwig/chef", Assert.Single(result.NewJinxes).Key);
     }
 

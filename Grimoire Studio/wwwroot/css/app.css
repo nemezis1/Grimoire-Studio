@@ -843,6 +843,9 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .role-grid__item { position: relative; }
 .role-grid__item > .wiki-link { position: absolute; top: 0.6rem; right: 0.75rem; }
 
+/* Room for the wiki link in the top-right corner, so a long name wraps before it. */
+.role-grid__item .role-card__name { padding-right: 3rem; }
+
 @media print {
     .wiki-link { display: none; }
 }

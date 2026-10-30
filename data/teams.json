@@ -58,5 +58,15 @@
     "color": "#b8960c",
     "order": 60,
     "extra": true
+  },
+  {
+    "id": "loric",
+    "namePl": "«Loric»",
+    "nameEn": "Loric",
+    "pluralPl": "«Loric»",
+    "pluralEn": "Loric",
+    "color": "#4f8f3a",
+    "order": 70,
+    "extra": true
   }
 ]
