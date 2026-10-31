@@ -1,7 +1,7 @@
 # Grimoire Studio
 
 Fanowska wiki i generator tokenów do gry **Blood on the Clocktower**, udostępniana za darmo społeczności:
-https://nemezis1.github.io/Grimoire-Studio/
+https://grimoire-studio.botc-wiki.workers.dev/
 
 > Projekt nieoficjalny, niezwiązany z The Pandemonium Institute. Blood on the Clocktower jest znakiem towarowym The Pandemonium Institute.
 
@@ -13,7 +13,7 @@ https://nemezis1.github.io/Grimoire-Studio/
 | `GrimoireStudio.Data/` | modele danych, wczytywanie i walidacja (net8.0, współdzielone z aplikacją Blood) |
 | `GrimoireStudio.Data.Tests/` | testy; sprawdzają też spójność plików w `data/` |
 | `Grimoire Studio/` | aplikacja webowa (Blazor WebAssembly) |
-| `worker/` | usługa zapisu zmian do repozytorium (Cloudflare Worker) |
+| `worker/` | Cloudflare Worker: serwuje stronę i usługę zapisu zmian do repozytorium (`/api/`) |
 
 ## Dane
 
@@ -47,11 +47,11 @@ dotnet run --project "Grimoire Studio"
 - Administrator (`/?admin`) zatwierdza zgłoszenia w panelu, a potem pobiera „Pliki danych (.zip)”: zmienione pliki
   `data/` gotowe do rozpakowania w katalogu repozytorium i zacommitowania.
 - Administrator zalogowany swoim kluczem może też wysłać zmiany prosto do repozytorium („Wyślij do repozytorium”) –
-  przez usługę zapisu w `worker/` (Cloudflare Worker, opis w `worker/README.md`); konto na GitHubie nie jest potrzebne.
+  przez usługę zapisu w `worker/` (opis w `worker/README.md`); konto na GitHubie nie jest potrzebne.
 - Panel zatrzymuje pobieranie i wysyłanie, gdy zmiany psują dane (np. skrypt z nieistniejącą rolą, nowa rola bez ikony).
 
 ## Wdrożenie
 
 Workflow `.github/workflows/build.yml` przy każdym pushu i pull requeście buduje projekt i uruchamia testy (w tym
-walidację `data/`). Push do `main` publikuje stronę na GitHub Pages; wersją danych (`data/version.txt`) jest wtedy
-skrót commita. W ustawieniach repozytorium: *Settings → Pages → Source: GitHub Actions*.
+walidację `data/` i testy Workera). Push do `main` wdraża stronę razem z usługą zapisu na Cloudflare Workers
+(`worker/`); wersją danych (`data/version.txt`) jest wtedy skrót commita. Konfiguracja: `worker/README.md`.

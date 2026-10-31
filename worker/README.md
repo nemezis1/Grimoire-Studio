@@ -1,6 +1,7 @@
-# Usługa zapisu (Cloudflare Worker)
+# Strona i usługa zapisu (Cloudflare Worker)
 
-Pozwala administratorom zapisywać zatwierdzone zmiany wiki prosto do repozytorium, bez kont na GitHubie.
+Worker serwuje stronę (opublikowaną aplikację, jako pliki statyczne) pod https://grimoire-studio.botc-wiki.workers.dev/,
+a pod `/api/` usługę zapisu. Usługa zapisu pozwala administratorom zapisywać zatwierdzone zmiany wiki prosto do repozytorium, bez kont na GitHubie.
 
 - Każdy administrator ma własny klucz. Worker sprawdza klucz i robi commit jednym tokenem GitHuba, który trzyma jako
   sekret – token nigdy nie trafia do przeglądarki.
@@ -8,7 +9,8 @@ Pozwala administratorom zapisywać zatwierdzone zmiany wiki prosto do repozytori
 - Zapisać można tylko pliki `data/` (JSON, ikony ról, obrazki skryptów).
 - Jeśli od wczytania strony ktoś zmienił te same pliki, Worker nic nie zapisuje i zwraca listę plików (konflikt).
 
-Po commicie workflow `Build` sam wdraża stronę na GitHub Pages (kilka minut).
+Każdy push do `main` – także commit administratora – uruchamia workflow `Build`, który buduje stronę i wdraża Workera
+(kilka minut).
 
 ## Uruchomienie (jednorazowo)
 
@@ -26,13 +28,15 @@ Po commicie workflow `Build` sam wdraża stronę na GitHub Pages (kilka minut).
    npx wrangler secret put ADMIN_KEYS
    ```
    `ADMIN_KEYS` to JSON z wpisami administratorów, np. `{"Kasia": "…", "Tomek": "…"}` (patrz niżej).
-4. **Wdrożenie:**
-   ```bash
-   npx wrangler deploy
-   ```
-   Wrangler poda adres, np. `https://grimoire-studio.botc-wiki.workers.dev`.
-5. **Adres w aplikacji:** wpisz go w `Grimoire Studio/wwwroot/appsettings.json` jako `PublishApi` i zrób commit.
-   Bez tego panel administratora nie pokazuje logowania ani wysyłania.
+4. **Wdrażanie z GitHuba:** w Cloudflare *My Profile → API Tokens → Create Token → szablon „Edit Cloudflare
+   Workers”* (konto: swoje, strefy: wszystkie lub żadna). Na GitHubie w repozytorium *Settings → Secrets and variables
+   → Actions* dodaj sekrety `CLOUDFLARE_API_TOKEN` (ten token) i `CLOUDFLARE_ACCOUNT_ID` (ID konta z panelu
+   Cloudflare, *Workers & Pages* → prawa kolumna).
+5. **Adres usługi w aplikacji:** `PublishApi` w `Grimoire Studio/wwwroot/appsettings.json`
+   (`https://grimoire-studio.botc-wiki.workers.dev/api`). Pusty – panel nie pokazuje logowania ani wysyłania.
+
+Ręczne wdrożenie (np. bez GitHuba): `dotnet publish "Grimoire Studio/Grimoire Studio.csproj" -c Release -o publish`
+w katalogu repozytorium, potem `npx wrangler deploy` w `worker/`.
 
 ## Administratorzy
 

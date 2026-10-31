@@ -1,6 +1,7 @@
-// Grimoire Studio publishing service (Cloudflare Worker).
+// Grimoire Studio on Cloudflare Workers: serves the site (the published Blazor app, as static assets) and, under
+// /api/, the publishing service.
 //
-// Lets the admins commit approved wiki changes to the repository without GitHub accounts: each admin has a personal
+// The publishing service lets the admins commit approved wiki changes to the repository without GitHub accounts: each admin has a personal
 // key, the Worker checks it and commits with the one GitHub token it keeps as a secret. The token never reaches a
 // browser.
 //
@@ -10,7 +11,8 @@
 //   REPOSITORY       "owner/name"
 //   BRANCH           branch to commit to, e.g. "main"
 //   COMMIT_EMAIL     author e-mail of the commits (the author name is the admin's)
-//   ALLOWED_ORIGINS  comma-separated origins allowed to call the Worker (the site, local development)
+//   ALLOWED_ORIGINS  other origins allowed to call the API (e.g. local development); the site itself is same-origin
+//   ASSETS           binding to the site's files (wrangler.toml [assets])
 
 const MAX_FILES = 60;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
@@ -19,8 +21,15 @@ const MAX_MESSAGE_LENGTH = 2000;
 // Only files of the data folder can be written: the JSON files, role icons and script pictures.
 const ALLOWED_PATH = /^data\/(?:[a-z]+\.json|icons\/[a-z0-9]+\.png|editions\/[a-z0-9-]+\.png)$/;
 
+const API = '/api/';
+
 export default {
     async fetch(request, env) {
+        // Everything outside /api/ is the site; its unknown paths get index.html (the app's own routes).
+        if (!new URL(request.url).pathname.startsWith(API) && env.ASSETS) {
+            return env.ASSETS.fetch(request);
+        }
+
         const cors = corsHeaders(request, env);
         if (request.method === 'OPTIONS') {
             return new Response(null, { status: cors ? 204 : 403, headers: cors ?? {} });
@@ -45,11 +54,11 @@ export default {
 
 async function route(request, env) {
     const { pathname } = new URL(request.url);
-    if (request.method === 'GET' && pathname === '/me') {
+    if (request.method === 'GET' && pathname === `${API}me`) {
         return json({ name: await authenticate(request, env) });
     }
 
-    if (request.method === 'POST' && pathname === '/commit') {
+    if (request.method === 'POST' && pathname === `${API}commit`) {
         const admin = await authenticate(request, env);
         return json(await commit(await readBody(request), admin, env));
     }

@@ -66,24 +66,24 @@ const call = (method, path, { key = KEY, body, origin = SITE } = {}) =>
 const file = (path, text = '[]') => ({ path, content: Buffer.from(text).toString('base64') });
 
 test('me returns the admin name for a valid key', async () => {
-    const response = await call('GET', '/me');
+    const response = await call('GET', '/api/me');
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { name: 'Kasia' });
     assert.equal(response.headers.get('Access-Control-Allow-Origin'), SITE);
 });
 
 test('a wrong or missing key is refused', async () => {
-    assert.equal((await call('GET', '/me', { key: 'wrong' })).status, 401);
-    assert.equal((await call('GET', '/me', { key: null })).status, 401);
+    assert.equal((await call('GET', '/api/me', { key: 'wrong' })).status, 401);
+    assert.equal((await call('GET', '/api/me', { key: null })).status, 401);
 });
 
 test('preflight is allowed only for listed origins', async () => {
-    assert.equal((await call('OPTIONS', '/commit', { origin: SITE })).status, 204);
-    assert.equal((await call('OPTIONS', '/commit', { origin: 'https://evil.example' })).status, 403);
+    assert.equal((await call('OPTIONS', '/api/commit', { origin: SITE })).status, 204);
+    assert.equal((await call('OPTIONS', '/api/commit', { origin: 'https://evil.example' })).status, 403);
 });
 
 test('commit writes the files on top of the branch with the admin as author', async () => {
-    const response = await call('POST', '/commit', {
+    const response = await call('POST', '/api/commit', {
         body: { message: 'Nowa rola', baseVersion: 'aaaaaaa', files: [file('data/roles.json'), file('data/icons/chef.png')] },
     });
 
@@ -104,7 +104,7 @@ test('commit writes the files on top of the branch with the admin as author', as
 
 test('files outside the data folder are refused', async () => {
     for (const path of ['README.md', '.github/workflows/build.yml', 'data/../README.md', 'data/icons/x.svg']) {
-        const response = await call('POST', '/commit', { body: { files: [file(path)] } });
+        const response = await call('POST', '/api/commit', { body: { files: [file(path)] } });
         assert.equal(response.status, 400, path);
     }
     assert.ok(!github.calls.some(c => c.method === 'POST'));
@@ -115,7 +115,7 @@ test('a change to the same file since the base version is a conflict', async () 
     github.commits.ccccccc3333 = { tree: { sha: 'tree0' } };
     github.changedSince.aaaaaaa = ['data/roles.json'];
 
-    const response = await call('POST', '/commit', { body: { baseVersion: 'aaaaaaa', files: [file('data/roles.json')] } });
+    const response = await call('POST', '/api/commit', { body: { baseVersion: 'aaaaaaa', files: [file('data/roles.json')] } });
 
     assert.equal(response.status, 409);
     assert.deepEqual((await response.json()).conflicts, ['data/roles.json']);
@@ -127,7 +127,7 @@ test('changes to other files since the base version are fine', async () => {
     github.commits.ccccccc3333 = { tree: { sha: 'tree0' } };
     github.changedSince.aaaaaaa = ['data/hatred.json'];
 
-    const response = await call('POST', '/commit', { body: { baseVersion: 'aaaaaaa', files: [file('data/roles.json')] } });
+    const response = await call('POST', '/api/commit', { body: { baseVersion: 'aaaaaaa', files: [file('data/roles.json')] } });
 
     assert.equal(response.status, 200);
 });
@@ -135,13 +135,13 @@ test('changes to other files since the base version are fine', async () => {
 test('a branch moved during the commit is reported as a conflict', async () => {
     github.refusePatch = true;
 
-    const response = await call('POST', '/commit', { body: { files: [file('data/roles.json')] } });
+    const response = await call('POST', '/api/commit', { body: { files: [file('data/roles.json')] } });
 
     assert.equal(response.status, 409);
 });
 
 test('without a key nothing reaches GitHub', async () => {
-    const response = await call('POST', '/commit', { key: null, body: { files: [file('data/roles.json')] } });
+    const response = await call('POST', '/api/commit', { key: null, body: { files: [file('data/roles.json')] } });
 
     assert.equal(response.status, 401);
     assert.equal(github.calls.length, 0);
@@ -150,8 +150,23 @@ test('without a key nothing reaches GitHub', async () => {
 test('a broken ADMIN_KEYS secret is reported as a configuration error', async () => {
     env.ADMIN_KEYS = '"3f9a"';
 
-    const response = await call('GET', '/me');
+    const response = await call('GET', '/api/me');
 
     assert.equal(response.status, 500);
     assert.match((await response.json()).error, /ADMIN_KEYS/);
+});
+
+test('paths outside /api/ are served from the site files', async () => {
+    const served = [];
+    const response = await worker.fetch(new Request('https://worker.test/roles/chef'), {
+        ...env,
+        ASSETS: { fetch: request => { served.push(new URL(request.url).pathname); return new Response('site'); } },
+    });
+
+    assert.equal(await response.text(), 'site');
+    assert.deepEqual(served, ['/roles/chef']);
+});
+
+test('an unknown API path is 404', async () => {
+    assert.equal((await call('GET', '/api/nothing')).status, 404);
 });
