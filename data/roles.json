@@ -2550,20 +2550,20 @@
   {
     "id": "knight",
     "nameEn": "Knight",
-    "namePl": "«Rycerz»",
+    "namePl": "Rycerz",
     "edition": "",
     "team": "townsfolk",
     "firstNight": 432,
     "firstNightReminderEn": "Point to the 2 players marked 'Know'.",
-    "firstNightReminderPl": "«Wskaż 2 graczy oznaczonych znacznikiem 'Wie'.»",
+    "firstNightReminderPl": "Wskaż 2 graczy oznaczonych znacznikiem 'Wie'.",
     "otherNight": 0,
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Know", "Know" ],
-    "remindersPl": [ "«Wie»", "«Wie»" ],
+    "remindersPl": [ "Wie", "Wie" ],
     "setup": false,
     "abilityEn": "You start knowing 2 players that are not the Demon.",
-    "abilityPl": "«Rozpoczynając grę, poznajesz 2 graczy, którzy nie są Demonem.»"
+    "abilityPl": "Rozpoczynając grę, poznajesz 2 graczy, którzy nie są Demonem."
   },
   {
     "id": "shugenja",
