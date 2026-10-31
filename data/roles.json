@@ -2532,20 +2532,20 @@
   {
     "id": "steward",
     "nameEn": "Steward",
-    "namePl": "«Zarządca»",
+    "namePl": "Zarządca",
     "edition": "",
     "team": "townsfolk",
     "firstNight": 431,
     "firstNightReminderEn": "Point to the player marked 'Know'.",
-    "firstNightReminderPl": "«Wskaż gracza oznaczonego znacznikiem 'Wie'.»",
+    "firstNightReminderPl": "Wskaż gracza oznaczonego znacznikiem 'Wie'.",
     "otherNight": 0,
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Know" ],
-    "remindersPl": [ "«Wie»" ],
+    "remindersPl": [ "Wie" ],
     "setup": false,
     "abilityEn": "You start knowing 1 good player.",
-    "abilityPl": "«Rozpoczynając grę, poznajesz 1 dobrego gracza.»"
+    "abilityPl": "Rozpoczynając grę, poznajesz 1 dobrego gracza."
   },
   {
     "id": "knight",
