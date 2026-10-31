@@ -363,3 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 # Copied from data/ at build time (see Grimoire Studio.csproj)
 Grimoire Studio/wwwroot/data/
+
+# Cloudflare Worker tooling
+worker/node_modules/
+worker/.wrangler/
+worker/.dev.vars

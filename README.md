@@ -13,6 +13,7 @@ https://nemezis1.github.io/Grimoire-Studio/
 | `GrimoireStudio.Data/` | modele danych, wczytywanie i walidacja (net8.0, współdzielone z aplikacją Blood) |
 | `GrimoireStudio.Data.Tests/` | testy; sprawdzają też spójność plików w `data/` |
 | `Grimoire Studio/` | aplikacja webowa (Blazor WebAssembly) |
+| `worker/` | usługa zapisu zmian do repozytorium (Cloudflare Worker) |
 
 ## Dane
 
@@ -45,7 +46,9 @@ dotnet run --project "Grimoire Studio"
   plik eksportu.
 - Administrator (`/?admin`) zatwierdza zgłoszenia w panelu, a potem pobiera „Pliki danych (.zip)”: zmienione pliki
   `data/` gotowe do rozpakowania w katalogu repozytorium i zacommitowania.
-- Panel zatrzymuje pobieranie, gdy zmiany psują dane (np. skrypt z nieistniejącą rolą, nowa rola bez ikony).
+- Administrator zalogowany swoim kluczem może też wysłać zmiany prosto do repozytorium („Wyślij do repozytorium”) –
+  przez usługę zapisu w `worker/` (Cloudflare Worker, opis w `worker/README.md`); konto na GitHubie nie jest potrzebne.
+- Panel zatrzymuje pobieranie i wysyłanie, gdy zmiany psują dane (np. skrypt z nieistniejącą rolą, nowa rola bez ikony).
 
 ## Wdrożenie
 

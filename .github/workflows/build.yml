@@ -28,6 +28,10 @@ jobs:
       - name: Test
         run: dotnet test "Grimoire Studio.slnx" --configuration Release
 
+      - name: Test publishing Worker
+        working-directory: worker
+        run: node --test
+
       - name: Publish
         run: dotnet publish "Grimoire Studio/Grimoire Studio.csproj" --configuration Release --output publish
 

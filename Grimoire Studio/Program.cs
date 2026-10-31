@@ -15,5 +15,6 @@ builder.Services.AddScoped<Proposals>();
 builder.Services.AddScoped<TeamText>();
 builder.Services.AddScoped<GameDataClient>();
 builder.Services.AddScoped<TokenRenderer>();
+builder.Services.AddScoped<RepositoryPublisher>();
 
 await builder.Build().RunAsync();

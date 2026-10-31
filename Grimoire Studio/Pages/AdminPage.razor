@@ -4,6 +4,7 @@
 @inject ChangeSets ChangeSets
 @inject Proposals Proposals
 @inject NavigationManager Nav
+@inject RepositoryPublisher Publisher
 @implements IDisposable
 
 @if (!_loaded || !ChangeSets.IsAdmin)
@@ -32,6 +33,31 @@ else
             <button class="button button--ghost" @onclick="LeaveAdminAsync">Wyjdź z trybu administratora</button>
         </div>
     </section>
+
+    @if (Publisher.IsConfigured)
+    {
+        <section class="panel form">
+            <h2>Zapis do repozytorium</h2>
+            @if (Publisher.AdminName is { } adminName)
+            {
+                <div class="field-row">
+                    <span>Zalogowano jako <strong>@adminName</strong>: zmiany wiki wyślesz przyciskiem „Wyślij do repozytorium”.</span>
+                    <button class="button button--ghost" @onclick="SignOutAsync">Wyloguj</button>
+                </div>
+            }
+            else
+            {
+                <div class="field-row">
+                    <label class="field">
+                        <span>Klucz administratora</span>
+                        <input type="password" autocomplete="off" @bind="_adminKey" @bind:event="oninput" />
+                    </label>
+                    <button class="button" disabled="@(string.IsNullOrWhiteSpace(_adminKey) || _busy)" @onclick="SignInAsync">Zaloguj</button>
+                </div>
+                <p class="muted small">Klucz dostajesz od właściciela strony. Zostaje tylko w tej karcie przeglądarki.</p>
+            }
+        </section>
+    }
 
     @if (_message is not null)
     {
@@ -89,6 +115,16 @@ else
             </label>
         </div>
     </div>
+    @if (Publisher.AdminName is not null && _wikiChanges.Count > 0)
+    {
+        <div class="field-row">
+            <label class="field">
+                <span>Opis zmian do historii repozytorium</span>
+                <input type="text" @bind="_commitMessage" @bind:event="oninput" placeholder="np. Poprawione tłumaczenia jinxów" />
+            </label>
+            <button class="button" disabled="@_busy" @onclick="PublishAsync">@(_busy ? "Wysyłanie…" : "Wyślij do repozytorium")</button>
+        </div>
+    }
     <p class="muted small">
         Różnice wiki względem danych strony (folderu danych). Na razie zapisane tylko w tej przeglądarce; plik eksportu to
         kopia zapasowa. „Pobierz pliki danych” daje zmienione pliki (JSON i obrazki) gotowe do rozpakowania w głównym
@@ -140,6 +176,9 @@ else
     private List<Proposal> _decided = [];
     private readonly Dictionary<string, HashSet<string>> _selection = [];
     private string? _message;
+    private string? _adminKey;
+    private string? _commitMessage;
+    private bool _busy;
     private bool _messageIsError;
 
     protected override async Task OnInitializedAsync()
@@ -155,6 +194,7 @@ else
             return;
         }
 
+        await Publisher.LoadAsync();
         await ReloadAsync();
     }
 
@@ -302,6 +342,71 @@ else
 
         await Store.DownloadAsync($"grimoire-studio-data-{DateTime.Now:yyyy-MM-dd}.zip", zip.ToArray(), "application/zip");
         Show($"Pobrano pliki danych: {string.Join(", ", files.Select(f => f.Path))}.");
+    }
+
+    private async Task SignInAsync()
+    {
+        _busy = true;
+        try
+        {
+            await Publisher.SignInAsync(_adminKey ?? string.Empty);
+            _adminKey = null;
+            Show($"Zalogowano jako {Publisher.AdminName}.");
+        }
+        catch (PublishException ex)
+        {
+            Show(ex.Message, error: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SignOutAsync()
+    {
+        await Publisher.SignOutAsync();
+        Show("Wylogowano.");
+    }
+
+    /// <summary>
+    /// Commits the files the wiki changes; the wiki changes are then cleared, as they are in the repository and reach the
+    /// site with its next deployment.
+    /// </summary>
+    private async Task PublishAsync()
+    {
+        _busy = true;
+        try
+        {
+            var original = await Client.GetOriginalAsync();
+            var changes = await ChangeSets.Wiki.GetAllAsync();
+            var files = RepositoryExport.ChangedFiles(original, changes);
+            if (files.Count == 0)
+            {
+                Show("Wiki nie zmienia żadnego pliku danych.");
+                return;
+            }
+
+            var message = string.IsNullOrWhiteSpace(_commitMessage)
+                ? $"Zmiany wiki: {ProposalText.Changes(changes.Count)}"
+                : _commitMessage.Trim();
+            var result = await Publisher.PublishAsync(message, original.Version, files);
+            await ChangeSets.Wiki.ClearAsync();
+            _commitMessage = null;
+            Show(result.Changed
+                ? $"Wysłano do repozytorium (commit {result.Sha[..7]}): {string.Join(", ", files.Select(f => f.Path))}. "
+                    + "Strona pokaże zmiany po wdrożeniu, zwykle w ciągu kilku minut."
+                : "Repozytorium ma już te zmiany.");
+            await ReloadAsync();
+        }
+        catch (Exception ex) when (ex is PublishException or InvalidDataException)
+        {
+            Show(ex.Message, error: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task ExportWikiAsync() =>
