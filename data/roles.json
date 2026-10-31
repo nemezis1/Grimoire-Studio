@@ -2604,20 +2604,20 @@
   {
     "id": "ogre",
     "nameEn": "Ogre",
-    "namePl": "«Ogr»",
+    "namePl": "Ogr",
     "edition": "",
     "team": "outsider",
     "firstNight": 491,
     "firstNightReminderEn": "The Ogre chooses a player.",
-    "firstNightReminderPl": "«Ogr wybiera gracza.»",
+    "firstNightReminderPl": "Ogr wybiera gracza.",
     "otherNight": 0,
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Friend" ],
-    "remindersPl": [ "«Przyjaciel»" ],
+    "remindersPl": [ "Przyjaciel" ],
     "setup": false,
     "abilityEn": "On your 1st night, choose a player (not yourself): you become their alignment (you don't know which) even if drunk or poisoned.",
-    "abilityPl": "«Pierwszej nocy wybierz gracza (nie siebie): przyjmujesz jego charakter (nie wiesz jaki), nawet jeśli jesteś pijany lub otruty.»"
+    "abilityPl": "Pierwszej nocy wybierz gracza (nie siebie): przyjmujesz jego charakter (nie wiesz jaki), nawet jeśli jesteś pijany lub otruty."
   },
   {
     "id": "plaguedoctor",
