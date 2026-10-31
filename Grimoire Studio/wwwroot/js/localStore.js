@@ -171,6 +171,16 @@ export function removeItem(key) {
     }
 }
 
+/** Copies text to the clipboard; false when the browser does not allow it. */
+export async function copyText(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 /** Saves text as a file through the browser's download. */
 export function downloadText(fileName, text, type = 'application/json') {
     const url = URL.createObjectURL(new Blob([text], { type }));

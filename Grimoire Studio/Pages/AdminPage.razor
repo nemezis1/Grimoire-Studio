@@ -45,6 +45,10 @@ else
                     <button class="button button--ghost" @onclick="SignOutAsync">Wyloguj</button>
                 </div>
                 <DeploymentPanel @ref="_deployments" LoadedVersion="@_original.Version" />
+                @if (Publisher.IsOwner)
+                {
+                    <AdminsPanel />
+                }
             }
             else
             {

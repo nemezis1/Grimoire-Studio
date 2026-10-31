@@ -47,6 +47,9 @@ public sealed class LocalStore(IJSRuntime js)
     public async Task<string> ResizeImageAsync(string dataUrl, int maxSize) =>
         await (await Module).InvokeAsync<string>("resizeImage", dataUrl, maxSize);
 
+    /// <returns>false when the browser did not allow copying.</returns>
+    public async Task<bool> CopyAsync(string text) => await (await Module).InvokeAsync<bool>("copyText", text);
+
     public async Task DownloadAsync(string fileName, string text) =>
         await (await Module).InvokeVoidAsync("downloadText", fileName, text);
 

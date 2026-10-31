@@ -203,6 +203,14 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .notice--error { color: #c42020; }
 .notice--warning { color: #d96a1a; }
 
+/* Admin panel: the owner's list of admins; a new key is shown once. */
+.admins { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.admins h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+.admins__key { margin-bottom: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--accent); border-radius: var(--radius); }
+.admins__key p { margin: 0 0 0.5rem; }
+.admins__key .field-row { margin-bottom: 0; }
+.admins__key-value { padding: 0.35rem 0.6rem; border-radius: 6px; background: var(--bg); font-size: 1rem; user-select: all; word-break: break-all; }
+
 /* Admin panel: deployments of the site. */
 .deployments { margin-top: 1rem; }
 .deployments h3 { margin: 0; font-size: 1rem; }

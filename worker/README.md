@@ -22,7 +22,12 @@ Każdy push do `main` – także commit administratora – uruchamia workflow `B
    cd worker
    npx wrangler login
    ```
-3. **Sekrety:**
+3. **Magazyn administratorów (KV):**
+   ```bash
+   npx wrangler kv namespace create ADMINS
+   ```
+   Wypisane `id` wpisz w `wrangler.toml` w sekcji `[[kv_namespaces]]`.
+   **Sekrety:**
    ```bash
    npx wrangler secret put GITHUB_TOKEN
    npx wrangler secret put ADMIN_KEYS
@@ -40,15 +45,25 @@ w katalogu repozytorium, potem `npx wrangler deploy` w `worker/`.
 
 ## Administratorzy
 
-Nowy administrator:
+- **Właściciele** – klucze z sekretu `ADMIN_KEYS`. Tylko oni zarządzają administratorami; dodać lub zmienić
+  właściciela można wyłącznie przez Cloudflare (poniżej), nie ze strony.
+- **Administratorzy** – dodawani przez właściciela w panelu administratora (sekcja „Administratorzy”: imię → „Dodaj”,
+  klucz pokazuje się raz; „Odbierz dostęp” działa od razu). Ich lista jest w Cloudflare KV (`ADMINS`), tylko ze
+  skrótami kluczy. Mogą wysyłać zmiany wiki, ale nie widzą listy administratorów i nie mogą nią zarządzać.
+
+### Właściciele (rzadko)
+
+Lista właścicieli jest w `worker/admins.json` – tylko na tym komputerze, poza gitem. Sekret ustawia się z całego pliku.
 
 ```bash
-node add-admin.mjs "Kasia"
+node add-admin.mjs "Grzegorz" --key KLUCZ  # właściciel z kluczem, który już ma
+node add-admin.mjs "Imię"                  # nowy właściciel z nowym kluczem
+node add-admin.mjs --remove "Imię"
 ```
 
-Skrypt wypisuje klucz (przekaż go tej osobie; nigdzie nie jest zapisany) i wpis do `ADMIN_KEYS` – skrót klucza.
-Dopisz wpis do JSON-a i ustaw sekret ponownie (`npx wrangler secret put ADMIN_KEYS`). Odebranie dostępu: usuń wpis i
-ustaw sekret jeszcze raz.
+```powershell
+Get-Content admins.json | npx wrangler secret put ADMIN_KEYS
+```
 
 Administrator otwiera stronę z `?admin`, w panelu wpisuje klucz („Zapis do repozytorium”) i po zatwierdzeniu zmian
 klika „Wyślij do repozytorium”.

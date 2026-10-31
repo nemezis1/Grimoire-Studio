@@ -13,12 +13,19 @@ const env = {
     ALLOWED_ORIGINS: `${SITE},http://localhost:5126`,
 };
 
+/** In-memory stand-in for a Cloudflare KV namespace. */
+const kvStore = () => {
+    const values = new Map();
+    return { get: async key => values.get(key) ?? null, put: async (key, value) => void values.set(key, value) };
+};
+
 /** In-memory stand-in for the GitHub API: one branch, commits, trees and a compare endpoint. */
 let github;
 const realFetch = globalThis.fetch;
 
 beforeEach(async () => {
     env.ADMIN_KEYS = JSON.stringify({ Kasia: await sha256Hex(KEY) });
+    env.ADMINS = kvStore();
     github = {
         head: 'aaaaaaa1111',
         commits: { aaaaaaa1111: { tree: { sha: 'tree0' } } },
@@ -43,8 +50,14 @@ beforeEach(async () => {
                 { name: 'Build', head_sha: 'ccccccc3333', head_commit: { message: 'Rycerz\n\nZatwierdził: Kasia', author: { name: 'Kasia' } },
                   status: 'in_progress', conclusion: null, run_started_at: '2026-10-31T17:08:42Z', updated_at: '2026-10-31T17:09:00Z', html_url: 'https://github.com/run/2' },
                 { name: 'Other', head_sha: 'x', status: 'completed', conclusion: 'success', html_url: 'https://github.com/run/x' },
-                { name: 'Build', head_sha: 'aaaaaaa1111', head_commit: { message: 'Start', author: { name: 'Grzegorz' } },
+                { name: 'Build', head_sha: 'ddddddd4444', head_commit: { message: 'Nowa wersja strony', author: { name: 'Grzegorz' } },
+                  status: 'completed', conclusion: 'success', run_started_at: '2026-10-31T17:05:00Z', updated_at: '2026-10-31T17:07:00Z', html_url: 'https://github.com/run/4' },
+                { name: 'Build', head_sha: 'eeeeeee5555', head_commit: { message: 'Jinx\n\nZatwierdził: Tomek', author: { name: 'Tomek' } },
+                  status: 'completed', conclusion: 'failure', run_started_at: '2026-10-31T17:02:00Z', updated_at: '2026-10-31T17:03:00Z', html_url: 'https://github.com/run/5' },
+                { name: 'Build', head_sha: 'aaaaaaa1111', head_commit: { message: 'Zarządca\n\nZatwierdził: Kasia', author: { name: 'Kasia' } },
                   status: 'completed', conclusion: 'success', run_started_at: '2026-10-31T16:57:56Z', updated_at: '2026-10-31T17:00:00Z', html_url: 'https://github.com/run/1' },
+                { name: 'Build', head_sha: 'fffffff6666', head_commit: { message: 'Starsze\n\nZatwierdził: Kasia', author: { name: 'Kasia' } },
+                  status: 'completed', conclusion: 'success', run_started_at: '2026-10-31T15:00:00Z', updated_at: '2026-10-31T15:02:00Z', html_url: 'https://github.com/run/6' },
             ] });
         }
         if (path.startsWith('compare/')) {
@@ -77,7 +90,7 @@ const file = (path, text = '[]') => ({ path, content: Buffer.from(text).toString
 test('me returns the admin name for a valid key', async () => {
     const response = await call('GET', '/api/me');
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { name: 'Kasia' });
+    assert.deepEqual(await response.json(), { name: 'Kasia', owner: true });
     assert.equal(response.headers.get('Access-Control-Allow-Origin'), SITE);
 });
 
@@ -180,18 +193,60 @@ test('an unknown API path is 404', async () => {
     assert.equal((await call('GET', '/api/nothing')).status, 404);
 });
 
-test('status lists the latest Build runs for an admin', async () => {
+test('status lists wiki changes from the running ones down to the last deployed', async () => {
     const response = await call('GET', '/api/status');
 
     assert.equal(response.status, 200);
     const { runs } = await response.json();
     assert.deepEqual(runs.map(r => [r.sha, r.title, r.author, r.status, r.conclusion]), [
         ['ccccccc3333', 'Rycerz', 'Kasia', 'in_progress', null],
-        ['aaaaaaa1111', 'Start', 'Grzegorz', 'completed', 'success'],
+        ['eeeeeee5555', 'Jinx', 'Tomek', 'completed', 'failure'],
+        ['aaaaaaa1111', 'Zarządca', 'Kasia', 'completed', 'success'],
     ]);
     assert.match(github.calls[0].path, /^actions\/runs\?branch=main&event=push/);
 });
 
 test('status needs an admin key', async () => {
     assert.equal((await call('GET', '/api/status', { key: null })).status, 401);
+});
+
+test('an owner adds an admin, whose key then works but cannot manage admins', async () => {
+    const added = await call('POST', '/api/admins', { body: { name: 'Tomek' } });
+    assert.equal(added.status, 200);
+    const { name, key } = await added.json();
+    assert.equal(name, 'Tomek');
+    assert.match(key, /^[A-Za-z0-9_-]{32}$/);
+
+    const me = await call('GET', '/api/me', { key });
+    assert.deepEqual(await me.json(), { name: 'Tomek', owner: false });
+
+    assert.equal((await call('GET', '/api/admins', { key })).status, 403);
+    assert.equal((await call('POST', '/api/admins', { key, body: { name: 'Ktoś' } })).status, 403);
+    assert.equal((await call('DELETE', '/api/admins/Tomek', { key })).status, 403);
+});
+
+test('the owner lists and removes admins; a removed key stops working at once', async () => {
+    const { key } = await (await call('POST', '/api/admins', { body: { name: 'Zoja Ś' } })).json();
+
+    const list = await (await call('GET', '/api/admins')).json();
+    assert.deepEqual(list.admins.map(a => [a.name, a.addedBy]), [['Zoja Ś', 'Kasia']]);
+    assert.ok(!JSON.stringify(list).includes(key));
+
+    assert.equal((await call('DELETE', '/api/admins/' + encodeURIComponent('Zoja Ś'))).status, 200);
+    assert.equal((await call('GET', '/api/me', { key })).status, 401);
+    assert.equal((await call('DELETE', '/api/admins/Nikt')).status, 404);
+});
+
+test('an admin name cannot repeat an owner or another admin', async () => {
+    assert.equal((await call('POST', '/api/admins', { body: { name: 'kasia' } })).status, 409);
+    await call('POST', '/api/admins', { body: { name: 'Tomek' } });
+    assert.equal((await call('POST', '/api/admins', { body: { name: 'TOMEK' } })).status, 409);
+    assert.equal((await call('POST', '/api/admins', { body: { name: '  ' } })).status, 400);
+});
+
+test('the store keeps only hashes of the keys', async () => {
+    const { key } = await (await call('POST', '/api/admins', { body: { name: 'Tomek' } })).json();
+    const stored = await env.ADMINS.get('admins');
+    assert.ok(!stored.includes(key));
+    assert.ok(stored.includes(await sha256Hex(key)));
 });

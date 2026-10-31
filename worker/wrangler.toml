@@ -12,6 +12,11 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = ["/api/*"]
 
+# Admins added by the owners in the admin panel (name and SHA-256 of the key).
+[[kv_namespaces]]
+binding = "ADMINS"
+id = "9972abd1faeb495da3764af05fff4353"
+
 [vars]
 REPOSITORY = "nemezis1/Grimoire-Studio"
 BRANCH = "main"

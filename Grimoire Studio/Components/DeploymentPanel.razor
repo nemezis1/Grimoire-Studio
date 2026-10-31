@@ -1,10 +1,10 @@
-@* Latest deployments of the site (Build workflow runs) for the signed-in admin; checks again while one is running. *@
+@* Deployments of the wiki changes sent by admins, down to the last deployed one; checks again while one is running. *@
 @inject RepositoryPublisher Publisher
 @implements IDisposable
 
 <div class="deployments">
     <div class="form-list__head">
-        <h3>Wdrożenia strony</h3>
+        <h3>Wdrożenia zmian wiki</h3>
         <button class="button button--ghost" disabled="@_loading" @onclick="RefreshAsync">@(_loading ? "Sprawdzanie…" : "Odśwież")</button>
     </div>
 
@@ -27,7 +27,7 @@
         </p>
         @if (_status.Runs.Count == 0)
         {
-            <p class="muted small">Brak wdrożeń.</p>
+            <p class="muted small">Brak wysłanych zmian w toku.</p>
         }
         <ul class="change-list">
             @foreach (var run in _status.Runs)

@@ -29,6 +29,9 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     /// <summary>Name of the signed-in admin, or null.</summary>
     public string? AdminName { get; private set; }
 
+    /// <summary>The signed-in admin is an owner (in the Worker's ADMIN_KEYS secret) and manages the other admins.</summary>
+    public bool IsOwner { get; private set; }
+
     /// <summary>Signs in again with the key kept for this tab, if any.</summary>
     public async Task LoadAsync()
     {
@@ -59,6 +62,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         var reply = await SendAsync<MeReply>(request);
         _key = key.Trim();
         AdminName = reply.Name;
+        IsOwner = reply.Owner;
         await store.SetSessionAsync(KeyStorage, _key);
     }
 
@@ -66,6 +70,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     {
         _key = null;
         AdminName = null;
+        IsOwner = false;
         await store.SetSessionAsync(KeyStorage, null);
     }
 
@@ -117,6 +122,32 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         }
     }
 
+    /// <summary>Admins added by the owners (owners themselves are not listed). Owner only.</summary>
+    /// <exception cref="PublishException">Not an owner, or the service refused.</exception>
+    public async Task<IReadOnlyList<AdminEntry>> GetAdminsAsync()
+    {
+        using var request = Request(HttpMethod.Get, "admins", RequireKey());
+        return (await SendAsync<AdminsReply>(request)).Admins;
+    }
+
+    /// <summary>Adds an admin; returns their new key, shown only this once.</summary>
+    /// <exception cref="PublishException">Not an owner, the name is taken, or the service refused.</exception>
+    public async Task<string> AddAdminAsync(string name)
+    {
+        using var request = Request(HttpMethod.Post, "admins", RequireKey());
+        request.Content = JsonContent.Create(new { name });
+        return (await SendAsync<NewAdminReply>(request)).Key;
+    }
+
+    /// <exception cref="PublishException">Not an owner, or no such admin.</exception>
+    public async Task RemoveAdminAsync(string name)
+    {
+        using var request = Request(HttpMethod.Delete, $"admins/{Uri.EscapeDataString(name)}", RequireKey());
+        await SendAsync<JsonElement>(request);
+    }
+
+    private string RequireKey() => _key ?? throw new PublishException("Najpierw zaloguj się kluczem administratora.");
+
     private HttpRequestMessage Request(HttpMethod method, string path, string key)
     {
         var request = new HttpRequestMessage(method, $"{ApiUrl}/{path}");
@@ -164,7 +195,11 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         }
     }
 
-    private sealed record MeReply(string Name);
+    private sealed record MeReply(string Name, bool Owner);
+
+    private sealed record AdminsReply(IReadOnlyList<AdminEntry> Admins);
+
+    private sealed record NewAdminReply(string Name, string Key);
 
     private sealed record StatusReply(IReadOnlyList<DeploymentRun> Runs);
 

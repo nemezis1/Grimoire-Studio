@@ -7,7 +7,8 @@
 //
 // Environment (see wrangler.toml and README.md):
 //   GITHUB_TOKEN     secret: fine-grained token with Contents read & write on the repository
-//   ADMIN_KEYS       secret: JSON {"<admin name>": "<sha-256 hex of the admin's key>"}
+//   ADMIN_KEYS       secret: the owners, JSON {"<name>": "<sha-256 hex of the key>"}; only they manage the admins
+//   ADMINS           KV namespace: the other admins, added and removed by an owner in the admin panel
 //   REPOSITORY       "owner/name"
 //   BRANCH           branch to commit to, e.g. "main"
 //   COMMIT_EMAIL     author e-mail of the commits (the author name is the admin's)
@@ -22,6 +23,10 @@ const MAX_MESSAGE_LENGTH = 2000;
 const ALLOWED_PATH = /^data\/(?:[a-z]+\.json|icons\/[a-z0-9]+\.png|editions\/[a-z0-9-]+\.png)$/;
 
 const API = '/api/';
+
+// Last line of the commits this Worker makes; it tells wiki changes from other commits.
+const APPROVED_BY_LABEL = 'Zatwierdził:';
+const APPROVED_BY = /\n\nZatwierdził: [^\n]+$/;
 
 export default {
     async fetch(request, env) {
@@ -55,12 +60,12 @@ export default {
 async function route(request, env) {
     const { pathname } = new URL(request.url);
     if (request.method === 'GET' && pathname === `${API}me`) {
-        return json({ name: await authenticate(request, env) });
+        return json(await authenticate(request, env));
     }
 
     if (request.method === 'POST' && pathname === `${API}commit`) {
         const admin = await authenticate(request, env);
-        return json(await commit(await readBody(request), admin, env));
+        return json(await commit(await readBody(request), admin.name, env));
     }
 
     if (request.method === 'GET' && pathname === `${API}status`) {
@@ -68,18 +73,105 @@ async function route(request, env) {
         return json(await deployments(env));
     }
 
+    if (pathname === `${API}admins` || pathname.startsWith(`${API}admins/`)) {
+        const owner = await authenticate(request, env);
+        if (!owner.owner) {
+            throw new HttpError(403, 'Tylko właściciel strony zarządza administratorami.');
+        }
+
+        const name = decodeURIComponent(pathname.slice(`${API}admins/`.length));
+        if (request.method === 'GET' && pathname === `${API}admins`) {
+            return json({ admins: await listAdmins(env) });
+        }
+
+        if (request.method === 'POST' && pathname === `${API}admins`) {
+            return json(await addAdmin((await readBody(request))?.name, owner.name, env));
+        }
+
+        if (request.method === 'DELETE' && name) {
+            return json(await removeAdmin(name, env));
+        }
+    }
+
     throw new HttpError(404, 'Nie ma takiego adresu.');
+}
+
+// --- Admins managed by the owners ---------------------------------------------------------------------------------
+
+const ADMINS_KEY = 'admins';
+const MAX_NAME_LENGTH = 40;
+
+/** Admins added in the panel: {"<name>": {hash, addedAt, addedBy}}. */
+async function storedAdmins(env) {
+    if (!env.ADMINS) {
+        return {};
+    }
+
+    return JSON.parse(await env.ADMINS.get(ADMINS_KEY) ?? '{}');
+}
+
+function requireStore(env) {
+    if (!env.ADMINS) {
+        throw new HttpError(500, 'Usługa zapisu jest źle skonfigurowana: brak magazynu ADMINS (Cloudflare KV).');
+    }
+}
+
+async function listAdmins(env) {
+    return Object.entries(await storedAdmins(env))
+        .map(([name, entry]) => ({ name, addedAt: entry.addedAt, addedBy: entry.addedBy }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pl'));
+}
+
+/** Adds an admin with a new key; the key is returned only here, the store keeps its hash. */
+async function addAdmin(rawName, owner, env) {
+    requireStore(env);
+    const name = String(rawName ?? '').trim();
+    if (!name || name.length > MAX_NAME_LENGTH) {
+        throw new HttpError(400, `Podaj imię administratora (do ${MAX_NAME_LENGTH} znaków).`);
+    }
+
+    const admins = await storedAdmins(env);
+    const taken = [...Object.keys(adminKeys(env)), ...Object.keys(admins)]
+        .some(existing => existing.toLowerCase() === name.toLowerCase());
+    if (taken) {
+        throw new HttpError(409, `Administrator „${name}” już jest.`);
+    }
+
+    const key = base64Url(crypto.getRandomValues(new Uint8Array(24)));
+    admins[name] = { hash: await sha256Hex(key), addedAt: new Date().toISOString(), addedBy: owner };
+    await env.ADMINS.put(ADMINS_KEY, JSON.stringify(admins));
+    return { name, key };
+}
+
+async function removeAdmin(name, env) {
+    requireStore(env);
+    const admins = await storedAdmins(env);
+    if (!(name in admins)) {
+        throw new HttpError(404, `Nie ma administratora „${name}”.`);
+    }
+
+    delete admins[name];
+    await env.ADMINS.put(ADMINS_KEY, JSON.stringify(admins));
+    return { removed: name };
+}
+
+function base64Url(bytes) {
+    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 // --- Deployments ------------------------------------------------------------------------------------------------
 
-/** The latest runs of the Build workflow on the branch: each push to it builds and deploys the site. */
+/**
+ * Deployments of wiki changes sent by admins (commits made by this Worker), newest first: those still running or
+ * failed, down to the last one deployed. Other commits (e.g. new versions of the site) are left out.
+ */
 export async function deployments(env) {
-    const runs = await new GitHub(env).get(`actions/runs?branch=${encodeURIComponent(env.BRANCH)}&event=push&per_page=10`);
+    const runs = await new GitHub(env).get(`actions/runs?branch=${encodeURIComponent(env.BRANCH)}&event=push&per_page=30`);
+    const wiki = (runs.workflow_runs ?? [])
+        .filter(run => run.name === 'Build' && APPROVED_BY.test(run.head_commit?.message ?? ''));
+    const lastDeployed = wiki.findIndex(run => run.status === 'completed' && run.conclusion === 'success');
     return {
-        runs: (runs.workflow_runs ?? [])
-            .filter(run => run.name === 'Build')
-            .slice(0, 5)
+        runs: (lastDeployed < 0 ? wiki : wiki.slice(0, lastDeployed + 1))
             .map(run => ({
                 sha: run.head_sha,
                 title: (run.head_commit?.message ?? run.display_title ?? '').split('\n')[0],
@@ -95,7 +187,7 @@ export async function deployments(env) {
 
 // --- Admin keys -------------------------------------------------------------------------------------------------
 
-/** Name of the admin whose key is in the Authorization header. */
+/** The admin whose key is in the Authorization header: {name, owner}; owners are those in ADMIN_KEYS. */
 export async function authenticate(request, env) {
     const key = /^Bearer (.+)$/.exec(request.headers.get('Authorization') ?? '')?.[1]?.trim();
     if (!key) {
@@ -105,7 +197,13 @@ export async function authenticate(request, env) {
     const hash = await sha256Hex(key);
     for (const [name, expected] of Object.entries(adminKeys(env))) {
         if (equalHex(hash, String(expected).toLowerCase())) {
-            return name;
+            return { name, owner: true };
+        }
+    }
+
+    for (const [name, entry] of Object.entries(await storedAdmins(env))) {
+        if (equalHex(hash, String(entry.hash).toLowerCase())) {
+            return { name, owner: false };
         }
     }
 
@@ -187,7 +285,7 @@ export async function commit(body, admin, env) {
     }
 
     const created = await github.post('git/commits', {
-        message: `${message}\n\nZatwierdził: ${admin}`,
+        message: `${message}\n\n${APPROVED_BY_LABEL} ${admin}`,
         tree: tree.sha,
         parents: [headSha],
         author: { name: admin, email: env.COMMIT_EMAIL, date: new Date().toISOString() },
@@ -321,7 +419,7 @@ function corsHeaders(request, env) {
 
     return {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Max-Age': '86400',
         Vary: 'Origin',

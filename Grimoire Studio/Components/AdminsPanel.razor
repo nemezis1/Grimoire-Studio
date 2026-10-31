@@ -1,0 +1,152 @@
+@* The owner's list of admins: add one (their key is shown once) or take the access away. The Worker enforces it. *@
+@inject RepositoryPublisher Publisher
+@inject LocalStore Store
+
+<div class="admins">
+    <h3>Administratorzy</h3>
+    <p class="muted small">
+        Administrator loguje się kluczem i wysyła zmiany wiki do repozytorium. Zarządza nimi tylko właściciel strony.
+    </p>
+
+    @if (_message is not null)
+    {
+        <p class="notice @(_messageIsError ? "notice--error" : null)">@_message</p>
+    }
+
+    @if (_newKey is not null)
+    {
+        <div class="admins__key">
+            <p>
+                Klucz dla <strong>@_newKey.Value.Name</strong> – przekaż go tej osobie prywatnie. Widać go tylko teraz;
+                później można jedynie odebrać dostęp i dodać nowy klucz.
+            </p>
+            <div class="field-row">
+                <code class="admins__key-value">@_newKey.Value.Key</code>
+                <button class="button" @onclick="CopyKeyAsync">Kopiuj</button>
+                <button class="button button--ghost" @onclick="() => _newKey = null">Gotowe</button>
+            </div>
+        </div>
+    }
+
+    <div class="field-row">
+        <label class="field">
+            <span>Imię nowego administratora</span>
+            <input type="text" maxlength="40" @bind="_name" @bind:event="oninput" placeholder="np. Kasia" />
+        </label>
+        <button class="button" disabled="@(string.IsNullOrWhiteSpace(_name) || _busy)" @onclick="AddAsync">Dodaj</button>
+    </div>
+
+    @if (_admins is null)
+    {
+        <p class="muted small">Wczytywanie…</p>
+    }
+    else if (_admins.Count == 0)
+    {
+        <p class="muted small">Nie ma jeszcze innych administratorów.</p>
+    }
+    else
+    {
+        <ul class="change-list">
+            @foreach (var admin in _admins)
+            {
+                <li>
+                    <span class="change-list__what">
+                        @admin.Name
+                        <span class="change-list__fields">dodany @admin.AddedAt.ToLocalTime().ToString("g") przez @admin.AddedBy</span>
+                    </span>
+                    @if (_confirmRemove == admin.Name)
+                    {
+                        <button class="button" disabled="@_busy" @onclick="() => RemoveAsync(admin.Name)">Tak, odbierz</button>
+                        <button class="button button--ghost" @onclick="() => _confirmRemove = null">Anuluj</button>
+                    }
+                    else
+                    {
+                        <button class="button button--ghost" @onclick="() => _confirmRemove = admin.Name">Odbierz dostęp</button>
+                    }
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<AdminEntry>? _admins;
+    private string? _name;
+    private (string Name, string Key)? _newKey;
+    private string? _confirmRemove;
+    private string? _message;
+    private bool _messageIsError;
+    private bool _busy;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _admins = await Publisher.GetAdminsAsync();
+        }
+        catch (PublishException ex)
+        {
+            Show(ex.Message, error: true);
+            _admins = [];
+        }
+    }
+
+    private async Task AddAsync()
+    {
+        var name = _name?.Trim() ?? string.Empty;
+        _busy = true;
+        try
+        {
+            _newKey = (name, await Publisher.AddAdminAsync(name));
+            _name = null;
+            _message = null;
+            await LoadAsync();
+        }
+        catch (PublishException ex)
+        {
+            Show(ex.Message, error: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RemoveAsync(string name)
+    {
+        _busy = true;
+        try
+        {
+            await Publisher.RemoveAdminAsync(name);
+            _confirmRemove = null;
+            Show($"Odebrano dostęp: {name}. Jego klucz już nie działa.");
+            await LoadAsync();
+        }
+        catch (PublishException ex)
+        {
+            Show(ex.Message, error: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CopyKeyAsync()
+    {
+        if (_newKey is { } created)
+        {
+            Show(await Store.CopyAsync(created.Key)
+                ? "Klucz skopiowany do schowka."
+                : "Przeglądarka nie pozwoliła skopiować – zaznacz klucz i skopiuj ręcznie.", error: false);
+        }
+    }
+
+    private void Show(string message, bool error = false)
+    {
+        _message = message;
+        _messageIsError = error;
+    }
+}
