@@ -203,6 +203,14 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .notice--error { color: #c42020; }
 .notice--warning { color: #d96a1a; }
 
+/* Admin panel: deployments of the site. */
+.deployments { margin-top: 1rem; }
+.deployments h3 { margin: 0; font-size: 1rem; }
+.local-badge.deployment--running, .local-badge.deployment--done, .local-badge.deployment--failed { margin: 0 0.4rem 0 0; border: 0; color: #fff; }
+.local-badge.deployment--running { background: #d96a1a; }
+.local-badge.deployment--done { background: #2f8f4e; }
+.local-badge.deployment--failed { background: #c42020; }
+
 /* Home */
 .hero { padding: 3rem 0; text-align: center; }
 .hero .lead { color: var(--muted); font-size: 1.15rem; }
@@ -926,6 +934,21 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .print-page__inner { font-family: system-ui, "Segoe UI", Roboto, sans-serif; font-size: calc(8pt * var(--print-scale, 1)); line-height: 1.25; }
 .print-page__bottom { flex: none; padding-top: 3mm; font-family: system-ui, "Segoe UI", Roboto, sans-serif; font-size: calc(8pt * var(--print-scale, 1)); }
 .print-page__bottom .player-count, .print-page__inner > .player-count:first-child { margin-top: 0; }
+.print-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2mm;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 1.5mm 5mm;
+    border: 0.3mm solid #c9c3b8;
+    border-radius: 2mm;
+    color: #444444;
+    font-style: italic;
+}
+.print-note__mark { font-style: normal; font-weight: 700; font-size: 1.6em; line-height: 0.6; color: #7a1f1f; }
 .print-page__footer { flex: none; padding-top: 2mm; text-align: center; font-size: 7pt; color: #777777; }
 
 .print-group + .print-group { margin-top: 5mm; }
@@ -1082,10 +1105,21 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .proposal-changes h3 { font-size: 1rem; margin: 0.75rem 0 0.4rem; }
 
 .field-label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
-.script-image { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; }
-.script-image > div { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.script-image .field-row { margin: 0; }
-.script-image__preview { width: 56px; height: 56px; object-fit: contain; flex: none; }
+.script-image { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; }
+.script-image__preview { width: 40px; height: 40px; object-fit: contain; flex: none; }
+
+/* Compact page title with a one-line description (editors, where the work area needs the height). */
+.page-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 1rem; margin-bottom: 0.75rem; }
+.page-head h1 { margin: 0; font-size: 1.5rem; }
+.page-head p { margin: 0; font-size: 0.85rem; }
+
+/* Script editor: name, id and picture side by side; search, filters and teams in as few rows as fit. */
+.script-head { display: flex; flex-wrap: wrap; gap: 0 1rem; align-items: flex-end; }
+.script-head__name { flex: 2 1 16rem; }
+.script-head__id { flex: 1 1 12rem; }
+.script-head__image { flex: 0 0 auto; }
+.script-filters .filters__search { flex: 1 1 14rem; }
+.script-filters .chips { flex: 1 1 auto; }
 
 /* Script editor: Save / Cancel stay visible; only the list of chosen roles scrolls. */
 .script-editor__actions { position: sticky; bottom: 0; padding-block: 0.5rem; background: var(--surface); border-top: 1px solid var(--border); }

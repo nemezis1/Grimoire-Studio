@@ -44,6 +44,7 @@ else
                     <span>Zalogowano jako <strong>@adminName</strong>: zmiany wiki wyślesz przyciskiem „Wyślij do repozytorium”.</span>
                     <button class="button button--ghost" @onclick="SignOutAsync">Wyloguj</button>
                 </div>
+                <DeploymentPanel @ref="_deployments" LoadedVersion="@_original.Version" />
             }
             else
             {
@@ -179,6 +180,7 @@ else
     private string? _adminKey;
     private string? _commitMessage;
     private bool _busy;
+    private DeploymentPanel? _deployments;
     private bool _messageIsError;
 
     protected override async Task OnInitializedAsync()
@@ -393,9 +395,10 @@ else
             var result = await Publisher.PublishAsync(message, original.Version, files);
             await ChangeSets.Wiki.ClearAsync();
             _commitMessage = null;
+            _deployments?.Watch();
             Show(result.Changed
                 ? $"Wysłano do repozytorium (commit {result.Sha[..7]}): {string.Join(", ", files.Select(f => f.Path))}. "
-                    + "Strona pokaże zmiany po wdrożeniu, zwykle w ciągu kilku minut."
+                    + "Strona pokaże zmiany po wdrożeniu (zwykle 2–3 minuty) – postęp widać w „Wdrożenia strony”."
                 : "Repozytorium ma już te zmiany.");
             await ReloadAsync();
         }

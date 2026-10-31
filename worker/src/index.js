@@ -63,7 +63,34 @@ async function route(request, env) {
         return json(await commit(await readBody(request), admin, env));
     }
 
+    if (request.method === 'GET' && pathname === `${API}status`) {
+        await authenticate(request, env);
+        return json(await deployments(env));
+    }
+
     throw new HttpError(404, 'Nie ma takiego adresu.');
+}
+
+// --- Deployments ------------------------------------------------------------------------------------------------
+
+/** The latest runs of the Build workflow on the branch: each push to it builds and deploys the site. */
+export async function deployments(env) {
+    const runs = await new GitHub(env).get(`actions/runs?branch=${encodeURIComponent(env.BRANCH)}&event=push&per_page=10`);
+    return {
+        runs: (runs.workflow_runs ?? [])
+            .filter(run => run.name === 'Build')
+            .slice(0, 5)
+            .map(run => ({
+                sha: run.head_sha,
+                title: (run.head_commit?.message ?? run.display_title ?? '').split('\n')[0],
+                author: run.head_commit?.author?.name ?? '',
+                status: run.status,
+                conclusion: run.conclusion,
+                startedAt: run.run_started_at ?? run.created_at,
+                updatedAt: run.updated_at,
+                url: run.html_url,
+            })),
+    };
 }
 
 // --- Admin keys -------------------------------------------------------------------------------------------------

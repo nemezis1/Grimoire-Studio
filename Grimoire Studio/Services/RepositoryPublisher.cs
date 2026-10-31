@@ -10,7 +10,7 @@ namespace Grimoire_Studio.Services;
 /// Sends approved wiki changes to the repository through the publishing service (the Cloudflare Worker in worker/).
 /// Admins sign in with their personal key; it is kept for this tab only (sessionStorage).
 /// </summary>
-public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore store)
+public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore store, HttpClient site)
 {
     /// <summary>Address of the publishing service in wwwroot/appsettings.json; empty means sending is not set up.</summary>
     public const string ConfigurationKey = "PublishApi";
@@ -88,6 +88,35 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         return await SendAsync<PublishResult>(request);
     }
 
+    /// <summary>The latest deployments and the data version this site serves now (not the one this tab loaded).</summary>
+    /// <exception cref="PublishException">Not signed in, or the service is unreachable.</exception>
+    public async Task<DeploymentStatus> GetDeploymentsAsync()
+    {
+        if (_key is null)
+        {
+            throw new PublishException("Najpierw zaloguj się kluczem administratora.");
+        }
+
+        using var request = Request(HttpMethod.Get, "status", _key);
+        var reply = await SendAsync<StatusReply>(request);
+        return new DeploymentStatus(reply.Runs, await GetLiveVersionAsync());
+    }
+
+    private async Task<string> GetLiveVersionAsync()
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"data/{GameData.VersionFile}");
+            request.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true };
+            using var response = await site.SendAsync(request);
+            return response.IsSuccessStatusCode ? (await response.Content.ReadAsStringAsync()).Trim() : string.Empty;
+        }
+        catch (HttpRequestException)
+        {
+            return string.Empty;
+        }
+    }
+
     private HttpRequestMessage Request(HttpMethod method, string path, string key)
     {
         var request = new HttpRequestMessage(method, $"{ApiUrl}/{path}");
@@ -136,6 +165,8 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     }
 
     private sealed record MeReply(string Name);
+
+    private sealed record StatusReply(IReadOnlyList<DeploymentRun> Runs);
 
     private sealed record ErrorReply(string? Error, IReadOnlyList<string>? Conflicts);
 }

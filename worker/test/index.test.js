@@ -38,6 +38,15 @@ beforeEach(async () => {
         if (path === 'git/trees') return reply({ sha: body.tree.length ? 'tree1' : body.base_tree });
         if (path === 'git/commits') return reply({ sha: 'bbbbbbb2222', html_url: 'https://github.com/owner/repo/commit/bbbbbbb2222' });
         if (path === 'git/refs/heads/main') return github.refusePatch ? reply({ message: 'not fast forward' }, 422) : reply({});
+        if (path.startsWith('actions/runs?')) {
+            return reply({ workflow_runs: [
+                { name: 'Build', head_sha: 'ccccccc3333', head_commit: { message: 'Rycerz\n\nZatwierdził: Kasia', author: { name: 'Kasia' } },
+                  status: 'in_progress', conclusion: null, run_started_at: '2026-10-31T17:08:42Z', updated_at: '2026-10-31T17:09:00Z', html_url: 'https://github.com/run/2' },
+                { name: 'Other', head_sha: 'x', status: 'completed', conclusion: 'success', html_url: 'https://github.com/run/x' },
+                { name: 'Build', head_sha: 'aaaaaaa1111', head_commit: { message: 'Start', author: { name: 'Grzegorz' } },
+                  status: 'completed', conclusion: 'success', run_started_at: '2026-10-31T16:57:56Z', updated_at: '2026-10-31T17:00:00Z', html_url: 'https://github.com/run/1' },
+            ] });
+        }
         if (path.startsWith('compare/')) {
             const base = path.slice('compare/'.length).split('...')[0];
             return base in github.changedSince
@@ -169,4 +178,20 @@ test('paths outside /api/ are served from the site files', async () => {
 
 test('an unknown API path is 404', async () => {
     assert.equal((await call('GET', '/api/nothing')).status, 404);
+});
+
+test('status lists the latest Build runs for an admin', async () => {
+    const response = await call('GET', '/api/status');
+
+    assert.equal(response.status, 200);
+    const { runs } = await response.json();
+    assert.deepEqual(runs.map(r => [r.sha, r.title, r.author, r.status, r.conclusion]), [
+        ['ccccccc3333', 'Rycerz', 'Kasia', 'in_progress', null],
+        ['aaaaaaa1111', 'Start', 'Grzegorz', 'completed', 'success'],
+    ]);
+    assert.match(github.calls[0].path, /^actions\/runs\?branch=main&event=push/);
+});
+
+test('status needs an admin key', async () => {
+    assert.equal((await call('GET', '/api/status', { key: null })).status, 401);
 });

@@ -6,8 +6,10 @@
 
 <PageTitle>@(IsNew ? "Nowy skrypt" : $"Edycja: {_name}") – Grimoire Studio</PageTitle>
 
-<h1>@(IsNew ? "Nowy skrypt" : "Edycja skryptu")</h1>
-<p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Skrypt z danych strony zostaje nietknięty i można do niego wrócić.</p>
+<header class="page-head">
+    <h1>@(IsNew ? "Nowy skrypt" : "Edycja skryptu")</h1>
+    <p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Skrypt z danych strony zostaje nietknięty i można do niego wrócić.</p>
+</header>
 
 @if (_data is null)
 {
@@ -24,27 +26,23 @@ else
 
     <div class="script-editor fill-viewport">
         <section class="panel">
-            <label class="field">
-                <span>Nazwa skryptu</span>
-                <input type="text" @bind="_name" @bind:event="oninput" placeholder="np. Pełnia Zła" />
-            </label>
-            @if (IsNew)
-            {
-                <label class="field">
-                    <span>Identyfikator (małe litery i cyfry)</span>
-                    <input type="text" value="@EffectiveId" @oninput="e => _id = e.Value?.ToString()" />
+            @* Name, id and picture in one row; they wrap on narrow screens. *@
+            <div class="script-head">
+                <label class="field script-head__name">
+                    <span>Nazwa skryptu</span>
+                    <input type="text" @bind="_name" @bind:event="oninput" placeholder="np. Pełnia Zła" />
                 </label>
-                @if (IdError() is { } idError)
+                @if (IsNew)
                 {
-                    <p class="notice notice--error">@idError</p>
+                    <label class="field script-head__id">
+                        <span>Identyfikator (małe litery i cyfry)</span>
+                        <input type="text" value="@EffectiveId" @oninput="e => _id = e.Value?.ToString()" />
+                    </label>
                 }
-            }
-
-            <span class="field-label">Obrazek</span>
-            <div class="script-image">
-                <img class="script-image__preview" src="@(_image ?? GameDataClient.EditionIconUrl(_iconName))" alt="" />
-                <div>
-                    <div class="field-row">
+                <div class="field script-head__image">
+                    <span>Obrazek</span>
+                    <div class="script-image">
+                        <img class="script-image__preview" src="@(_image ?? GameDataClient.EditionIconUrl(_iconName))" alt="" />
                         <label class="button button--ghost button--file" title="Zmniejszany do @MaxImageSize px; widoczny na liście skryptów, stronie skryptu i wydruku">
                             Wczytaj obrazek…
                             <InputFile accept="image/png,image/jpeg,image/webp" OnChange="UploadImageAsync" />
@@ -56,7 +54,13 @@ else
                     </div>
                 </div>
             </div>
-            <div class="filters">
+            @if (IsNew && IdError() is { } idError)
+            {
+                <p class="notice notice--error">@idError</p>
+            }
+
+            @* Search, filters and teams flow together: one row on wide screens, two when there is no room. *@
+            <div class="filters script-filters">
                 <input class="filters__search" type="search" placeholder="Szukaj roli lub zdolności…" @bind="_query" @bind:event="oninput" />
                 <details class="multi-select">
                     <summary>Filtry@(_filters.Count > 0 ? $" ({_filters.Count})" : null)</summary>
@@ -72,13 +76,13 @@ else
                         <button class="button button--ghost" disabled="@(_filters.Count == 0)" @onclick="() => _filters.Clear()">Wyczyść filtry</button>
                     </div>
                 </details>
-            </div>
-            <div class="chips">
+                <div class="chips">
                 <button class="chip @(team is null ? "chip--active" : null)" @onclick='() => _team = null'>Wszystkie</button>
                 @foreach (var t in Teams.All)
                 {
                     <button class="chip team--@(t.Id) @(team?.Id == t.Id ? "chip--active" : null)" style="@Teams.Style(t.Id)" @onclick="() => _team = t.Id">@t.PluralPl</button>
                 }
+                </div>
             </div>
 
             <ul class="role-picker">

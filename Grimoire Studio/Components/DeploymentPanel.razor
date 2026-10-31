@@ -1,0 +1,140 @@
+@* Latest deployments of the site (Build workflow runs) for the signed-in admin; checks again while one is running. *@
+@inject RepositoryPublisher Publisher
+@implements IDisposable
+
+<div class="deployments">
+    <div class="form-list__head">
+        <h3>Wdrożenia strony</h3>
+        <button class="button button--ghost" disabled="@_loading" @onclick="RefreshAsync">@(_loading ? "Sprawdzanie…" : "Odśwież")</button>
+    </div>
+
+    @if (_error is not null)
+    {
+        <p class="notice notice--error">@_error</p>
+    }
+    else if (_status is not null)
+    {
+        <p class="small">
+            Strona działa w wersji <code>@Short(_status.LiveVersion)</code>.
+            @if (_status.AnyRunning)
+            {
+                <span class="muted">Trwa wdrażanie – po jego końcu zmiany będą widoczne dla wszystkich (sprawdzam co @PollSeconds s).</span>
+            }
+            @if (IsNewerThanLoaded)
+            {
+                <strong>Ta karta ma starszą wersję: odśwież stronę (F5), żeby zobaczyć zmiany.</strong>
+            }
+        </p>
+        @if (_status.Runs.Count == 0)
+        {
+            <p class="muted small">Brak wdrożeń.</p>
+        }
+        <ul class="change-list">
+            @foreach (var run in _status.Runs)
+            {
+                <li>
+                    <span class="change-list__what">
+                        <span class="local-badge deployment--@(run.IsRunning ? "running" : run.Succeeded ? "done" : "failed")">@run.StatusText</span>
+                        @run.Title
+                        <span class="change-list__fields">
+                            <a href="@run.Url" target="_blank" rel="noopener noreferrer"><code>@run.ShortSha</code></a>
+                            · @run.Author · @run.StartedAt.ToLocalTime().ToString("g")
+                            @if (Short(_status.LiveVersion) == run.ShortSha)
+                            {
+                                <span> · na stronie</span>
+                            }
+                        </span>
+                    </span>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private const int PollSeconds = 15;
+
+    /// <summary>Data version this tab loaded; a newer live version means the admin should reload.</summary>
+    [Parameter]
+    public string LoadedVersion { get; set; } = string.Empty;
+
+    private DeploymentStatus? _status;
+    private string? _error;
+    private bool _loading;
+    private CancellationTokenSource? _polling;
+
+    private bool IsNewerThanLoaded =>
+        _status is { LiveVersion.Length: > 0 } && LoadedVersion.Length > 0 && Short(_status.LiveVersion) != Short(LoadedVersion);
+
+    protected override Task OnInitializedAsync() => RefreshAsync();
+
+    /// <summary>Checks now, and keeps checking while a deployment runs (e.g. right after sending changes).</summary>
+    public async Task RefreshAsync()
+    {
+        _loading = true;
+        try
+        {
+            _status = await Publisher.GetDeploymentsAsync();
+            _error = null;
+        }
+        catch (PublishException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        if (_status?.AnyRunning == true && _polling is null)
+        {
+            _polling = new CancellationTokenSource();
+            _ = PollAsync(_polling.Token);
+        }
+    }
+
+    /// <summary>A push starts its run a few seconds later: after sending, poll even before the run shows up.</summary>
+    public void Watch()
+    {
+        if (_polling is null)
+        {
+            _polling = new CancellationTokenSource();
+            _ = PollAsync(_polling.Token, minimumChecks: 4);
+        }
+    }
+
+    private async Task PollAsync(CancellationToken cancel, int minimumChecks = 0)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(PollSeconds));
+            var checks = 0;
+            while (await timer.WaitForNextTickAsync(cancel))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await RefreshAsync();
+                    StateHasChanged();
+                });
+
+                if (++checks >= minimumChecks && _status?.AnyRunning != true)
+                {
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The panel was closed.
+        }
+        finally
+        {
+            _polling = null;
+        }
+    }
+
+    // A commit id is shortened; a build date (local builds) stays whole.
+    private static string Short(string version) => version.Length > 7 && version.All(Uri.IsHexDigit) ? version[..7] : version;
+
+    public void Dispose() => _polling?.Cancel();
+}

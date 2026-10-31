@@ -66,9 +66,10 @@
                     .DistinctBy(x => x.Jinx)
                     .ToList();
                 var showExtras = _options.IncludeExtras && (extras.Count > 0 || jinxes.Count > 0);
+                var nightStar = core.SelectMany(g => g).Any(r => r.AbilityPl.Contains('*'));
             }
 
-            <PrintPage Title="@Script.Name" Script="Script">
+            <PrintPage Title="@Script.Name" Script="Script" Bottom="@(nightStar ? NightStarNote : null)">
                 @foreach (var group in core)
                 {
                     <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
@@ -122,6 +123,10 @@
 </div>
 
 @code {
+    /// <summary>Explains the asterisk of "Każdej nocy*" under the roles of the first page.</summary>
+    private static RenderFragment NightStarNote =>
+        @<p class="print-note"><span class="print-note__mark">*</span>Nie pierwszej nocy: zdolność oznaczona gwiazdką działa każdej nocy oprócz pierwszej.</p>;
+
     private RenderFragment PlayerCountTable =>
         @<table class="player-count">
             <tr>
