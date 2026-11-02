@@ -18,6 +18,7 @@
                 <label><input type="radio" name="columns" checked="@(_options.Columns == 1)" @onchange="() => Update(o => o.Columns = 1)" /> Jedna kolumna</label>
                 <label><input type="radio" name="columns" checked="@(_options.Columns == 2)" @onchange="() => Update(o => o.Columns = 2)" /> Dwie kolumny</label>
                 <label><input type="checkbox" checked="@_options.AbilityBesideName" @onchange="e => Update(o => o.AbilityBesideName = e.Value is true)" /> Opis roli obok nazwy</label>
+                <label><input type="checkbox" checked="@_options.ShowEnglishNames" @onchange="e => Update(o => o.ShowEnglishNames = e.Value is true)" /> Angielskie nazwy ról</label>
                 <label><input type="checkbox" checked="@_options.ShowPlayerCount" @onchange="e => Update(o => o.ShowPlayerCount = e.Value is true)" /> Tabela liczby graczy</label>
                 <label><input type="checkbox" checked="@_options.IncludeExtras" @onchange="e => Update(o => o.IncludeExtras = e.Value is true)" /> Wędrowcy, legendy i jinxy (osobna strona)</label>
             </div>
@@ -72,7 +73,7 @@
             <PrintPage Title="@Script.Name" Script="Script" Bottom="@(nightStar ? NightStarNote : null)">
                 @foreach (var group in core)
                 {
-                    <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
+                    <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" EnglishNames="_options.ShowEnglishNames" />
                 }
             </PrintPage>
 
@@ -88,7 +89,7 @@
                     }
                     @foreach (var group in showExtras ? extras : [])
                     {
-                        <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" />
+                        <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" EnglishNames="_options.ShowEnglishNames" />
                     }
                     @if (showExtras && jinxes.Count > 0)
                     {
@@ -113,8 +114,8 @@
             {
                 <PrintPage Title="@Script.Name" Script="Script" FillHeight="true">
                     <div class="print-nights">
-                        <PrintNightList Title="Pierwsza noc" Steps="NightSteps(true)" FirstNight="true" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" />
-                        <PrintNightList Title="Pozostałe noce" Steps="NightSteps(false)" FirstNight="false" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" Flipped="_options.FlipOtherNights" />
+                        <PrintNightList Title="Pierwsza noc" Steps="NightSteps(true)" FirstNight="true" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" EnglishNames="_options.ShowEnglishNames" />
+                        <PrintNightList Title="Pozostałe noce" Steps="NightSteps(false)" FirstNight="false" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" EnglishNames="_options.ShowEnglishNames" Flipped="_options.FlipOtherNights" />
                     </div>
                 </PrintPage>
             }
@@ -214,6 +215,7 @@
         var defaults = new ScriptPrintOptions();
         options.Columns = defaults.Columns;
         options.AbilityBesideName = defaults.AbilityBesideName;
+        options.ShowEnglishNames = defaults.ShowEnglishNames;
         options.Scale = defaults.Scale;
         options.ShowPlayerCount = defaults.ShowPlayerCount;
         options.IncludeExtras = defaults.IncludeExtras;

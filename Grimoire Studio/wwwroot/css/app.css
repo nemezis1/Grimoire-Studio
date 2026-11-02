@@ -179,6 +179,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 }
 
 .site-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
+.site-menu { display: none; }
 
 .site-nav a {
     padding: 0.4rem 0.75rem;
@@ -765,6 +766,15 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     font-weight: normal;
 }
 
+/* Status of a change on the scripts list: waiting for an admin, or in the wiki but not in the repository yet. */
+.local-badge--pending { border-color: #b7791f; color: #b7791f; }
+.local-badge--wiki { border-color: #2b6cb0; color: #2b6cb0; }
+
+@media (prefers-color-scheme: dark) {
+    .local-badge--pending { border-color: #e0a84a; color: #e0a84a; }
+    .local-badge--wiki { border-color: #6aa9e9; color: #6aa9e9; }
+}
+
 /* Page actions next to the title in the page header. */
 .script-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-left: 0.5rem; }
 
@@ -885,15 +895,17 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 /* ---------- Links to the official wiki ---------- */
 
+/* Small links in a card's corner (official wiki, edit, history): accent colour and underlined, so they read as links. */
 .wiki-link {
-    font-size: 0.75rem;
-    font-weight: normal;
-    color: var(--muted);
-    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
     white-space: nowrap;
 }
 
-.wiki-link:hover { color: var(--accent); text-decoration: underline; }
+.wiki-link:hover { text-decoration-thickness: 2px; }
 
 .role-grid__item { position: relative; }
 .role-grid__item > .wiki-link { position: absolute; top: 0.6rem; right: 0.75rem; }
@@ -1004,9 +1016,16 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .print-columns--1 .print-roles__row { padding: 0.25mm 0; }
 
 /* Ability beside the name: icon | name | ability, same text size, slightly larger icon and name. */
-.print-roles--beside .print-roles__row { display: grid; grid-template-columns: 3.2em minmax(5em, 7.5em) minmax(0, 1fr); align-items: center; column-gap: 2mm; }
+.print-roles--beside .print-roles__row { display: grid; grid-template-columns: 3.2em minmax(5em, 9.5em) minmax(0, 1fr); align-items: center; column-gap: 2mm; }
 .print-roles--beside .role-icon { width: 3.2em; height: 3.2em; }
 .print-roles--beside strong { font-size: 1.15em; }
+
+/* English name: smaller and regular weight, beside the Polish name, or under it when the ability is beside. */
+.print-roles__en { font-size: 0.85em; font-weight: normal; color: #555555; }
+.print-roles--beside .print-roles__en { display: block; }
+
+/* A name too long even for the wider column breaks instead of running into the ability column. */
+.print-roles__name { min-width: 0; overflow-wrap: break-word; hyphens: auto; }
 
 .print-jinxes li { padding: 0.8mm 0; border-bottom: 0.2mm solid #dddddd; break-inside: avoid; }
 .print-jinxes p { margin: 0.3mm 0 0; }
@@ -1168,13 +1187,80 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     .script-editor__selected { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
 }
 .proposal-changes__part { margin: 0.75rem 0 0.25rem; font-size: 0.9rem; color: var(--muted); }
-.site-nav__exit {
-    padding: 0.25rem 0.6rem;
-    border: 1px dashed var(--accent);
-    border-radius: 999px;
-    background: none;
-    color: var(--accent);
-    font: inherit;
-    font-size: 0.85rem;
-    cursor: pointer;
+
+/* ---------- Smaller windows and phones: the top of each page takes as little height as it can ---------- */
+
+.title-row--compact h1 { margin: 0 0 0.5rem; font-size: 1.6rem; }
+.filters__count { font-size: 0.9rem; }
+
+/* Shown only on narrow screens; on wide ones the folded parts flow in their row as if not wrapped. */
+.filters__toggle, .actions__more, .script-head__toggle { display: none; }
+.filters__more, .actions__secondary { display: contents; }
+
+/* Filters that would take more than their rows (js/fold.js sets data-folded): all but the search fold behind "Filtry". */
+.filters[data-folded] .filters__toggle { display: inline-block; }
+.filters[data-folded] .filters__search { flex: 1 1 0; }
+.filters[data-folded] .filters__more { display: none; }
+.filters[data-folded] .filters__more--open { display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%; }
+.filters[data-folded] .filters__more--open > .filters__select { flex: 1 1 14rem; }
+
+/* Detail pages: smaller buttons and icon, so title and actions share one row when they fit. */
+.script-header__icon { width: 72px; height: 72px; }
+.script-header .script-actions, .role-detail__header .script-actions { margin-left: auto; }
+.script-actions .button { padding: 0.45rem 0.9rem; }
+
+/* Medium windows: the menu fits one line. */
+@media (max-width: 1250px) {
+    .site-header__inner { gap: 0.5rem 1rem; }
+    .site-nav a { padding: 0.35rem 0.55rem; }
+}
+
+/* Medium windows: the lists keep their filters in view, as on wide screens (pages with a pinned top only). */
+@media (min-width: 901px) and (max-width: 1100px) {
+    html:has(.pinned), body:has(.pinned) { height: 100%; overflow: hidden; }
+    #app:has(.pinned) { height: 100%; display: flex; flex-direction: column; }
+    #app:has(.pinned) > .site-header, #app:has(.pinned) > .wiki-banner { flex: none; }
+    .site-main:has(.pinned) { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+    .page:has(.pinned) { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; padding-block: 1rem; }
+    .page:has(.pinned) > :not(.pinned) { flex: none; }
+    .pinned { flex: 1; min-height: 0; }
+    .pinned__scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
+}
+
+/* Narrow windows: the menu folds behind one button. */
+@media (max-width: 900px) {
+    .site-header__inner { min-height: 48px; }
+    .site-menu {
+        display: inline-flex;
+        margin-left: auto;
+        padding: 0.35rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: none;
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+    }
+    .site-nav { display: none; flex-basis: 100%; padding-bottom: 0.5rem; }
+    .site-nav--open { display: flex; }
+}
+
+/* Phones: filters, extra actions and the script's details fold; icons and titles shrink. */
+@media (max-width: 700px) {
+    .page { padding-block: 1rem 2rem; }
+    .title-row--compact h1 { font-size: 1.4rem; }
+
+    .actions__more, .script-head__toggle { display: inline-block; }
+
+    .actions__secondary { display: none; }
+    .actions__secondary--open { display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%; }
+    .script-header .script-actions, .role-detail__header .script-actions { margin-left: 0; }
+    .script-header, .role-detail__header { gap: 0.5rem 0.75rem; margin-bottom: 0.75rem; }
+    .script-header__icon { width: 48px; height: 48px; }
+    .role-detail__header .role-icon--lg { width: 56px; height: 56px; }
+    .script-header h1, .role-detail__header h1 { font-size: 1.5rem; }
+
+    .script-head__toggle { width: 100%; margin-bottom: 0.75rem; text-align: left; }
+    .script-head { display: none; }
+    .script-head--open { display: flex; }
 }

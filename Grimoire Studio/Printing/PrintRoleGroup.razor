@@ -9,13 +9,16 @@
                 <RoleIcon Role="role" />
                 @if (AbilityBesideName)
                 {
-                    <strong>@role.NamePl</strong>
+                    <div class="print-roles__name">
+                        <strong>@role.NamePl</strong>
+                        @EnglishName(role)
+                    </div>
                     <p>@role.AbilityPl</p>
                 }
                 else
                 {
                     <div>
-                        <strong>@role.NamePl</strong>
+                        <strong>@role.NamePl</strong> @EnglishName(role)
                         <p>@role.AbilityPl</p>
                     </div>
                 }
@@ -37,4 +40,13 @@
     /// <summary>Icon, name and ability side by side (ability in its own column).</summary>
     [Parameter]
     public bool AbilityBesideName { get; set; }
+
+    /// <summary>English name in smaller type beside the Polish one (under it when the ability is beside).</summary>
+    [Parameter]
+    public bool EnglishNames { get; set; }
+
+    private RenderFragment? EnglishName(Role role) =>
+        EnglishNames && role.NameEn.Length > 0 && role.NameEn != role.NamePl
+            ? @<span class="print-roles__en">@role.NameEn</span>
+            : null;
 }

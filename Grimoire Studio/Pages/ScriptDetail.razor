@@ -37,15 +37,19 @@
                 </div>
                 <div class="script-actions">
                     <a class="button" href="scripts/@script.Id/edit">Edytuj</a>
-                    <a class="button button--ghost" href="scripts/new?from=@script.Id">Duplikuj</a>
-                    <ItemHistoryButton Kind="script" Id="@script.Id" Title="@script.Name" />
                     <button class="button button--ghost" @onclick="() => _printing = true">Drukuj / PDF</button>
-                    <a class="button button--ghost" href="generator?script=@script.Id">Generuj tokeny</a>
-                    <button class="button button--ghost" title="Plik JSON do script.bloodontheclocktower.com" @onclick="() => ExportAsync(script)">Eksport do Script Tool</button>
-                    @if (_isLocal)
-                    {
-                        <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń skrypt")</button>
-                    }
+                    @* Narrow screens: the other actions fold behind this button. *@
+                    <button class="button button--ghost actions__more" aria-expanded="@_moreOpen" @onclick="() => _moreOpen = !_moreOpen">Więcej @(_moreOpen ? "▴" : "▾")</button>
+                    <div class="actions__secondary @(_moreOpen ? "actions__secondary--open" : null)">
+                        <a class="button button--ghost" href="generator?script=@script.Id">Generuj tokeny</a>
+                        <a class="button button--ghost" href="scripts/new?from=@script.Id">Duplikuj</a>
+                        <ItemHistoryButton Kind="script" Id="@script.Id" Title="@script.Name" />
+                        <button class="button button--ghost" title="Plik JSON do script.bloodontheclocktower.com" @onclick="() => ExportAsync(script)">Eksport do Script Tool</button>
+                        @if (_isLocal)
+                        {
+                            <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń skrypt")</button>
+                        }
+                    </div>
                 </div>
             </header>
         </div>
@@ -104,6 +108,8 @@
 }
 
 @code {
+    private bool _moreOpen;
+
     [Parameter]
     public string Id { get; set; } = string.Empty;
 

@@ -27,7 +27,11 @@ else
     <div class="script-editor fill-viewport">
         <section class="panel">
             @* Name, id and picture in one row; they wrap on narrow screens. *@
-            <div class="script-head">
+            @* Narrow screens: name, id and picture fold into this one line (open for a new script). *@
+            <button class="button button--ghost script-head__toggle" aria-expanded="@HeadOpen" @onclick="() => _headOpen = !HeadOpen">
+                @(string.IsNullOrWhiteSpace(_name) ? "Nazwa i obrazek" : _name) @(HeadOpen ? "▴" : "✎")
+            </button>
+            <div class="script-head @(HeadOpen ? "script-head--open" : null)">
                 <label class="field script-head__name">
                     <span>Nazwa skryptu</span>
                     <input type="text" @bind="_name" @bind:event="oninput" placeholder="np. Pełnia Zła" />
@@ -60,7 +64,7 @@ else
             }
 
             @* Search, filters and teams flow together: one row on wide screens, two when there is no room. *@
-            <div class="filters script-filters">
+            <div class="filters script-filters" data-fold-rows="2">
                 <input class="filters__search" type="search" placeholder="Szukaj roli lub zdolności…" @bind="_query" @bind:event="oninput" />
                 <details class="multi-select">
                     <summary>Filtry@(_filters.Count > 0 ? $" ({_filters.Count})" : null)</summary>
@@ -76,7 +80,10 @@ else
                         <button class="button button--ghost" disabled="@(_filters.Count == 0)" @onclick="() => _filters.Clear()">Wyczyść filtry</button>
                     </div>
                 </details>
-                <div class="chips">
+                <button class="button button--ghost filters__toggle" aria-expanded="@_teamsOpen" @onclick="() => _teamsOpen = !_teamsOpen">
+                    Drużyny@(team is null ? null : $": {team.PluralPl}")
+                </button>
+                <div class="chips filters__more @(_teamsOpen ? "filters__more--open" : null)">
                 <button class="chip @(team is null ? "chip--active" : null)" @onclick='() => _team = null'>Wszystkie</button>
                 @foreach (var t in Teams.All)
                 {
@@ -152,6 +159,11 @@ else
     public string? Id { get; set; }
 
     private bool IsNew => Id is null;
+
+    private bool? _headOpen;
+    private bool _teamsOpen;
+
+    private bool HeadOpen => _headOpen ?? IsNew;
 
     private GameData? _data;
     private Script? _existing;

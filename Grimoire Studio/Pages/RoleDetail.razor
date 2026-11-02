@@ -38,14 +38,18 @@
                 </div>
                 <div class="script-actions">
                     <a class="button" href="roles/@role.Id/edit">Edytuj</a>
-                    <a class="button button--ghost" href="roles/@role.Id/jinxes">Jinxy</a>
-                    <ItemHistoryButton Kind="role" Id="@role.Id" File="@(role.Team == TeamIds.Fabled ? "fabled" : "roles")" Title="@role.NamePl" Style="@Teams.Style(role.Team)" />
-                    @if (_isLocal)
-                    {
-                        <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń rolę")</button>
-                    }
-                    <a class="button button--ghost" href="@WikiLink.Url(role)" target="_blank" rel="noopener noreferrer">Oficjalna wiki ↗</a>
                     <a class="button button--ghost" href="generator?role=@role.Id">Generuj token</a>
+                    @* Narrow screens: the other actions fold behind this button. *@
+                    <button class="button button--ghost actions__more" aria-expanded="@_moreOpen" @onclick="() => _moreOpen = !_moreOpen">Więcej @(_moreOpen ? "▴" : "▾")</button>
+                    <div class="actions__secondary @(_moreOpen ? "actions__secondary--open" : null)">
+                        <a class="button button--ghost" href="roles/@role.Id/jinxes">Jinxy</a>
+                        <ItemHistoryButton Kind="role" Id="@role.Id" File="@(role.Team == TeamIds.Fabled ? "fabled" : "roles")" Title="@role.NamePl" Style="@Teams.Style(role.Team)" />
+                        <a class="button button--ghost" href="@WikiLink.Url(role)" target="_blank" rel="noopener noreferrer">Oficjalna wiki ↗</a>
+                        @if (_isLocal)
+                        {
+                            <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń rolę")</button>
+                        }
+                    </div>
                 </div>
             </header>
         </div>
@@ -150,6 +154,8 @@
 </div>
 
 @code {
+    private bool _moreOpen;
+
     [Parameter]
     public string Id { get; set; } = string.Empty;
 

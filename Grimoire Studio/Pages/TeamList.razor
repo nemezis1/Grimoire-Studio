@@ -1,6 +1,7 @@
 @page "/teams"
 @inject GameDataClient Client
 @inject ChangeSets Changes
+@inject Proposals Proposals
 
 <PageTitle>Drużyny – Grimoire Studio</PageTitle>
 
@@ -39,10 +40,7 @@ else
                     <div class="form-list__head">
                         <h2 class="team-heading">
                             @team.PluralPl <span class="muted">(@count)</span>
-                            @if (isLocal)
-                            {
-                                <span class="local-badge">@(isBuiltin ? (Changes.EditingWiki ? "zmieniona w wiki" : "zmieniona lokalnie") : (Changes.EditingWiki ? "nowa w wiki" : "tylko w tej przeglądarce"))</span>
-                            }
+                            <ChangeBadge Status="_status" Key="@LocalBackup.TeamKey(team.Id)" Feminine="true" />
                         </h2>
                         <div class="script-actions">
                             <a class="button button--ghost" href="roles?team=@team.Id">Role</a>
@@ -69,6 +67,7 @@ else
     private GameData? _data;
     private GameData? _original;
     private HashSet<string> _localIds = new(StringComparer.OrdinalIgnoreCase);
+    private ChangeStatus _status = ChangeStatus.Empty;
 
     /// <summary>Team being edited; <see cref="_editingId"/> is null for a new team.</summary>
     private TeamForm? _edit;
@@ -82,6 +81,7 @@ else
         _original = await Client.GetBaseAsync();
         _data = await Client.GetAsync();
         _localIds = (await (await Changes.GetCurrentAsync()).Teams.GetAllAsync()).Select(t => t.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _status = await ChangeStatus.LoadAsync(Client, Changes, Proposals);
     }
 
     private void StartNew()

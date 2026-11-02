@@ -18,6 +18,10 @@
                         <RoleIcon Role="role" Size="sm" />
                         <div>
                             <strong>@role.NamePl</strong>
+                            @if (EnglishNames && role.NameEn.Length > 0 && role.NameEn != role.NamePl)
+                            {
+                                @(" ")<span class="print-roles__en">@role.NameEn</span>
+                            }
                             @if (ShowAbility)
                             {
                                 <p class="print-night__ability">@role.AbilityPl</p>
@@ -65,6 +69,10 @@
     /// <summary>Storyteller instructions under each step.</summary>
     [Parameter]
     public bool ShowReminder { get; set; } = true;
+
+    /// <summary>English name in smaller type beside the Polish one.</summary>
+    [Parameter]
+    public bool EnglishNames { get; set; }
 
     /// <summary>Rotated by 180°, for a sheet read from both sides of a table.</summary>
     [Parameter]

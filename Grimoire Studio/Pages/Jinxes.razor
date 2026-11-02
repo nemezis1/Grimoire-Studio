@@ -1,10 +1,15 @@
 @page "/jinxes"
 @using System.Globalization
 @inject NavigationManager Nav
+@inject GameDataClient Client
+@inject ChangeSets ChangeSets
+@inject Proposals Proposals
 
 <PageTitle>Jinxy – Grimoire Studio</PageTitle>
 
-<h1>Jinxy</h1>
+<div class="title-row title-row--compact">
+    <h1>Jinxy</h1>
+</div>
 
 <div class="pinned fill-viewport">
 <DataView Context="data">
@@ -26,10 +31,16 @@
     }
 
     <div class="pinned__top">
-        <div class="filters">
+        <div class="filters" data-fold-rows="2">
             <input class="filters__search" type="search" placeholder="Szukaj po roli lub treści…"
                    value="@Q" @oninput="e => SetParameter(QueryName, e.Value?.ToString())" />
 
+            @* Narrow screens: script and translation filters fold behind this button. *@
+            <button class="button button--ghost filters__toggle" aria-expanded="@_filtersOpen" @onclick="() => _filtersOpen = !_filtersOpen">
+                Filtry@((scope is null ? 0 : 1) + (ToReview ? 1 : 0) is var active and > 0 ? $" ({active})" : null)
+            </button>
+
+            <div class="filters__more @(_filtersOpen ? "filters__more--open" : null)">
             <select class="filters__select" value="@(scope?.Id ?? string.Empty)"
                     @onchange="e => SetParameter(ScriptName, e.Value?.ToString())">
                 <option value="">Wszystkie skrypty</option>
@@ -46,15 +57,16 @@
                     Do sprawdzenia (@all.Count(j => IsMachineTranslated(j.Jinx)))
                 </button>
             </div>
-        </div>
+            </div>
 
-        <p class="muted">
-            Znaleziono: @jinxes.Count z @all.Count
-            @if (scope is not null)
-            {
-                <span> · tylko pary, w których obie role są w skrypcie</span>
-            }
-        </p>
+            <span class="filters__count muted">
+                Znaleziono: @jinxes.Count z @all.Count
+                @if (scope is not null)
+                {
+                    <span> · tylko pary, w których obie role są w skrypcie</span>
+                }
+            </span>
+        </div>
     </div>
 
     <div class="pinned__scroll">
@@ -63,7 +75,10 @@
             {
                 <li>
                     <div class="jinx-list__head">
-                        <span class="jinx-pair"><RoleLink Role="owner" /> + <RoleLink Role="other" /></span>
+                        <span class="jinx-pair">
+                            <RoleLink Role="owner" /> + <RoleLink Role="other" />
+                            <ChangeBadge Status="_status" Key="@($"jinx:{owner.Id}/{other.Id}".ToLowerInvariant())" />
+                        </span>
                         <span class="jinx-list__links">
                             <ItemHistoryButton Kind="jinx" Id="@($"{owner.Id}/{other.Id}")" Title="@($"{owner.NamePl} + {other.NamePl}")"
                                                Label="historia" CssClass="wiki-link link-button" />
@@ -84,6 +99,11 @@
     private const string ScriptName = "script";
     private const string ReviewName = "review";
     private const string ReviewValue = "1";
+
+    private bool _filtersOpen;
+    private ChangeStatus _status = ChangeStatus.Empty;
+
+    protected override async Task OnInitializedAsync() => _status = await ChangeStatus.LoadAsync(Client, ChangeSets, Proposals);
 
     private static readonly StringComparer PolishOrder = StringComparer.Create(new CultureInfo("pl-PL"), true);
 

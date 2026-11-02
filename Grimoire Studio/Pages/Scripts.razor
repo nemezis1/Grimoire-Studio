@@ -1,5 +1,6 @@
 @page "/scripts"
 @inject ChangeSets ChangeSets
+@inject Proposals Proposals
 
 <PageTitle>Skrypty – Grimoire Studio</PageTitle>
 
@@ -26,6 +27,7 @@
 }
 
 <div class="pinned__scroll">
+    <CascadingValue Value="_status">
     <DataView Context="data">
         @foreach (var (title, scripts) in new[]
         {
@@ -49,10 +51,7 @@
                             <div>
                                 <div class="script-card__name">
                                     @script.Name
-                                    @if (_localIds.Contains(script.Id))
-                                    {
-                                        <span class="local-badge">lokalny</span>
-                                    }
+                                    <ChangeBadge Key="@LocalBackup.ScriptKey(script.Id)" />
                                 </div>
                                 <div class="muted">
                                     @string.Join(" · ", Teams.All
@@ -67,6 +66,7 @@
             </ul>
         }
     </DataView>
+    </CascadingValue>
 </div>
 </div>
 
@@ -82,15 +82,14 @@
     [Inject]
     private NavigationManager Nav { get; set; } = default!;
 
-    private HashSet<string> _localIds = new(StringComparer.OrdinalIgnoreCase);
+    private ChangeStatus _status = ChangeStatus.Empty;
     private string? _importMessage;
     private string? _importedId;
     private bool _importFailed;
 
     protected override async Task OnInitializedAsync()
     {
-        await Client.GetAsync(); // drops saved-but-unchanged scripts before the badges are decided
-        _localIds = (await (await ChangeSets.GetCurrentAsync()).Scripts.GetAllAsync()).Select(s => s.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _status = await ChangeStatus.LoadAsync(Client, ChangeSets, Proposals);
     }
 
     /// <summary>
@@ -140,7 +139,7 @@
             _importedId = id;
             _importFailed = false;
             _importMessage = $"Zaimportowano „{result.Script.Name}”, ale pominięto nieznane role: {string.Join(", ", result.UnknownRoles)}.";
-            _localIds.Add(id);
+            _status.Add(LocalBackup.ScriptKey(id), ChangeSets.EditingWiki);
         }
         catch (Exception ex) when (ex is FormatException or IOException)
         {

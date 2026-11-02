@@ -6,7 +6,7 @@
         }
         <RoleIcon Role="Role" />
         <div class="role-card__body">
-            <div class="role-card__name">@Role.NamePl <span class="muted">@Role.NameEn</span></div>
+            <div class="role-card__name">@Role.NamePl <span class="muted">@Role.NameEn</span> <ChangeBadge Key="@LocalBackup.RoleKey(Role.Id)" Feminine="true" /></div>
             <p class="role-card__ability">@Role.AbilityPl</p>
         </div>
     </a>

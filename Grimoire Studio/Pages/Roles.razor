@@ -1,10 +1,13 @@
 @page "/roles"
 @using System.Globalization
 @inject NavigationManager Nav
+@inject GameDataClient Client
+@inject ChangeSets ChangeSets
+@inject Proposals Proposals
 
 <PageTitle>Role – Grimoire Studio</PageTitle>
 
-<div class="title-row">
+<div class="title-row title-row--compact">
     <h1>Role</h1>
     <a class="button" href="roles/new">Nowa rola</a>
 </div>
@@ -34,10 +37,16 @@
     }
 
     <div class="pinned__top">
-        <div class="filters">
+        <div class="filters" data-fold-rows="2">
             <input class="filters__search" type="search" placeholder="Szukaj po nazwie lub zdolności…"
                    value="@Q" @oninput="e => SetParameter(QueryName, e.Value?.ToString())" />
 
+            @* Narrow screens: script, sorting and teams fold behind this button. *@
+            <button class="button button--ghost filters__toggle" aria-expanded="@_filtersOpen" @onclick="() => _filtersOpen = !_filtersOpen">
+                Filtry@((scope is null ? 0 : 1) + (nightOrder is null ? 0 : 1) + (team is null ? 0 : 1) is var active and > 0 ? $" ({active})" : null)
+            </button>
+
+            <div class="filters__more @(_filtersOpen ? "filters__more--open" : null)">
             <select class="filters__select" value="@(scope?.Id ?? string.Empty)"
                     @onchange="e => SetParameter(ScriptName, e.Value?.ToString())">
                 <option value="">Wszystkie skrypty</option>
@@ -62,18 +71,20 @@
                             @onclick="() => SetParameter(TeamName, t.Id)">@t.PluralPl</button>
                 }
             </div>
-        </div>
+            </div>
 
-        <p class="muted">
-            Znaleziono: @roles.Count
-            @if (nightOrder is not null)
-            {
-                <span> · tylko role, które budzą się @(Sort == FirstNightSort ? "pierwszej nocy" : "w pozostałe noce")</span>
-            }
-        </p>
+            <span class="filters__count muted">
+                Znaleziono: @roles.Count
+                @if (nightOrder is not null)
+                {
+                    <span> · tylko role, które budzą się @(Sort == FirstNightSort ? "pierwszej nocy" : "w pozostałe noce")</span>
+                }
+            </span>
+        </div>
     </div>
 
     <div class="pinned__scroll">
+        <CascadingValue Value="_status">
         @if (nightOrder is not null)
         {
             <ul class="role-grid role-grid--ordered">
@@ -98,6 +109,7 @@
                 </section>
             }
         }
+        </CascadingValue>
     </div>
 </DataView>
 </div>
@@ -109,6 +121,11 @@
     private const string SortName = "sort";
     private const string FirstNightSort = "first";
     private const string OtherNightsSort = "other";
+
+    private bool _filtersOpen;
+    private ChangeStatus _status = ChangeStatus.Empty;
+
+    protected override async Task OnInitializedAsync() => _status = await ChangeStatus.LoadAsync(Client, ChangeSets, Proposals);
 
     private static readonly StringComparer PolishOrder = StringComparer.Create(new CultureInfo("pl-PL"), true);
 

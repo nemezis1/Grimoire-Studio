@@ -17,6 +17,9 @@ public sealed class ScriptPrintOptions
     /// <summary>Ability in its own column beside a slightly larger icon and name (in one or two columns of roles).</summary>
     public bool AbilityBesideName { get; set; }
 
+    /// <summary>English role names in smaller type next to the Polish ones (under them when the ability is beside).</summary>
+    public bool ShowEnglishNames { get; set; }
+
     public bool ShowPlayerCount { get; set; } = true;
 
     /// <summary>Second page with travellers, fabled and jinxes (when the script has any).</summary>

@@ -1,0 +1,32 @@
+@* Status of a change of this browser on a list: personal, waiting for an admin, or in the wiki but not sent yet. *@
+
+@switch ((Status ?? Cascaded)?.Of(Key) ?? ChangeStage.None)
+{
+    case ChangeStage.Personal:
+        <span class="local-badge" title="Zmiana w „Moich zmianach”, widoczna tylko dla Ciebie">@(Feminine ? "lokalna" : "lokalny")</span>
+        break;
+    case ChangeStage.Pending:
+        <span class="local-badge local-badge--pending" title="@(Feminine ? "Zgłoszona" : "Zgłoszony") do wiki, czeka na decyzję administratora">czeka na akceptację</span>
+        break;
+    case ChangeStage.Wiki:
+        <span class="local-badge local-badge--wiki"
+              title="@(Feminine ? "Dodana" : "Dodany") do wiki w tej przeglądarce, ale jeszcze niewysłana do repozytorium (inni tego nie widzą)">w wiki, @(Feminine ? "niewysłana" : "niewysłany")</span>
+        break;
+}
+
+@code {
+    /// <summary>Given by the list page, directly or cascaded; without it (e.g. a role card on a script page) nothing is shown.</summary>
+    [Parameter]
+    public ChangeStatus? Status { get; set; }
+
+    [CascadingParameter]
+    private ChangeStatus? Cascaded { get; set; }
+
+    /// <summary>Item key, e.g. <c>LocalBackup.RoleKey(id)</c>.</summary>
+    [Parameter, EditorRequired]
+    public string Key { get; set; } = string.Empty;
+
+    /// <summary>Feminine labels, for a role or a team ("lokalna"); a script or a jinx is "lokalny".</summary>
+    [Parameter]
+    public bool Feminine { get; set; }
+}

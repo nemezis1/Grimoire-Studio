@@ -6,7 +6,11 @@
 <header class="site-header">
     <div class="site-header__inner">
         <a class="site-title" href="">Grimoire Studio</a>
-        <nav class="site-nav">
+        @* Narrow screens: the links fold behind this button, so the header stays one line. *@
+        <button class="site-menu" aria-expanded="@_menuOpen" aria-controls="site-nav" @onclick="() => _menuOpen = !_menuOpen">
+            @(_menuOpen ? "✕ Zamknij" : "☰ Menu")
+        </button>
+        <nav id="site-nav" class="site-nav @(_menuOpen ? "site-nav--open" : null)">
             <NavLink href="roles">Role</NavLink>
             <NavLink href="scripts">Skrypty</NavLink>
             <NavLink href="jinxes">Jinxy</NavLink>
@@ -16,7 +20,6 @@
             @if (ChangeSets.IsAdmin)
             {
                 <NavLink href="admin">Admin</NavLink>
-                <button class="site-nav__exit" title="Wyjdź z trybu administratora" @onclick="LeaveAdminAsync">Wyjdź z admina</button>
             }
         </nav>
     </div>
@@ -45,6 +48,8 @@
 }
 
 @code {
+    private bool _menuOpen;
+
     private bool IsHome => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Length == 0;
 
     protected override async Task OnInitializedAsync()
@@ -58,7 +63,12 @@
     private void OnChanged() => InvokeAsync(StateHasChanged);
 
     private async void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
-        await InvokeAsync(EnterAdminFromAddressAsync);
+        await InvokeAsync(async () =>
+        {
+            _menuOpen = false;
+            await EnterAdminFromAddressAsync();
+            StateHasChanged();
+        });
 
     /// <summary>
     /// An address with ?admin opens the admin mode for this browsing session; the parameter is then removed from the
@@ -73,15 +83,6 @@
 
         await ChangeSets.SetAdminAsync(true);
         Nav.NavigateTo(Nav.GetUriWithQueryParameter(ChangeSets.AdminParameter, (string?)null), replace: true);
-    }
-
-    private async Task LeaveAdminAsync()
-    {
-        await ChangeSets.SetAdminAsync(false);
-        if (Nav.ToBaseRelativePath(Nav.Uri).StartsWith("admin", StringComparison.OrdinalIgnoreCase))
-        {
-            Nav.NavigateTo("");
-        }
     }
 
     public void Dispose()
