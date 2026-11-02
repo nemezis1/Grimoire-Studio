@@ -64,7 +64,11 @@
                 <li>
                     <div class="jinx-list__head">
                         <span class="jinx-pair"><RoleLink Role="owner" /> + <RoleLink Role="other" /></span>
-                        <a class="wiki-link" href="roles/@owner.Id/jinxes">edytuj</a>
+                        <span class="jinx-list__links">
+                            <ItemHistoryButton Kind="jinx" Id="@($"{owner.Id}/{other.Id}")" Title="@($"{owner.NamePl} + {other.NamePl}")"
+                                               Label="historia" CssClass="wiki-link link-button" />
+                            <a class="wiki-link" href="roles/@owner.Id/jinxes">edytuj</a>
+                        </span>
                     </div>
                     <p>@jinx.ReasonPl</p>
                     <p class="muted small">@jinx.ReasonEn</p>

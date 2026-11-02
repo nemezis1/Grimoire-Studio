@@ -14,6 +14,9 @@ public sealed record Proposal
     public ProposalStatus Status { get; init; } = ProposalStatus.Pending;
     public DateTimeOffset? DecidedAt { get; init; }
 
+    /// <summary>Commit that took the approved changes to the repository; null until they are sent.</summary>
+    public string? PublishedIn { get; init; }
+
     /// <summary>Keys (<see cref="LocalBackup.Keys"/>) of the items the admin accepted.</summary>
     public IReadOnlyList<string> ApprovedKeys { get; init; } = [];
 

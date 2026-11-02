@@ -73,6 +73,17 @@ async function route(request, env) {
         return json(await deployments(env));
     }
 
+    if (request.method === 'GET' && pathname === `${API}changes`) {
+        await authenticate(request, env);
+        return json(await wikiChanges(env));
+    }
+
+    if (request.method === 'GET' && pathname === `${API}item-history`) {
+        await authenticate(request, env);
+        const params = new URL(request.url).searchParams;
+        return json(await itemHistory(params.get('kind'), params.get('id'), params.get('file'), env));
+    }
+
     if (pathname === `${API}admins` || pathname.startsWith(`${API}admins/`)) {
         const owner = await authenticate(request, env);
         if (!owner.owner) {
@@ -182,6 +193,109 @@ export async function deployments(env) {
                 updatedAt: run.updated_at,
                 url: run.html_url,
             })),
+    };
+}
+
+// --- History of the wiki, read from git ---------------------------------------------------------------------------
+
+const CHANGES_LIMIT = 30;
+// Per file: one listing, one version per commit and the version before the oldest stay under the subrequest limit.
+const ITEM_COMMITS_LIMIT = 15;
+const PROPOSALS_LINE = /^Zgłoszenia: (.+)$/m;
+
+function commitSummary(item) {
+    const message = item.commit?.message ?? '';
+    return {
+        sha: item.sha,
+        url: item.html_url,
+        date: item.commit?.author?.date,
+        author: item.commit?.author?.name ?? '',
+        title: message.split('\n')[0],
+        approvedBy: /\n\nZatwierdził: ([^\n]+)$/.exec(message)?.[1] ?? null,
+        proposals: PROPOSALS_LINE.exec(message)?.[1] ?? null,
+    };
+}
+
+/** Wiki changes sent by admins (commits made by this Worker), newest first. */
+export async function wikiChanges(env) {
+    const commits = await new GitHub(env).get(
+        `commits?sha=${encodeURIComponent(env.BRANCH)}&path=data&per_page=${CHANGES_LIMIT * 2}`);
+    return {
+        changes: commits
+            .filter(item => APPROVED_BY.test(item.commit?.message ?? ''))
+            .slice(0, CHANGES_LIMIT)
+            .map(commitSummary),
+    };
+}
+
+// Which data file holds an item of a kind, and how to find the item in it.
+const ITEM_KINDS = {
+    role: {
+        files: ['roles', 'fabled'],
+        find: (data, id) => data?.find?.(role => role.id === id) ?? null,
+    },
+    script: {
+        files: ['scripts'],
+        find: (data, id) => data?.scripts?.find?.(script => script.id === id) ?? null,
+    },
+    jinx: {
+        files: ['hatred'],
+        // id is "<role>/<role>": the jinx may be stored under either of the two.
+        find: (data, id) => {
+            const [a, b] = id.split('/');
+            for (const owner of data ?? []) {
+                const other = owner.id === a ? b : owner.id === b ? a : null;
+                const jinx = other && owner.hatred?.find(j => j.id === other);
+                if (jinx) {
+                    return { owner: owner.id, ...jinx };
+                }
+            }
+            return null;
+        },
+    },
+};
+
+/**
+ * Commits that changed one role, script or jinx, newest first, with the item before and after each (null when it did
+ * not exist). For a role, commits of its icon count too. Only the latest commits of the file are looked at.
+ */
+export async function itemHistory(kind, id, file, env) {
+    const spec = ITEM_KINDS[kind];
+    if (!spec || !id || !/^[a-z0-9]+(?:\/[a-z0-9]+)?$/.test(id)) {
+        throw new HttpError(400, 'Nieznana pozycja.');
+    }
+
+    const name = spec.files.includes(file) ? file : spec.files[0];
+    const path = `data/${name}.json`;
+    const github = new GitHub(env);
+    const branch = encodeURIComponent(env.BRANCH);
+    const commits = await github.get(`commits?sha=${branch}&path=${encodeURIComponent(path)}&per_page=${ITEM_COMMITS_LIMIT}`);
+
+    const versions = await Promise.all(commits.map(c => github.fileAt(c.sha, path)));
+    const oldest = commits.at(-1)?.parents?.[0]?.sha;
+    versions.push(oldest ? await github.fileAt(oldest, path) : null);
+
+    const entries = new Map();
+    commits.forEach((c, i) => {
+        const after = spec.find(versions[i], id);
+        const before = spec.find(versions[i + 1], id);
+        if (JSON.stringify(after) !== JSON.stringify(before)) {
+            entries.set(c.sha, { ...commitSummary(c), before, after, iconChanged: false });
+        }
+    });
+
+    if (kind === 'role') {
+        const icons = await github.get(`commits?sha=${branch}&path=${encodeURIComponent(`data/icons/${id}.png`)}&per_page=${ITEM_COMMITS_LIMIT}`);
+        for (const c of icons) {
+            const entry = entries.get(c.sha) ?? { ...commitSummary(c), before: null, after: null };
+            entries.set(c.sha, { ...entry, iconChanged: true });
+        }
+    }
+
+    return {
+        entries: [...entries.values()].sort((a, b) => String(b.date).localeCompare(String(a.date))),
+        // Older changes may exist beyond the commits looked at.
+        complete: commits.length < ITEM_COMMITS_LIMIT,
     };
 }
 
@@ -360,6 +474,7 @@ async function rejectConflicts(github, baseVersion, headSha, files) {
 
 class GitHub {
     constructor(env) {
+        this.repository = env.REPOSITORY;
         this.base = `https://api.github.com/repos/${env.REPOSITORY}/`;
         this.headers = {
             Authorization: `Bearer ${env.GITHUB_TOKEN}`,
@@ -379,6 +494,23 @@ class GitHub {
 
     patch(path, body) {
         return this.request('PATCH', path, body);
+    }
+
+    /** A file of the repository as it was at <sha>, parsed as JSON; null when it did not exist then. */
+    async fileAt(sha, path) {
+        const response = await fetch(`https://raw.githubusercontent.com/${this.repository}/${sha}/${path}`, {
+            headers: { Authorization: this.headers.Authorization, 'User-Agent': this.headers['User-Agent'] },
+        });
+        if (response.status === 404) {
+            return null;
+        }
+
+        if (!response.ok) {
+            console.error(`GitHub raw ${sha} ${path}: ${response.status}`);
+            throw new HttpError(502, 'Nie udało się odczytać historii z GitHuba.');
+        }
+
+        return response.json();
     }
 
     async request(method, path, body) {

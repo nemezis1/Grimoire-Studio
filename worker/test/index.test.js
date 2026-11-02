@@ -32,12 +32,25 @@ beforeEach(async () => {
         changedSince: {},
         calls: [],
         refusePatch: false,
+        // History for commits?path= listings (newest first) and the files at each commit (raw.githubusercontent.com).
+        history: {},
+        files: {},
     };
     globalThis.fetch = async (url, init = {}) => {
+        const reply = (value, status = 200) => new Response(JSON.stringify(value), { status });
+        const raw = /^https:\/\/raw\.githubusercontent\.com\/owner\/repo\/([^/]+)\/(.+)$/.exec(url);
+        if (raw) {
+            github.calls.push({ method: 'RAW', path: `${raw[1]}/${raw[2]}` });
+            const content = github.files[raw[1]]?.[raw[2]];
+            return content === undefined ? new Response('404', { status: 404 }) : reply(content);
+        }
+
         const path = url.replace('https://api.github.com/repos/owner/repo/', '');
         const body = init.body ? JSON.parse(init.body) : undefined;
         github.calls.push({ method: init.method, path, body });
-        const reply = (value, status = 200) => new Response(JSON.stringify(value), { status });
+
+        const listing = /^commits\?sha=main&path=([^&]+)&per_page=\d+$/.exec(path);
+        if (listing) return reply(github.history[decodeURIComponent(listing[1])] ?? []);
 
         if (path === 'git/ref/heads/main') return reply({ object: { sha: github.head } });
         if (path.startsWith('git/commits/')) return reply(github.commits[path.slice('git/commits/'.length)]);
@@ -249,4 +262,63 @@ test('the store keeps only hashes of the keys', async () => {
     const stored = await env.ADMINS.get('admins');
     assert.ok(!stored.includes(key));
     assert.ok(stored.includes(await sha256Hex(key)));
+});
+
+const commitItem = (sha, date, message, parent) =>
+    ({ sha, html_url: `https://github.com/c/${sha}`, commit: { message, author: { name: 'Ktoś', date } }, parents: [{ sha: parent }] });
+
+test('changes list only wiki commits sent by admins, with who approved and whose proposals', async () => {
+    github.history.data = [
+        commitItem('c3', '2026-11-02T10:00:00Z', 'Rycerz\n\nZgłoszenia: Ola, Tomek\n\nZatwierdził: Kasia', 'c2'),
+        commitItem('c2', '2026-11-01T10:00:00Z', 'Update data to the official TPI release', 'c1'),
+    ];
+
+    const { changes } = await (await call('GET', '/api/changes')).json();
+
+    assert.deepEqual(changes.map(c => [c.sha, c.title, c.approvedBy, c.proposals]), [['c3', 'Rycerz', 'Kasia', 'Ola, Tomek']]);
+});
+
+test('item history keeps only the commits that changed this role, plus its icon', async () => {
+    const chef = name => ({ id: 'chef', namePl: name });
+    const imp = name => ({ id: 'imp', namePl: name });
+    github.history['data/roles.json'] = [
+        commitItem('c3', '2026-11-03T10:00:00Z', 'Szef\n\nZatwierdził: Kasia', 'c2'),
+        commitItem('c2', '2026-11-02T10:00:00Z', 'Imp', 'c1'),
+        commitItem('c1', '2026-11-01T10:00:00Z', 'Kucharz', 'c0'),
+    ];
+    github.history['data/icons/chef.png'] = [commitItem('c4', '2026-11-04T10:00:00Z', 'Ikona\n\nZatwierdził: Kasia', 'c3')];
+    github.files = {
+        c3: { 'data/roles.json': [chef('C'), imp('Y')] },
+        c2: { 'data/roles.json': [chef('B'), imp('Y')] },
+        c1: { 'data/roles.json': [chef('B'), imp('X')] },
+        c0: { 'data/roles.json': [chef('A'), imp('X')] },
+    };
+
+    const { entries, complete } = await (await call('GET', '/api/item-history?kind=role&id=chef&file=roles')).json();
+
+    assert.deepEqual(entries.map(e => [e.sha, e.before?.namePl ?? null, e.after?.namePl ?? null, e.iconChanged]), [
+        ['c4', null, null, true],
+        ['c3', 'B', 'C', false],
+        ['c1', 'A', 'B', false],
+    ]);
+    assert.equal(entries[1].approvedBy, 'Kasia');
+    assert.equal(complete, true);
+});
+
+test('item history finds a jinx stored under either role', async () => {
+    github.history['data/hatred.json'] = [commitItem('c2', '2026-11-02T10:00:00Z', 'Jinx', 'c1')];
+    github.files = {
+        c2: { 'data/hatred.json': [{ id: 'imp', hatred: [{ id: 'chef', reasonPl: 'nowy' }] }] },
+        c1: { 'data/hatred.json': [] },
+    };
+
+    const { entries } = await (await call('GET', '/api/item-history?kind=jinx&id=chef/imp')).json();
+
+    assert.deepEqual(entries.map(e => [e.sha, e.before, e.after?.owner, e.after?.reasonPl]), [['c2', null, 'imp', 'nowy']]);
+});
+
+test('item history refuses unknown kinds and odd ids', async () => {
+    assert.equal((await call('GET', '/api/item-history?kind=team&id=imp')).status, 400);
+    assert.equal((await call('GET', '/api/item-history?kind=role&id=../x')).status, 400);
+    assert.equal((await call('GET', '/api/item-history?kind=role&id=chef', { key: null })).status, 401);
 });

@@ -20,7 +20,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     private static readonly HttpClient Http = new();
 
     private string? _key;
-    private bool _loaded;
+    private Task? _load;
 
     public string ApiUrl { get; } = (configuration[ConfigurationKey] ?? string.Empty).TrimEnd('/');
 
@@ -32,15 +32,14 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     /// <summary>The signed-in admin is an owner (in the Worker's ADMIN_KEYS secret) and manages the other admins.</summary>
     public bool IsOwner { get; private set; }
 
-    /// <summary>Signs in again with the key kept for this tab, if any.</summary>
-    public async Task LoadAsync()
-    {
-        if (_loaded || !IsConfigured)
-        {
-            return;
-        }
+    /// <summary>
+    /// Signs in again with the key kept for this tab, if any. Every caller waits for the same sign-in, so components
+    /// rendered together all see the result.
+    /// </summary>
+    public Task LoadAsync() => _load ??= IsConfigured ? LoadCoreAsync() : Task.CompletedTask;
 
-        _loaded = true;
+    private async Task LoadCoreAsync()
+    {
         var key = await store.GetSessionAsync(KeyStorage);
         if (key is not null)
         {
@@ -146,6 +145,24 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         await SendAsync<JsonElement>(request);
     }
 
+    /// <summary>Wiki changes sent by admins, newest first, read from the repository history.</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<IReadOnlyList<WikiCommit>> GetChangesAsync()
+    {
+        using var request = Request(HttpMethod.Get, "changes", RequireKey());
+        return (await SendAsync<ChangesReply>(request)).Changes;
+    }
+
+    /// <summary>Commits that changed one item (kind "role", "script" or "jinx"; <paramref name="file"/> picks roles/fabled).</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<ItemHistory> GetItemHistoryAsync(string kind, string id, string? file = null)
+    {
+        var query = $"item-history?kind={Uri.EscapeDataString(kind)}&id={Uri.EscapeDataString(id)}"
+            + (file is null ? null : $"&file={Uri.EscapeDataString(file)}");
+        using var request = Request(HttpMethod.Get, query, RequireKey());
+        return await SendAsync<ItemHistory>(request);
+    }
+
     private string RequireKey() => _key ?? throw new PublishException("Najpierw zaloguj się kluczem administratora.");
 
     private HttpRequestMessage Request(HttpMethod method, string path, string key)
@@ -196,6 +213,8 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     }
 
     private sealed record MeReply(string Name, bool Owner);
+
+    private sealed record ChangesReply(IReadOnlyList<WikiCommit> Changes);
 
     private sealed record AdminsReply(IReadOnlyList<AdminEntry> Admins);
 

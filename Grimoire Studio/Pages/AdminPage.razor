@@ -153,6 +153,10 @@ else
                     <span class="change-list__what">
                         @proposal.Author · @proposal.CreatedAt.ToLocalTime().ToString("g") · @ProposalText.Changes(proposal.Changes.Count)
                         <span class="local-badge">@ProposalText.Status(proposal)</span>
+                        @if (proposal.PublishedIn is { } sha)
+                        {
+                            <span class="change-list__fields">w repozytorium: <code>@sha[..Math.Min(7, sha.Length)]</code></span>
+                        }
                         @if (proposal.Comment.Length > 0)
                         {
                             <span class="change-list__fields">@proposal.Comment</span>
@@ -160,6 +164,41 @@ else
                     </span>
                     <button class="button button--ghost" @onclick="() => DeleteProposalAsync(proposal)">Usuń z historii</button>
                     <ProposalDetails Proposal="proposal" Base="_original" Data="_data" />
+                </li>
+            }
+        </ul>
+    }
+
+    @if (_repoChanges is not null)
+    {
+        <h2>Zmiany w repozytorium</h2>
+        <p class="muted small">
+            Zmiany wiki wysłane przez administratorów, z historii repozytorium – widoczne po zalogowaniu na każdym komputerze.
+            Historię jednej roli, skryptu lub jinxa pokazuje przycisk „Historia zmian” na ich stronach.
+        </p>
+        @if (_repoChanges.Count == 0)
+        {
+            <p class="muted">Nie wysłano jeszcze żadnych zmian.</p>
+        }
+        <ul class="change-list">
+            @foreach (var change in _repoChanges)
+            {
+                <li>
+                    <span class="change-list__what">
+                        @change.Title
+                        <span class="change-list__fields">
+                            @change.Date.ToLocalTime().ToString("g")
+                            @if (change.ApprovedBy is not null)
+                            {
+                                <span> · zatwierdził: @change.ApprovedBy</span>
+                            }
+                            @if (change.Proposals is not null)
+                            {
+                                <span> · zgłosili: @change.Proposals</span>
+                            }
+                            · <a href="@change.Url" target="_blank" rel="noopener noreferrer"><code>@change.ShortSha</code></a>
+                        </span>
+                    </span>
                 </li>
             }
         </ul>
@@ -179,6 +218,7 @@ else
     private LocalBackup? _wikiChanges;
     private List<Proposal> _pending = [];
     private List<Proposal> _decided = [];
+    private List<WikiCommit>? _repoChanges;
     private readonly Dictionary<string, HashSet<string>> _selection = [];
     private string? _message;
     private string? _adminKey;
@@ -231,6 +271,19 @@ else
         var proposals = await Proposals.GetAllAsync();
         _pending = proposals.Where(p => p.Status == ProposalStatus.Pending).OrderBy(p => p.CreatedAt).ToList();
         _decided = proposals.Where(p => p.Status != ProposalStatus.Pending).OrderByDescending(p => p.DecidedAt).ToList();
+
+        _repoChanges = null;
+        if (Publisher.AdminName is not null)
+        {
+            try
+            {
+                _repoChanges = (await Publisher.GetChangesAsync()).ToList();
+            }
+            catch (PublishException ex)
+            {
+                Show($"Nie udało się wczytać zmian z repozytorium: {ex.Message}", error: true);
+            }
+        }
 
         // New proposals start with everything selected; the admin unticks what to leave out.
         foreach (var proposal in _pending.Where(p => !_selection.ContainsKey(p.Id)))
@@ -358,6 +411,7 @@ else
             await Publisher.SignInAsync(_adminKey ?? string.Empty);
             _adminKey = null;
             Show($"Zalogowano jako {Publisher.AdminName}.");
+            await ReloadAsync();
         }
         catch (PublishException ex)
         {
@@ -373,6 +427,7 @@ else
     {
         await Publisher.SignOutAsync();
         Show("Wylogowano.");
+        await ReloadAsync();
     }
 
     /// <summary>
@@ -396,13 +451,27 @@ else
             var message = string.IsNullOrWhiteSpace(_commitMessage)
                 ? $"Zmiany wiki: {ProposalText.Changes(changes.Count)}"
                 : _commitMessage.Trim();
+
+            // Approved proposals not sent yet: their authors go into the commit, and they remember the commit.
+            var sent = _decided.Where(p => p.Status == ProposalStatus.Approved && p.PublishedIn is null).ToList();
+            var authors = sent.Select(p => p.Author).Distinct().ToList();
+            if (authors.Count > 0)
+            {
+                message += $"\n\nZgłoszenia: {string.Join(", ", authors)}";
+            }
+
             var result = await Publisher.PublishAsync(message, original.Version, files);
+            foreach (var proposal in sent)
+            {
+                await Proposals.SaveAsync(proposal with { PublishedIn = result.Sha });
+            }
+
             await ChangeSets.Wiki.ClearAsync();
             _commitMessage = null;
             _deployments?.Watch();
             Show(result.Changed
                 ? $"Wysłano do repozytorium (commit {result.Sha[..7]}): {string.Join(", ", files.Select(f => f.Path))}. "
-                    + "Strona pokaże zmiany po wdrożeniu (zwykle 2–3 minuty) – postęp widać w „Wdrożenia strony”."
+                    + "Strona pokaże zmiany po wdrożeniu (zwykle 2–3 minuty) – postęp widać w „Wdrożenia zmian wiki”."
                 : "Repozytorium ma już te zmiany.");
             await ReloadAsync();
         }

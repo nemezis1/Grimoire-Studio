@@ -36,11 +36,17 @@
     </div>
 </main>
 
-<footer class="site-footer">
-    Projekt fanowski, niezwiązany z The Pandemonium Institute. Blood on the Clocktower jest znakiem towarowym The Pandemonium Institute.
-</footer>
+@* Only on the home page: elsewhere the work area gets the height. *@
+@if (IsHome)
+{
+    <footer class="site-footer">
+        Projekt fanowski, niezwiązany z The Pandemonium Institute. Blood on the Clocktower jest znakiem towarowym The Pandemonium Institute.
+    </footer>
+}
 
 @code {
+    private bool IsHome => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Length == 0;
+
     protected override async Task OnInitializedAsync()
     {
         ChangeSets.Changed += OnChanged;

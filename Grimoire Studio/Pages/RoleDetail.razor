@@ -39,6 +39,7 @@
                 <div class="script-actions">
                     <a class="button" href="roles/@role.Id/edit">Edytuj</a>
                     <a class="button button--ghost" href="roles/@role.Id/jinxes">Jinxy</a>
+                    <ItemHistoryButton Kind="role" Id="@role.Id" File="@(role.Team == TeamIds.Fabled ? "fabled" : "roles")" Title="@role.NamePl" Style="@Teams.Style(role.Team)" />
                     @if (_isLocal)
                     {
                         <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń rolę")</button>
