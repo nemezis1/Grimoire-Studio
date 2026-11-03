@@ -2,6 +2,7 @@
 @inject GameDataClient Client
 @inject ChangeSets ChangeSets
 @inject Proposals Proposals
+@inject OutdatedCheck OutdatedCheck
 
 <PageTitle>Moje zmiany – Grimoire Studio</PageTitle>
 
@@ -73,7 +74,7 @@ else
         </section>
     }
 
-    @if (ProposalText.Outdated(_changes, _base.Version) is { } outdated)
+    @if (_outdated is { } outdated)
     {
         <p class="notice notice--warning">@outdated</p>
     }
@@ -130,6 +131,7 @@ else
     private string _author = string.Empty;
     private string _comment = string.Empty;
     private string? _message;
+    private string? _outdated;
     private bool _messageIsError;
 
     protected override async Task OnInitializedAsync()
@@ -148,6 +150,7 @@ else
         _base = await Client.GetWikiAsync();
         _original = await Client.GetOriginalAsync();
         _changes = await Personal.GetAllAsync();
+        _outdated = await OutdatedCheck.WarningAsync(_changes, _base);
 
         // Changes seen for the first time start selected; unticked ones stay unticked, removed ones drop out.
         var keys = _changes.Keys().ToHashSet();

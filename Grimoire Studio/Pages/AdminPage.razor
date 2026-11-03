@@ -6,6 +6,7 @@
 @inject Proposals Proposals
 @inject NavigationManager Nav
 @inject RepositoryPublisher Publisher
+@inject OutdatedCheck OutdatedCheck
 @implements IDisposable
 
 @if (!_loaded || !ChangeSets.IsAdmin)
@@ -111,7 +112,7 @@ else
                 {
                     <p>@proposal.Comment</p>
                 }
-                @if (ProposalText.Outdated(proposal.Changes, _original.Version) is { } outdated)
+                @if (_outdated.GetValueOrDefault(proposal.Id) is { } outdated)
                 {
                     <p class="notice notice--warning">@outdated</p>
                 }
@@ -148,7 +149,7 @@ else
             Zatwierdzone zgłoszenia i zmiany wprowadzone bezpośrednio w wiki, względem danych strony; przy każdej pozycji
             widać, skąd pochodzi. Są zapisane tylko w tej przeglądarce, dopóki ich nie wyślesz; plik eksportu to kopia zapasowa.
         </p>
-        @if (ProposalText.Outdated(_wikiChanges, _original.Version) is { } wikiOutdated)
+        @if (_outdated.GetValueOrDefault(WikiKey) is { } wikiOutdated)
         {
             <p class="notice notice--warning">@wikiOutdated</p>
         }
@@ -252,6 +253,10 @@ else
     private GameData? _data;
     private GameData? _wiki;
     private GameData? _original;
+
+    /// <summary>Warnings about items changed in the wiki since the changes were made, by proposal id or <see cref="WikiKey"/>.</summary>
+    private readonly Dictionary<string, string> _outdated = [];
+    private const string WikiKey = "wiki";
     private LocalBackup? _wikiChanges;
     private List<Proposal> _pending = [];
     private List<Proposal> _decided = [];
@@ -385,6 +390,20 @@ else
             catch (PublishException ex)
             {
                 Show($"Nie udało się wczytać zmian z repozytorium: {ex.Message}", error: true);
+            }
+        }
+
+        _outdated.Clear();
+        if (await OutdatedCheck.WarningAsync(_wikiChanges, _original) is { } wikiOutdated)
+        {
+            _outdated[WikiKey] = wikiOutdated;
+        }
+
+        foreach (var proposal in _pending)
+        {
+            if (await OutdatedCheck.WarningAsync(proposal.Changes.Only(proposal.UndecidedKeys()), _original) is { } outdated)
+            {
+                _outdated[proposal.Id] = outdated;
             }
         }
 

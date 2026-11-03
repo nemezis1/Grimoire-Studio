@@ -20,8 +20,14 @@ public sealed record LocalBackup
     /// </summary>
     public string BaseVersion { get; init; } = string.Empty;
 
-    /// <summary>True when the changes were made on another data version than <paramref name="current"/>.</summary>
-    public bool IsOutdated(string current) => BaseVersion.Length > 0 && current.Length > 0 && BaseVersion != current;
+    /// <summary>
+    /// True when the changes were made on another data version than <paramref name="current"/>; a short commit id and
+    /// the full one name the same version.
+    /// </summary>
+    public bool IsOutdated(string current) =>
+        BaseVersion.Length > 0 && current.Length > 0
+        && !BaseVersion.StartsWith(current, StringComparison.OrdinalIgnoreCase)
+        && !current.StartsWith(BaseVersion, StringComparison.OrdinalIgnoreCase);
 
     public IReadOnlyList<LocalRole> Roles { get; init; } = [];
     public IReadOnlyList<Script> Scripts { get; init; } = [];
