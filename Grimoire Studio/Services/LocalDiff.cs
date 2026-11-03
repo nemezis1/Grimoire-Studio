@@ -25,6 +25,7 @@ public static class LocalDiff
         Add("Nazwa (EN)", original?.NameEn, role.NameEn);
         Add("Drużyna", original is null ? null : teamName(original.Team), teamName(role.Team));
         Add("Edycja", original?.Edition, role.Edition);
+        Add("Eksperymentalna", original is null ? null : YesNo(original.IsExperimental), YesNo(role.IsExperimental));
         Add("Zmienia przygotowanie", original is null ? null : YesNo(original.Setup), YesNo(role.Setup));
         Add("Zdolność (PL)", original?.AbilityPl, role.AbilityPl);
         Add("Zdolność (EN)", original?.AbilityEn, role.AbilityEn);
@@ -151,6 +152,7 @@ public static class LocalDiff
         Check(role.NamePl != original.NamePl || role.NameEn != original.NameEn, "nazwa");
         Check(role.Team != original.Team, "drużyna");
         Check(role.Edition != original.Edition, "edycja");
+        Check(role.IsExperimental != original.IsExperimental, "eksperymentalna");
         Check(role.Setup != original.Setup, "wpływ na przygotowanie");
         Check(role.AbilityPl != original.AbilityPl || role.AbilityEn != original.AbilityEn, "zdolność");
         Check(role.FirstNight != original.FirstNight || role.OtherNight != original.OtherNight, "kolejność nocy");

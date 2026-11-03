@@ -28,7 +28,7 @@ public sealed class ChangeStatus
 
         return new(
             (await changes.Personal.GetAllAsync()).Keys(),
-            (await proposals.GetAllAsync()).Where(p => p.Status == ProposalStatus.Pending).SelectMany(p => p.Changes.Keys()),
+            (await proposals.GetAllAsync()).SelectMany(p => p.UndecidedKeys()),
             (await changes.Wiki.GetAllAsync()).Keys());
     }
 

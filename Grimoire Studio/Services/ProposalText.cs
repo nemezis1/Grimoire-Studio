@@ -28,6 +28,8 @@ public static class ProposalText
 
     public static string Status(Proposal proposal) => proposal.Status switch
     {
+        ProposalStatus.Pending when proposal.ApprovedKeys.Count + proposal.RejectedKeys.Count > 0 =>
+            $"częściowo rozpatrzone (zatwierdzone {proposal.ApprovedKeys.Count}, odrzucone {proposal.RejectedKeys.Count}, czeka {proposal.UndecidedKeys().Count})",
         ProposalStatus.Approved when proposal.ApprovedCount < proposal.Changes.Count =>
             $"zatwierdzone częściowo ({proposal.ApprovedCount} z {proposal.Changes.Count})",
         ProposalStatus.Approved => "zatwierdzone",

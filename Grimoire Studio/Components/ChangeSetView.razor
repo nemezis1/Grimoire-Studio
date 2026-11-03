@@ -18,6 +18,7 @@ else
                     <span class="change-list__what">
                         <RoleLink Role="local.Role" />
                         <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
+                        @Origin(LocalBackup.RoleKey(local.Role.Id))
                         @if (original is not null)
                         {
                             <span class="change-list__fields">@Fields(LocalDiff.Role(original, local))</span>
@@ -28,6 +29,7 @@ else
                         <a class="button button--ghost" href="roles/@local.Role.Id/edit">Edytuj</a>
                     }
                     @RemoveButton(LocalBackup.RoleKey(local.Role.Id), original is null)
+                    @ItemActions(LocalBackup.RoleKey(local.Role.Id))
                     @Details(LocalDiff.RoleDetails(original, local, BeforeIcon(local.Role.Id), Teams.Singular))
                 </li>
             }
@@ -46,6 +48,7 @@ else
                     <span class="change-list__what">
                         <a href="scripts/@local.Id">@local.Name</a>
                         <span class="local-badge">@(original is null ? "nowy" : "zmieniony")</span>
+                        @Origin(LocalBackup.ScriptKey(local.Id))
                         <span class="change-list__fields">@(original is null ? $"{local.Roles.Count} ról" : Fields(LocalDiff.Script(original, local)))</span>
                     </span>
                     @if (EditLinks)
@@ -53,6 +56,7 @@ else
                         <a class="button button--ghost" href="scripts/@local.Id/edit">Edytuj</a>
                     }
                     @RemoveButton(LocalBackup.ScriptKey(local.Id), original is null)
+                    @ItemActions(LocalBackup.ScriptKey(local.Id))
                     @Details(LocalDiff.ScriptDetails(original, local, RoleName))
                 </li>
             }
@@ -72,12 +76,14 @@ else
                     <span class="change-list__what">
                         <a href="teams">@local.PluralPl</a>
                         <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
+                        @Origin(LocalBackup.TeamKey(local.Id))
                         @if (original is not null)
                         {
                             <span class="change-list__fields">@Fields(LocalDiff.Team(original, local))</span>
                         }
                     </span>
                     @RemoveButton(LocalBackup.TeamKey(local.Id), original is null, used ? "Najpierw przenieś role do innej drużyny." : null)
+                    @ItemActions(LocalBackup.TeamKey(local.Id))
                     @Details(LocalDiff.TeamDetails(original, local))
                 </li>
             }
@@ -99,6 +105,7 @@ else
                     <span class="change-list__what">
                         @(owner?.NamePl ?? local.OwnerId) + @(other?.NamePl ?? local.Jinx.Id)
                         <span class="local-badge">@(local.Removed ? "usunięty" : isNew ? "nowy" : "zmieniony")</span>
+                        @Origin(LocalBackup.JinxKey(local))
                         @if (!local.Removed && ShowJinxText)
                         {
                             <span class="change-list__fields">@local.Jinx.ReasonPl</span>
@@ -109,7 +116,42 @@ else
                         <a class="button button--ghost" href="roles/@local.OwnerId/jinxes">Edytuj</a>
                     }
                     @RemoveButton(LocalBackup.JinxKey(local), isNew)
+                    @ItemActions(LocalBackup.JinxKey(local))
                     @Details(LocalDiff.JinxDetails(FindJinx(local), local))
+                </li>
+            }
+        </ul>
+    }
+
+    @if (Changes.Removed.Count > 0)
+    {
+        <h3>Usunięte (@Changes.Removed.Count)</h3>
+        <ul class="change-list">
+            @foreach (var key in Changes.Removed)
+            {
+                var (kind, id) = ItemLabel.Split(key);
+                var role = kind == "role" ? Base.FindRole(id) : null;
+                var scripts = role is null ? [] : Base.ScriptsWithRole(id).Select(s => s.Name).ToList();
+                <li style="@(role is null ? null : Teams.Style(role.Team))">
+                    @Checkbox(key)
+                    <span class="change-list__what">
+                        @if (role is not null)
+                        {
+                            <RoleLink Role="role" />
+                        }
+                        else
+                        {
+                            <strong>@ItemLabel.Of(Base, kind, id)</strong>
+                        }
+                        <span class="local-badge">@(kind == "script" ? "usunięty skrypt" : kind == "team" ? "usunięta drużyna" : "usunięta")</span>
+                        @Origin(key)
+                        @if (scripts.Count > 0)
+                        {
+                            <span class="change-list__fields">znika też ze skryptów: @string.Join(", ", scripts)</span>
+                        }
+                    </span>
+                    @RemoveButton(key, isNew: false)
+                    @ItemActions(key)
                 </li>
             }
         </ul>
@@ -140,8 +182,16 @@ else
     [Parameter]
     public EventCallback<string> OnRemove { get; set; }
 
+    /// <summary>When set, rendered on every item with its key (<see cref="LocalBackup.Keys"/>), e.g. per-item decisions.</summary>
+    [Parameter]
+    public RenderFragment<string>? Actions { get; set; }
+
     [Parameter]
     public bool EditLinks { get; set; }
+
+    /// <summary>When set, every item says where it came from: its text here, or a direct wiki edit without one.</summary>
+    [Parameter]
+    public IReadOnlyDictionary<string, string>? Origins { get; set; }
 
     [Parameter]
     public bool ShowJinxText { get; set; }
@@ -209,6 +259,14 @@ else
         </details>
     };
 
+    private RenderFragment Origin(string key) => __builder =>
+    {
+        if (Origins is not null)
+        {
+            <span class="change-origin">@(Origins.GetValueOrDefault(key) ?? "zmiana bezpośrednio w wiki")</span>
+        }
+    };
+
     private RenderFragment Checkbox(string key) => __builder =>
     {
         if (Selected is { } selected)
@@ -231,6 +289,14 @@ else
 
         return SelectedChanged.InvokeAsync();
     }
+
+    private RenderFragment ItemActions(string key) => __builder =>
+    {
+        if (Actions is not null)
+        {
+            <span class="script-actions">@Actions(key)</span>
+        }
+    };
 
     private RenderFragment RemoveButton(string key, bool isNew, string? blockedReason = null) => __builder =>
     {

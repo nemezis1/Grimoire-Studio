@@ -1,0 +1,88 @@
+@*
+    The admin panel link; for a signed-in admin it shows how many proposals wait for a decision, checked on every page
+    change and every few minutes.
+*@
+@inject RepositoryPublisher Publisher
+@inject Proposals Proposals
+@inject NavigationManager Nav
+@implements IDisposable
+
+<NavLink href="admin">
+    Admin
+    @if (_pending > 0)
+    {
+        <span class="nav-count" title="Zgłoszenia czekające na decyzję">@_pending</span>
+    }
+</NavLink>
+
+@code {
+    private static readonly TimeSpan Every = TimeSpan.FromMinutes(3);
+
+    private int _pending;
+    private CancellationTokenSource? _polling;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Publisher.SignedInChanged += OnChanged;
+        Proposals.Changed += OnChanged;
+        Nav.LocationChanged += OnLocationChanged;
+        await Publisher.LoadAsync();
+        await RefreshAsync();
+        _polling = new CancellationTokenSource();
+        _ = PollAsync(_polling.Token);
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) => OnChanged();
+
+    private void OnChanged() => _ = InvokeAsync(async () =>
+    {
+        await RefreshAsync();
+        StateHasChanged();
+    });
+
+    private async Task RefreshAsync()
+    {
+        if (Publisher.AdminName is null)
+        {
+            _pending = 0;
+            return;
+        }
+
+        try
+        {
+            _pending = await Publisher.GetPendingCountAsync();
+        }
+        catch (PublishException)
+        {
+            // Offline or signed out elsewhere: the last count stays.
+        }
+    }
+
+    private async Task PollAsync(CancellationToken cancel)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(Every);
+            while (await timer.WaitForNextTickAsync(cancel))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await RefreshAsync();
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The layout was closed.
+        }
+    }
+
+    public void Dispose()
+    {
+        Publisher.SignedInChanged -= OnChanged;
+        Proposals.Changed -= OnChanged;
+        Nav.LocationChanged -= OnLocationChanged;
+        _polling?.Cancel();
+    }
+}

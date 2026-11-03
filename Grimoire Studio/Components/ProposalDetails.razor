@@ -1,4 +1,4 @@
-@* Folded list of a proposal's changes; a partly approved one is split into accepted and rejected items. *@
+@* Folded list of a proposal's changes; a partly decided one is split into accepted, rejected and waiting items. *@
 
 <details class="proposal-changes">
     <summary>Pokaż zmiany</summary>
@@ -9,19 +9,24 @@
             zawierać te zmiany. Pełne różnice pokazuje „Historia zmian” na stronie roli, skryptu lub jinxa.
         </p>
     }
-    @* Older proposals did not record the accepted items; they are shown as one list. *@
-    @if (Proposal.Status == ProposalStatus.Approved && Proposal.ApprovedKeys.Count > 0 && Proposal.ApprovedKeys.Count < Proposal.Changes.Count)
+    @{
+        // Older proposals recorded neither part: approved ones took everything, rejected ones nothing.
+        var approved = Proposal.Status == ProposalStatus.Approved && Proposal.ApprovedKeys.Count == 0
+            ? Proposal.Changes.Keys().ToHashSet()
+            : Proposal.ApprovedKeys.ToHashSet();
+        var waiting = Proposal.UndecidedKeys();
+        var rejected = Proposal.Changes.Keys().Where(k => !approved.Contains(k) && !waiting.Contains(k)).ToHashSet();
+        var decided = Proposal.DecidedBase(Base);
+    }
+    @if (new[] { approved, rejected, waiting }.Count(part => part.Count > 0) <= 1)
     {
-        var approved = Proposal.ApprovedKeys.ToHashSet();
-        var rejected = Proposal.Changes.Keys().Where(k => !approved.Contains(k)).ToHashSet();
-        <h4 class="proposal-changes__part">Przyjęte</h4>
-        <ChangeSetView Changes="Proposal.Changes.Only(approved)" Base="Base" Data="Data" DetailsOpen="true" />
-        <h4 class="proposal-changes__part">Odrzucone</h4>
-        <ChangeSetView Changes="Proposal.Changes.Only(rejected)" Base="Base" Data="Data" DetailsOpen="true" />
+        <ChangeSetView Changes="Proposal.Changes" Base="@(waiting.Count > 0 ? Base : decided)" Data="Data" DetailsOpen="true" />
     }
     else
     {
-        <ChangeSetView Changes="Proposal.Changes" Base="Base" Data="Data" DetailsOpen="true" />
+        @Part("Przyjęte", approved, decided)
+        @Part("Odrzucone", rejected, decided)
+        @Part("Czekają na akceptację", waiting, Base)
     }
 </details>
 
@@ -30,12 +35,23 @@
     public Proposal Proposal { get; set; } = default!;
 
     /// <summary>
-    /// Data to compare with. For a decided proposal pass <see cref="Proposal.DecidedBase"/>: the wiki and later the data
-    /// folder contain the approved changes, so comparing with them would show no differences.
+    /// Data the waiting items are compared with (the wiki). Decided items are compared with
+    /// <see cref="Proposal.DecidedBase"/>: the wiki and later the data folder contain the approved changes.
     /// </summary>
     [Parameter, EditorRequired]
     public GameData Base { get; set; } = default!;
 
     [Parameter, EditorRequired]
     public GameData Data { get; set; } = default!;
+
+    private RenderFragment Part(string title, IReadOnlySet<string> keys, GameData compareWith) => __builder =>
+    {
+        if (keys.Count == 0)
+        {
+            return;
+        }
+
+        <h4 class="proposal-changes__part">@title</h4>
+        <ChangeSetView Changes="Proposal.Changes.Only(keys)" Base="compareWith" Data="Data" DetailsOpen="true" />
+    };
 }

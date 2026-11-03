@@ -66,6 +66,10 @@ else
                     </label>
                 </div>
                 <label class="field field--inline">
+                    <input type="checkbox" @bind="_experimental" />
+                    <span>Eksperymentalna</span>
+                </label>
+                <label class="field field--inline">
                     <input type="checkbox" @bind="_setup" />
                     <span>Wpływa na przygotowanie gry (np. zmienia liczbę Przybyszów)</span>
                 </label>
@@ -199,6 +203,7 @@ else
     private string _team = TeamIds.Townsfolk;
     private string _edition = string.Empty;
     private bool _setup;
+    private bool _experimental;
     private string _abilityPl = string.Empty;
     private string _abilityEn = string.Empty;
     private int _firstNight;
@@ -235,6 +240,7 @@ else
         _team = role.Team;
         _edition = role.Edition;
         _setup = role.Setup;
+        _experimental = role.IsExperimental;
         _abilityPl = role.AbilityPl;
         _abilityEn = role.AbilityEn;
         _firstNight = role.FirstNight;
@@ -406,6 +412,7 @@ else
             Team = _team,
             Edition = _team == TeamIds.Fabled ? string.Empty : _edition,
             Setup = _setup,
+            IsExperimental = _experimental,
             AbilityPl = _abilityPl.Trim(),
             AbilityEn = string.IsNullOrWhiteSpace(_abilityEn) ? _abilityPl.Trim() : _abilityEn.Trim(),
             FirstNight = _firstNight,

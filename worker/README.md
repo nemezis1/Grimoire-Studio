@@ -8,6 +8,11 @@ a pod `/api/` usługę zapisu. Usługa zapisu pozwala administratorom zapisywać
 - Commit ma jako autora imię administratora (i adres `COMMIT_EMAIL`), w opisie „Zatwierdził: …”.
 - Zapisać można tylko pliki `data/` (JSON, ikony ról, obrazki skryptów).
 - Jeśli od wczytania strony ktoś zmienił te same pliki, Worker nic nie zapisuje i zwraca listę plików (konflikt).
+  Panel administratora przed wysłaniem pobiera aktualne dane z repozytorium (`/api/data`), nakłada na nie zmiany
+  i pokazuje konflikty tylko dla pozycji zmienionych po obu stronach.
+- Zgłoszenia zmian od odwiedzających trafiają do KV (`ADMINS`, klucze `proposal:<id>`): wysłać może każdy (najwyżej
+  10 na godzinę z jednego adresu, 100 czekających naraz), odczytać – po identyfikatorze, który dostaje zgłaszający;
+  listę widzą i decyzje zapisują tylko administratorzy. Rozpatrzone zgłoszenia znikają po 180 dniach.
 
 Każdy push do `main` – także commit administratora – uruchamia workflow `Build`, który buduje stronę i wdraża Workera
 (kilka minut).

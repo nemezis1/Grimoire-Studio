@@ -38,7 +38,7 @@ public static class DataFiles
     }
 
     /// <summary>
-    /// Fields left out when they hold nothing, as the data files always did: global reminders (rare), script flags,
+    /// Fields left out when they hold nothing, as the data files always did: global reminders (rare), role and script flags,
     /// and uploaded pictures (those become files, see <see cref="RepositoryExport"/>).
     /// </summary>
     private static void OmitOptionalFields(JsonTypeInfo type)
@@ -49,6 +49,7 @@ public static class DataFiles
             {
                 ("remindersGlobalEn" or "remindersGlobalPl", true, _) => (_, value) => value is IReadOnlyCollection<string> { Count: > 0 },
                 ("isOfficial", _, true) => (_, value) => value is true,
+                ("isExperimental", true, _) => (_, value) => value is true,
                 ("customIcon", _, true) => (_, value) => value is string { Length: > 0 },
                 ("image", _, true) => (_, _) => false,
                 _ => property.ShouldSerialize,

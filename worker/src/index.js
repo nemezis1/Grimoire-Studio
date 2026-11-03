@@ -8,7 +8,8 @@
 // Environment (see wrangler.toml and README.md):
 //   GITHUB_TOKEN     secret: fine-grained token with Contents read & write on the repository
 //   ADMIN_KEYS       secret: the owners, JSON {"<name>": "<sha-256 hex of the key>"}; only they manage the admins
-//   ADMINS           KV namespace: the other admins, added and removed by an owner in the admin panel
+//   ADMINS           KV namespace: the other admins, added and removed by an owner in the admin panel, and the
+//                    proposals sent by visitors (proposal:<id>)
 //   REPOSITORY       "owner/name"
 //   BRANCH           branch to commit to, e.g. "main"
 //   COMMIT_EMAIL     author e-mail of the commits (the author name is the admin's)
@@ -87,6 +88,42 @@ async function route(request, env) {
     if (request.method === 'GET' && pathname === `${API}commit-changes`) {
         await authenticate(request, env);
         return json(await commitChanges(new URL(request.url).searchParams.get('sha'), env));
+    }
+
+    if (request.method === 'GET' && pathname === `${API}data`) {
+        await authenticate(request, env);
+        return json(await dataAt(new URL(request.url).searchParams.get('ref'), env));
+    }
+
+    // Anyone sends a proposal and reads it back by its id (their receipt); only admins list, decide and remove them.
+    if (pathname === `${API}proposals`) {
+        if (request.method === 'POST') {
+            return json(await submitProposal(request, env), 201);
+        }
+
+        if (request.method === 'GET') {
+            await authenticate(request, env);
+            return json(new URL(request.url).searchParams.has('pending')
+                ? { pending: await pendingProposals(env) }
+                : await listProposals(env));
+        }
+    }
+
+    if (pathname.startsWith(`${API}proposals/`)) {
+        const id = decodeURIComponent(pathname.slice(`${API}proposals/`.length));
+        if (request.method === 'GET') {
+            return json(await getProposal(id, env));
+        }
+
+        if (request.method === 'PUT') {
+            await authenticate(request, env);
+            return json(await saveProposal(id, await readBody(request), env));
+        }
+
+        if (request.method === 'DELETE') {
+            await authenticate(request, env);
+            return json(await deleteProposal(id, env));
+        }
     }
 
     if (pathname === `${API}admins` || pathname.startsWith(`${API}admins/`)) {
@@ -173,6 +210,187 @@ async function removeAdmin(name, env) {
 
 function base64Url(bytes) {
     return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// --- Proposals ----------------------------------------------------------------------------------------------------
+
+// Proposals live in the ADMINS namespace too, as proposal:<id> with {status, author} as metadata. Decided ones expire.
+const PROPOSAL_PREFIX = 'proposal:';
+const PROPOSAL_ID = /^[A-Za-z0-9_-]{16,64}$/;
+const PROPOSAL_STATUSES = ['pending', 'approved', 'rejected'];
+const MAX_PROPOSAL_BYTES = 4 * 1024 * 1024;
+const MAX_PENDING_PROPOSALS = 100;
+const MAX_PROPOSALS_PER_HOUR = 10;
+const MAX_LISTED_PROPOSALS = 200;
+const DECIDED_PROPOSAL_SECONDS = 180 * 24 * 60 * 60;
+
+/** A proposal from anyone: the Worker gives it its id and time, and keeps only the fields a visitor may set. */
+async function submitProposal(request, env) {
+    requireStore(env);
+    const text = await request.text();
+    if (text.length > MAX_PROPOSAL_BYTES) {
+        throw new HttpError(413, 'Zgłoszenie jest za duże.');
+    }
+
+    let body;
+    try {
+        body = JSON.parse(text);
+    } catch {
+        throw new HttpError(400, 'Treść żądania nie jest poprawnym JSON.');
+    }
+
+    const author = String(body?.author ?? '').trim();
+    if (!author || author.length > MAX_NAME_LENGTH) {
+        throw new HttpError(400, `Podaj, kto zgłasza (do ${MAX_NAME_LENGTH} znaków).`);
+    }
+
+    const changes = validChanges(body?.changes);
+    if (await pendingProposals(env) >= MAX_PENDING_PROPOSALS) {
+        throw new HttpError(429, 'Za dużo zgłoszeń czeka na decyzję. Spróbuj za jakiś czas.');
+    }
+
+    await limitProposals(request, env);
+    const proposal = {
+        id: base64Url(crypto.getRandomValues(new Uint8Array(18))),
+        author,
+        comment: String(body?.comment ?? '').trim().slice(0, MAX_MESSAGE_LENGTH),
+        createdAt: new Date().toISOString(),
+        changes,
+        status: 'pending',
+    };
+    await putProposal(proposal, env);
+    return proposal;
+}
+
+/** A change set: an object whose item lists are arrays of objects, and removed items as "role:<id>" etc. */
+function validChanges(changes) {
+    const lists = ['roles', 'scripts', 'teams', 'jinxes'];
+    const removed = changes?.removed;
+    const valid = changes && typeof changes === 'object' && !Array.isArray(changes)
+        && lists.every(name => changes[name] === undefined
+            || (Array.isArray(changes[name]) && changes[name].every(item => item && typeof item === 'object')))
+        && (removed === undefined
+            || (Array.isArray(removed) && removed.every(key => /^(?:role|script|team):[a-z0-9]+$/.test(String(key)))))
+        && [...lists, 'removed'].some(name => changes[name]?.length > 0);
+    if (!valid) {
+        throw new HttpError(400, 'Zgłoszenie nie zawiera zmian.');
+    }
+
+    return changes;
+}
+
+/** At most MAX_PROPOSALS_PER_HOUR from one address (kept as a hash, for an hour). */
+async function limitProposals(request, env) {
+    const address = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+    const key = `proposal-rate:${(await sha256Hex(address)).slice(0, 32)}`;
+    const count = Number(await env.ADMINS.get(key) ?? 0);
+    if (count >= MAX_PROPOSALS_PER_HOUR) {
+        throw new HttpError(429, 'Za dużo zgłoszeń w krótkim czasie. Spróbuj za godzinę.');
+    }
+
+    await env.ADMINS.put(key, String(count + 1), { expirationTtl: 60 * 60 });
+}
+
+function putProposal(proposal, env) {
+    const metadata = { status: proposal.status, author: proposal.author };
+    return env.ADMINS.put(PROPOSAL_PREFIX + proposal.id, JSON.stringify(proposal),
+        proposal.status === 'pending' ? { metadata } : { metadata, expirationTtl: DECIDED_PROPOSAL_SECONDS });
+}
+
+async function proposalKeys(env) {
+    const keys = [];
+    let cursor;
+    do {
+        const page = await env.ADMINS.list({ prefix: PROPOSAL_PREFIX, cursor });
+        keys.push(...page.keys);
+        cursor = page.list_complete ? undefined : page.cursor;
+    } while (cursor && keys.length < MAX_LISTED_PROPOSALS);
+    return keys;
+}
+
+/** Number of proposals waiting for a decision, from the listing's metadata (no proposal is read). */
+async function pendingProposals(env) {
+    requireStore(env);
+    return (await proposalKeys(env)).filter(key => key.metadata?.status === 'pending').length;
+}
+
+async function listProposals(env) {
+    requireStore(env);
+    const keys = (await proposalKeys(env)).slice(0, MAX_LISTED_PROPOSALS);
+    const values = await Promise.all(keys.map(key => env.ADMINS.get(key.name)));
+    return { proposals: values.filter(Boolean).map(value => JSON.parse(value)) };
+}
+
+function proposalId(id) {
+    if (!PROPOSAL_ID.test(id)) {
+        throw new HttpError(400, 'Nieznane zgłoszenie.');
+    }
+
+    return id;
+}
+
+async function getProposal(id, env) {
+    requireStore(env);
+    const value = await env.ADMINS.get(PROPOSAL_PREFIX + proposalId(id));
+    if (!value) {
+        throw new HttpError(404, 'Nie ma takiego zgłoszenia (mogło zostać usunięte).');
+    }
+
+    return JSON.parse(value);
+}
+
+/** An admin's version of a proposal: a decision, the commit that sent it, or one added from a file. */
+async function saveProposal(id, body, env) {
+    requireStore(env);
+    proposalId(id);
+    if (body?.id !== id) {
+        throw new HttpError(400, 'Identyfikator zgłoszenia się nie zgadza.');
+    }
+
+    const author = String(body.author ?? '').trim();
+    if (!author || author.length > MAX_NAME_LENGTH * 4) {
+        throw new HttpError(400, 'Zgłoszenie nie ma autora.');
+    }
+
+    if (!PROPOSAL_STATUSES.includes(body.status)) {
+        throw new HttpError(400, 'Nieznany stan zgłoszenia.');
+    }
+
+    validChanges(body.changes);
+    const proposal = { ...body, author };
+    if (JSON.stringify(proposal).length > MAX_PROPOSAL_BYTES * 2) {
+        throw new HttpError(413, 'Zgłoszenie jest za duże.');
+    }
+
+    await putProposal(proposal, env);
+    return proposal;
+}
+
+async function deleteProposal(id, env) {
+    requireStore(env);
+    await env.ADMINS.delete(PROPOSAL_PREFIX + proposalId(id));
+    return { removed: id };
+}
+
+// --- Data files at a version ------------------------------------------------------------------------------------
+
+const DATA_FILES = ['roles', 'fabled', 'scripts', 'hatred', 'teams'];
+
+/**
+ * The JSON files of the data folder as text at <ref> (a commit, or its prefix), or at the head of the branch without
+ * it; a file missing there is null.
+ */
+export async function dataAt(ref, env) {
+    if (ref && !/^[0-9a-f]{7,40}$/.test(ref)) {
+        throw new HttpError(400, 'Nieznana wersja danych.');
+    }
+
+    const github = new GitHub(env);
+    const sha = ref
+        ? (await github.get(`commits/${ref}`)).sha
+        : (await github.get(`git/ref/heads/${env.BRANCH}`)).object.sha;
+    const texts = await Promise.all(DATA_FILES.map(name => github.textAt(sha, `data/${name}.json`)));
+    return { sha, files: Object.fromEntries(DATA_FILES.map((name, i) => [`${name}.json`, texts[i]])) };
 }
 
 // --- Deployments ------------------------------------------------------------------------------------------------
@@ -356,7 +574,7 @@ export async function commitChanges(sha, env) {
         const data = known?.iconChanged && !item.iconChanged ? item : known ?? item;
         merged.set(key, { ...data, iconChanged: Boolean(known?.iconChanged || item.iconChanged) });
     }
-    return { items: [...merged.values()] };
+    return { parent: parent ?? null, items: [...merged.values()] };
 }
 
 // --- Admin keys -------------------------------------------------------------------------------------------------
@@ -430,7 +648,7 @@ async function readBody(request) {
 }
 
 /**
- * Commits <files> (path + base64 content) on top of the branch. <baseVersion> is the commit (or its prefix) the
+ * Commits <files> (path + base64 content, or delete: true) on top of the branch. <baseVersion> is the commit (or its prefix) the
  * changes were made on: when the same files changed since then, nothing is committed and 409 lists them.
  */
 export async function commit(body, admin, env) {
@@ -450,7 +668,8 @@ export async function commit(body, admin, env) {
             path: file.path,
             mode: '100644',
             type: 'blob',
-            sha: (await github.post('git/blobs', { content: file.content, encoding: 'base64' })).sha,
+            // A null sha removes the file.
+            sha: file.delete ? null : (await github.post('git/blobs', { content: file.content, encoding: 'base64' })).sha,
         }))),
     });
 
@@ -491,6 +710,7 @@ function validateFiles(files) {
     return files.map(file => {
         const path = String(file?.path ?? '');
         const content = String(file?.content ?? '');
+        const remove = file?.delete === true;
         if (!ALLOWED_PATH.test(path)) {
             throw new HttpError(400, `Nie można zapisać pliku ${path}: dozwolone są tylko pliki folderu data/.`);
         }
@@ -504,7 +724,7 @@ function validateFiles(files) {
             throw new HttpError(400, `Plik ${path}: niepoprawna treść albo za duży.`);
         }
 
-        return { path, content };
+        return { path, content, delete: remove };
     });
 }
 
@@ -558,6 +778,12 @@ class GitHub {
 
     /** A file of the repository as it was at <sha>, parsed as JSON; null when it did not exist then. */
     async fileAt(sha, path) {
+        const text = await this.textAt(sha, path);
+        return text === null ? null : JSON.parse(text);
+    }
+
+    /** A file of the repository as it was at <sha>, as text; null when it did not exist then. */
+    async textAt(sha, path) {
         const response = await fetch(`https://raw.githubusercontent.com/${this.repository}/${sha}/${path}`, {
             headers: { Authorization: this.headers.Authorization, 'User-Agent': this.headers['User-Agent'] },
         });
@@ -570,7 +796,7 @@ class GitHub {
             throw new HttpError(502, 'Nie udało się odczytać historii z GitHuba.');
         }
 
-        return response.json();
+        return response.text();
     }
 
     async request(method, path, body) {
@@ -611,7 +837,7 @@ function corsHeaders(request, env) {
 
     return {
         'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         'Access-Control-Max-Age': '86400',
         Vary: 'Origin',

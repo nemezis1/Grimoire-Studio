@@ -49,6 +49,13 @@
                         {
                             <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń skrypt")</button>
                         }
+                        @if (_hasOriginal)
+                        {
+                            var editionOf = data.AllRoles.Count(r => r.Edition == script.Id);
+                            <RemoveItemButton Key="@LocalBackup.ScriptKey(script.Id)" Label="Usuń skrypt…"
+                                              BlockedReason="@(editionOf > 0 ? $"To edycja {editionOf} ról: najpierw zmień im edycję." : null)"
+                                              OnRemoved="@(() => Nav.NavigateTo("scripts", forceLoad: true))" />
+                        }
                     </div>
                 </div>
             </header>

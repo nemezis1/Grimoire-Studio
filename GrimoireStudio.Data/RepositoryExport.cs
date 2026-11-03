@@ -4,7 +4,8 @@ namespace GrimoireStudio.Data;
 
 /// <summary>
 /// Turns a change set (e.g. the wiki changes) into files of the data folder: the JSON files that change, uploaded role
-/// icons as <c>icons/&lt;id&gt;.png</c> and uploaded script pictures as <c>editions/&lt;script id&gt;.png</c>.
+/// icons as <c>icons/&lt;id&gt;.png</c> (removed for removed roles) and uploaded script pictures as
+/// <c>editions/&lt;script id&gt;.png</c>.
 /// </summary>
 public static class RepositoryExport
 {
@@ -33,6 +34,12 @@ public static class RepositoryExport
         if (errors.Count > 0)
         {
             throw new InvalidDataException("Zmiany psują dane: " + string.Join(" ", errors));
+        }
+
+        // Icons of removed roles go too; a role added and removed in the wiki never had one.
+        foreach (var id in changes.RemovedIds("role").Where(id => original.FindRole(id) is not null))
+        {
+            files.Add(new($"{GameData.IconsFolder}/{id}.png", []) { Deleted = true });
         }
 
         foreach (var role in changes.Roles.Where(r => r.IconUrl is not null))

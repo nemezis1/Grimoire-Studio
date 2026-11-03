@@ -1,0 +1,46 @@
+@* Removes a role, script or team of the data in the current change set, after a second click to confirm. *@
+@inject ChangeSets Changes
+@inject GameDataClient Client
+
+@if (_confirm)
+{
+    <span class="remove-confirm">
+        <span class="muted small">@Explanation</span>
+        <button class="button" @onclick="RemoveAsync">Usuń</button>
+        <button class="button button--ghost" @onclick="() => _confirm = false">Anuluj</button>
+    </span>
+}
+else
+{
+    <button class="button button--ghost" disabled="@(BlockedReason is not null)" title="@BlockedReason" @onclick="() => _confirm = true">@Label</button>
+}
+
+@code {
+    /// <summary>Key of the item (<see cref="LocalBackup.RoleKey"/>…).</summary>
+    [Parameter, EditorRequired]
+    public string Key { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>Why the item cannot be removed now; null when it can.</summary>
+    [Parameter]
+    public string? BlockedReason { get; set; }
+
+    /// <summary>Called after removing (e.g. to leave the item's page).</summary>
+    [Parameter]
+    public EventCallback OnRemoved { get; set; }
+
+    private bool _confirm;
+
+    private string Explanation => Changes.EditingWiki
+        ? "Zniknie z wiki po wysłaniu zmian do repozytorium."
+        : "Zniknie u Ciebie; z wiki dopiero po zgłoszeniu w „Moich zmianach” i akceptacji administratora.";
+
+    private async Task RemoveAsync()
+    {
+        await (await Changes.GetCurrentAsync()).MarkRemovedAsync(Key, await Client.GetBaseAsync());
+        _confirm = false;
+        await OnRemoved.InvokeAsync();
+    }
+}

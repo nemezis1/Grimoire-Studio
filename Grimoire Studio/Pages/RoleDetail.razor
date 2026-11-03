@@ -30,6 +30,10 @@
                         {
                             <span> · <a href="scripts/@edition.Id">@edition.Name</a></span>
                         }
+                        @if (role.IsExperimental)
+                        {
+                            <span class="experimental-badge">eksperymentalna</span>
+                        }
                         @if (_isLocal)
                         {
                             <span class="local-badge">@(_hasOriginal ? (Changes.EditingWiki ? "zmieniona w wiki" : "zmieniona lokalnie") : (Changes.EditingWiki ? "nowa w wiki" : "tylko w tej przeglądarce"))</span>
@@ -48,6 +52,11 @@
                         @if (_isLocal)
                         {
                             <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń rolę")</button>
+                        }
+                        @if (_hasOriginal)
+                        {
+                            <RemoveItemButton Key="@LocalBackup.RoleKey(role.Id)" Label="Usuń rolę…"
+                                              OnRemoved="@(() => Nav.NavigateTo("roles", forceLoad: true))" />
                         }
                     </div>
                 </div>

@@ -3,7 +3,7 @@
 @if (Rows.Count > 0 || Icon is not null)
 {
     <details class="change-details" open="@Open">
-        <summary>Różnice</summary>
+        <summary>@Summary</summary>
         <table>
             <thead>
                 <tr><th></th><th>Było</th><th>Jest</th></tr>
@@ -40,6 +40,9 @@
 
     [Parameter]
     public bool Open { get; set; }
+
+    [Parameter]
+    public string Summary { get; set; } = "Różnice";
 
     /// <summary>A role's icon as of a commit, from the commit's GitHub address; null when the address is not GitHub's.</summary>
     public static string? IconAt(string commitUrl, string sha, string roleId)

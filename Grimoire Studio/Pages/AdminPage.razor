@@ -1,5 +1,6 @@
 @page "/admin"
 @using System.IO.Compression
+@using System.Text.Json
 @inject GameDataClient Client
 @inject ChangeSets ChangeSets
 @inject Proposals Proposals
@@ -83,88 +84,125 @@ else
         </div>
     </div>
 
-    <h3 class="admin-part">Czekają na decyzję (@_pending.Count)</h3>
-    @if (_pending.Count == 0)
-    {
-        <p class="muted">Brak zgłoszeń. Zgłoszenia przychodzą ze strony „Moje zmiany” albo z plików eksportu.</p>
-    }
-    @foreach (var proposal in _pending)
-    {
-        var selected = _selection[proposal.Id];
-        <section class="panel">
-            <div class="form-list__head">
-                <h3>@proposal.Author <span class="muted small">@proposal.CreatedAt.ToLocalTime().ToString("g")</span></h3>
-                <div class="script-actions">
-                    <button class="button" disabled="@(selected.Count == 0)" @onclick="() => ApproveAsync(proposal)">
-                        Zatwierdź @(selected.Count == proposal.Changes.Count ? "wszystko" : $"zaznaczone ({selected.Count})")
-                    </button>
-                    <button class="button button--ghost" @onclick="() => RejectAsync(proposal)">Odrzuć</button>
+    <section class="panel admin-section">
+        <h3 class="admin-part">Czekają na akceptację (@_pending.Count)</h3>
+        @if (_pending.Count == 0)
+        {
+            <p class="muted">Brak zgłoszeń. Zgłoszenia przychodzą ze strony „Moje zmiany” albo z plików eksportu.</p>
+        }
+        @if (Proposals.OnServer && Publisher.AdminName is null)
+        {
+            <p class="notice notice--warning">Zgłoszenia wysłane przez innych zobaczysz po zalogowaniu kluczem administratora.</p>
+        }
+        @foreach (var proposal in _pending)
+        {
+            var waiting = proposal.UndecidedKeys();
+            var selected = _selection[proposal.Id];
+            var which = selected.Count == waiting.Count ? "wszystko" : $"zaznaczone ({selected.Count})";
+            <section class="panel">
+                <div class="form-list__head">
+                    <h3>@proposal.Author <span class="muted small">@proposal.CreatedAt.ToLocalTime().ToString("g")</span></h3>
+                    <div class="script-actions">
+                        <button class="button" disabled="@(selected.Count == 0)" @onclick="() => DecideAsync(proposal, approve: true)">Zatwierdź @which</button>
+                        <button class="button button--ghost" disabled="@(selected.Count == 0)" @onclick="() => DecideAsync(proposal, approve: false)">Odrzuć @which</button>
+                    </div>
                 </div>
-            </div>
-            @if (proposal.Comment.Length > 0)
-            {
-                <p>@proposal.Comment</p>
-            }
-            @if (ProposalText.Outdated(proposal.Changes, _original.Version) is { } outdated)
-            {
-                <p class="notice notice--warning">@outdated</p>
-            }
-            <p class="muted small">Porównanie z obecną wiki. Odznacz pozycje, których nie chcesz przyjąć.</p>
-            <ChangeSetView Changes="proposal.Changes" Base="_wiki" Data="_data" Selected="selected" SelectedChanged="() => { }" DetailsOpen="true" />
-        </section>
-    }
+                @if (proposal.Comment.Length > 0)
+                {
+                    <p>@proposal.Comment</p>
+                }
+                @if (ProposalText.Outdated(proposal.Changes, _original.Version) is { } outdated)
+                {
+                    <p class="notice notice--warning">@outdated</p>
+                }
+                @if (proposal.ApprovedKeys.Count + proposal.RejectedKeys.Count > 0)
+                {
+                    <p class="muted small">
+                        Już rozpatrzone: zatwierdzone @proposal.ApprovedKeys.Count, odrzucone @proposal.RejectedKeys.Count.
+                        Poniżej tylko pozycje, które jeszcze czekają.
+                    </p>
+                }
+                <p class="muted small">Porównanie z obecną wiki. Zaznacz pozycje, które zatwierdzasz albo odrzucasz; pozostałe poczekają.</p>
+                <ChangeSetView Changes="proposal.Changes.Only(waiting)" Base="_wiki" Data="_data" Selected="selected" SelectedChanged="() => { }" DetailsOpen="true">
+                    <Actions Context="key">
+                        <button class="button" @onclick="() => DecideAsync(proposal, approve: true, [key])">Zatwierdź</button>
+                        <button class="button button--ghost" @onclick="() => DecideAsync(proposal, approve: false, [key])">Odrzuć</button>
+                    </Actions>
+                </ChangeSetView>
+            </section>
+        }
+    </section>
 
-    <div class="title-row">
-        <h3 class="admin-part">Zatwierdzone, do wysłania (@_wikiChanges.Count)</h3>
-        <div class="script-actions">
-            <button class="button button--ghost" disabled="@(_wikiChanges.Count == 0)" @onclick="DownloadDataFilesAsync"
-                    title="Archiwum ZIP z plikami folderu data/, które zmienia wiki">
-                Pobierz pliki danych (.zip)
-            </button>
-            <button class="button button--ghost" disabled="@(_wikiChanges.Count == 0)" @onclick="ExportWikiAsync">Eksportuj do pliku</button>
+    <section class="panel admin-section">
+        <div class="title-row">
+            <h3 class="admin-part">Zatwierdzone, do wysłania (@_wikiChanges.Count)</h3>
+            <div class="script-actions">
+                <button class="button button--ghost" disabled="@(_wikiChanges.Count == 0)" @onclick="DownloadDataFilesAsync"
+                        title="Archiwum ZIP z plikami folderu data/, które zmienia wiki">
+                    Pobierz pliki danych (.zip)
+                </button>
+                <button class="button button--ghost" disabled="@(_wikiChanges.Count == 0)" @onclick="ExportWikiAsync">Eksportuj do pliku</button>
+            </div>
         </div>
-    </div>
-    <p class="muted small">
-        Zatwierdzone zgłoszenia i zmiany wprowadzone bezpośrednio w wiki, względem danych strony. Są zapisane tylko w tej
-        przeglądarce, dopóki ich nie wyślesz; plik eksportu to kopia zapasowa.
-    </p>
-    @if (_wikiChanges.Count > 0 && Unsent.Count > 0)
-    {
-        <p class="muted small">Ze zgłoszeń: @string.Join(", ", Unsent.Select(p => p.Author).Distinct())</p>
-    }
-    @if (ProposalText.Outdated(_wikiChanges, _original.Version) is { } wikiOutdated)
-    {
-        <p class="notice notice--warning">@wikiOutdated</p>
-    }
-    @if (Publisher.AdminName is not null && _wikiChanges.Count > 0)
-    {
-        <div class="field-row">
-            <label class="field">
-                <span>Opis zmian do historii repozytorium</span>
-                <input type="text" @bind="_commitMessage" @bind:event="oninput" placeholder="np. Poprawione tłumaczenia jinxów" />
-            </label>
-            <button class="button" disabled="@_busy" @onclick="PublishAsync">@(_busy ? "Wysyłanie…" : "Wyślij do repozytorium")</button>
-        </div>
-    }
-    <ChangeSetView Changes="_wikiChanges" Base="_original" Data="_data" OnRemove="RemoveWikiAsync" ShowJinxText="true">
-        <p class="muted">Nic nie czeka na wysłanie.</p>
-    </ChangeSetView>
+        <p class="muted small">
+            Zatwierdzone zgłoszenia i zmiany wprowadzone bezpośrednio w wiki, względem danych strony; przy każdej pozycji
+            widać, skąd pochodzi. Są zapisane tylko w tej przeglądarce, dopóki ich nie wyślesz; plik eksportu to kopia zapasowa.
+        </p>
+        @if (ProposalText.Outdated(_wikiChanges, _original.Version) is { } wikiOutdated)
+        {
+            <p class="notice notice--warning">@wikiOutdated</p>
+        }
+        <ChangeSetView Changes="_wikiChanges" Base="_original" Data="_data" OnRemove="RemoveWikiAsync" ShowJinxText="true" Origins="Origins">
+            <p class="muted">Nic nie czeka na wysłanie.</p>
+        </ChangeSetView>
+        @if (Publisher.AdminName is not null && _wikiChanges.Count > 0)
+        {
+            <div class="field-row">
+                <label class="field">
+                    <span>Opis zmian do historii repozytorium</span>
+                    <input type="text" @bind="_commitMessage" @bind:event="oninput" placeholder="np. Poprawione tłumaczenia jinxów" />
+                </label>
+                <button class="button" disabled="@(_busy || _conflicts is { Count: > 0 })" @onclick="PublishAsync">@(_busy ? "Wysyłanie…" : "Wyślij do repozytorium")</button>
+            </div>
+        }
+        @if (_conflicts is { Count: > 0 } conflicts)
+        {
+            <section class="panel">
+                <h3>Konflikty z repozytorium (@conflicts.Count)</h3>
+                <p class="muted small">
+                    Od czasu, gdy te zmiany powstały, ktoś zmienił w repozytorium te same pozycje. Zdecyduj przy każdej, która
+                    wersja zostaje; potem wyślij zmiany ponownie.
+                </p>
+                <ul class="change-list">
+                    @foreach (var conflict in conflicts)
+                    {
+                        <li>
+                            <span class="change-list__what"><strong>@conflict.Label</strong></span>
+                            <ItemDiffTable Rows="conflict.Theirs" Summary="Zmiana w repozytorium" Open="true" />
+                            <ItemDiffTable Rows="conflict.Mine" Summary="Twoja zmiana" Open="true" />
+                            <div class="script-actions">
+                                <button class="button" @onclick="() => KeepMine(conflict)">Zostaw moją</button>
+                                <button class="button button--ghost" @onclick="() => TakeTheirsAsync(conflict)">Weź z repozytorium</button>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+    </section>
 
     @if (History.Count > 0)
     {
-        <h2>Historia</h2>
-        <p class="muted small">
-            @(_repoChanges is not null
-                ? "Zmiany wysłane do repozytorium przez administratorów (widoczne po zalogowaniu na każdym komputerze) i zgłoszenia rozpatrzone w tej przeglądarce."
-                : "Zgłoszenia rozpatrzone w tej przeglądarce; zmiany wysłane do repozytorium widać po zalogowaniu.")
-            Historię jednej roli, skryptu lub jinxa pokazuje przycisk „Historia zmian” na ich stronach.
-        </p>
-        <ul class="change-list">
-            @foreach (var entry in History)
-            {
-                <li>
-                    @if (entry.Commit is { } commit)
-                    {
+        <section class="panel admin-section">
+            <h2>Historia</h2>
+            <p class="muted small">
+                Zmiany wysłane do repozytorium, czyli te, które są (albo za chwilę będą) w wiki. Wysłany commit można cofnąć
+                w „Pokaż zmiany”. Historię jednej roli, skryptu lub jinxa pokazuje przycisk „Historia zmian” na ich stronach.
+            </p>
+            <ul class="change-list">
+                @foreach (var (commit, proposals) in History)
+                {
+                    <li>
                         <span class="change-list__what">
                             @commit.Title
                             @if (Deployment(commit) is { } deployed)
@@ -187,34 +225,20 @@ else
                                 }
                                 · <a href="@commit.Url" target="_blank" rel="noopener noreferrer"><code>@commit.ShortSha</code></a>
                             </span>
-                            @foreach (var proposal in entry.Proposals.Where(p => p.Comment.Length > 0))
+                            @foreach (var proposal in proposals.Where(p => p.Comment.Length > 0))
                             {
                                 <span class="change-list__fields">@proposal.Author: @proposal.Comment</span>
                             }
                         </span>
-                        <CommitDetails Commit="commit" Data="_data" />
-                    }
-                    else
-                    {
-                        var proposal = entry.Proposals[0];
-                        <span class="change-list__what">
-                            @proposal.Author · @proposal.CreatedAt.ToLocalTime().ToString("g") · @ProposalText.Changes(proposal.Changes.Count)
-                            <span class="local-badge">@ProposalText.Status(proposal)</span>
-                            @if (proposal.PublishedIn is { } sha)
-                            {
-                                <span class="change-list__fields">w repozytorium: <code>@sha[..Math.Min(7, sha.Length)]</code></span>
-                            }
-                            @if (proposal.Comment.Length > 0)
-                            {
-                                <span class="change-list__fields">@proposal.Comment</span>
-                            }
-                        </span>
-                        <button class="button button--ghost" @onclick="() => DeleteProposalAsync(proposal)">Usuń z historii</button>
-                        <ProposalDetails Proposal="proposal" Base="proposal.DecidedBase(_original)" Data="_data" />
-                    }
-                </li>
-            }
-        </ul>
+                        <CommitDetails Commit="commit" Data="_data" Wiki="_wiki" OnRevert="changes => RevertAsync(commit, changes)" />
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+    else if (Publisher.IsConfigured && Publisher.AdminName is null)
+    {
+        <p class="muted small">Historię zmian wysłanych do repozytorium zobaczysz po zalogowaniu.</p>
     }
 }
 
@@ -241,6 +265,18 @@ else
     private DeploymentStatus? _deployStatus;
     private bool _messageIsError;
 
+    /// <summary>Items changed both here and in the repository, found when sending; null before the check.</summary>
+    private List<Conflict>? _conflicts;
+
+    /// <summary>Keys of conflicting items where the admin chose to keep the wiki's version.</summary>
+    private readonly HashSet<string> _keepMine = [];
+
+    private sealed record Conflict(
+        string Key,
+        string Label,
+        IReadOnlyList<(string Label, string Before, string After)> Theirs,
+        IReadOnlyList<(string Label, string Before, string After)> Mine);
+
     /// <summary>
     /// How a sent commit deployed: its own Build run when listed; a commit older than the last successful deployment is
     /// on the site with it, since each build deploys the whole repository. Null when unknown.
@@ -263,34 +299,26 @@ else
     }
 
     /// <summary>Approved proposals whose changes are still in the wiki, not sent yet.</summary>
-    private List<Proposal> Unsent => _decided.Where(p => p.Status == ProposalStatus.Approved && p.PublishedIn is null).ToList();
+    private List<Proposal> Unsent => _pending.Concat(_decided).Where(p => p.IsUnsent).ToList();
+
+    /// <summary>Where each wiki change came from: the authors of the approved proposals that hold it.</summary>
+    private Dictionary<string, string> Origins =>
+        Unsent.SelectMany(p => p.ApprovedKeys.Select(key => (Key: key, p.Author)))
+            .GroupBy(x => x.Key)
+            .ToDictionary(g => g.Key, g => "zgłoszenie: " + string.Join(", ", g.Select(x => x.Author).Distinct()));
 
     /// <summary>
-    /// Repository commits with the proposals of this browser they took, and the decided proposals no listed commit
-    /// took, newest first; approved proposals waiting in the wiki are shown with it instead.
+    /// Wiki changes that reached the repository, newest first, each with the proposals it took (for their comments).
+    /// Decided proposals that were not sent are not history of the wiki.
     /// </summary>
-    private List<HistoryEntry> History
-    {
-        get
-        {
-            var commits = _repoChanges ?? [];
-            var taken = new HashSet<Proposal>();
-            var entries = commits.Select(c =>
-            {
-                var proposals = _decided.Where(p => p.PublishedIn is { } sha && c.Sha.StartsWith(sha, StringComparison.OrdinalIgnoreCase)).ToList();
-                taken.UnionWith(proposals);
-                return new HistoryEntry(c.Date, c, proposals);
-            }).ToList();
+    private List<HistoryEntry> History =>
+        (_repoChanges ?? [])
+            .Select(c => new HistoryEntry(c, _pending.Concat(_decided)
+                .Where(p => p.PublishedIn is { } sha && c.Sha.StartsWith(sha, StringComparison.OrdinalIgnoreCase))
+                .ToList()))
+            .ToList();
 
-            var waiting = _wikiChanges is { Count: > 0 } ? Unsent.ToHashSet() : [];
-            entries.AddRange(_decided
-                .Where(p => !taken.Contains(p) && !waiting.Contains(p))
-                .Select(p => new HistoryEntry(p.DecidedAt ?? p.CreatedAt, null, [p])));
-            return entries.OrderByDescending(e => e.Date).ToList();
-        }
-    }
-
-    private sealed record HistoryEntry(DateTimeOffset Date, WikiCommit? Commit, IReadOnlyList<Proposal> Proposals);
+    private sealed record HistoryEntry(WikiCommit Commit, IReadOnlyList<Proposal> Proposals);
 
     protected override async Task OnInitializedAsync()
     {
@@ -333,7 +361,17 @@ else
         _data = await Client.GetAsync();
         _wikiChanges = await ChangeSets.Wiki.GetAllAsync();
 
-        var proposals = await Proposals.GetAllAsync();
+        IReadOnlyList<Proposal> proposals;
+        try
+        {
+            proposals = await Proposals.GetForAdminAsync();
+        }
+        catch (PublishException ex)
+        {
+            proposals = await Proposals.GetAllAsync();
+            Show($"Nie udało się wczytać zgłoszeń z serwera: {ex.Message}", error: true);
+        }
+
         _pending = proposals.Where(p => p.Status == ProposalStatus.Pending).OrderBy(p => p.CreatedAt).ToList();
         _decided = proposals.Where(p => p.Status != ProposalStatus.Pending).OrderByDescending(p => p.DecidedAt).ToList();
 
@@ -350,10 +388,10 @@ else
             }
         }
 
-        // New proposals start with everything selected; the admin unticks what to leave out.
+        // New proposals start with every waiting item selected; the admin unticks what to leave for later.
         foreach (var proposal in _pending.Where(p => !_selection.ContainsKey(p.Id)))
         {
-            _selection[proposal.Id] = proposal.Changes.Keys().ToHashSet();
+            _selection[proposal.Id] = proposal.UndecidedKeys().ToHashSet();
         }
     }
 
@@ -371,41 +409,47 @@ else
             : "Edytory znowu zapisują do „Moich zmian”.");
     }
 
-    private async Task ApproveAsync(Proposal proposal)
+    /// <summary>
+    /// Approves (into the wiki) or rejects the given items of a proposal, by default the ticked ones; the others keep
+    /// waiting, and the proposal is decided once none is left.
+    /// </summary>
+    private async Task DecideAsync(Proposal proposal, bool approve, IEnumerable<string>? only = null)
     {
-        var accepted = proposal.Changes.Only(_selection[proposal.Id]);
-        if (!await ChangeSets.Wiki.MergeAsync(accepted))
+        var keys = (only ?? _selection[proposal.Id]).ToHashSet();
+        var items = proposal.Changes.Only(keys);
+
+        // The items as the wiki has them before the decision, for the history.
+        var decided = proposal.Decide(keys, approve, _wiki is null ? new LocalBackup() : items.As(_wiki));
+        if (approve && !await ChangeSets.Wiki.MergeAsync(items))
         {
             Show("Przeglądarka nie pozwoliła zapisać wiki (tryb prywatny lub brak miejsca).", error: true);
             return;
         }
 
-        await DecideAsync(proposal with { ApprovedKeys = accepted.Keys().ToList() }, ProposalStatus.Approved, accepted.Count);
-        Show($"Zatwierdzono {accepted.Count} z {proposal.Changes.Count} od: {proposal.Author}.");
-    }
-
-    private async Task RejectAsync(Proposal proposal)
-    {
-        await DecideAsync(proposal, ProposalStatus.Rejected, 0);
-        Show($"Odrzucono zgłoszenie od: {proposal.Author}.");
-    }
-
-    private async Task DecideAsync(Proposal proposal, ProposalStatus status, int approved)
-    {
-        await Proposals.SaveAsync(proposal with
+        try
         {
-            Status = status,
-            DecidedAt = DateTimeOffset.Now,
-            ApprovedCount = approved,
-            Before = _wiki is null ? null : proposal.Changes.As(_wiki),
-        });
-        _selection.Remove(proposal.Id);
-        await ReloadAsync();
-    }
+            await Proposals.UpdateAsync(decided);
+        }
+        catch (PublishException ex)
+        {
+            // The proposal stays as it was; approving the same items again merges the same changes.
+            Show($"Nie udało się zapisać decyzji na serwerze: {ex.Message}", error: true);
+            return;
+        }
 
-    private async Task DeleteProposalAsync(Proposal proposal)
-    {
-        await Proposals.RemoveAsync(proposal.Id);
+        var left = decided.UndecidedKeys().Count;
+        Show($"{(approve ? "Zatwierdzono" : "Odrzucono")}: {ProposalText.Changes(keys.Count)} ({proposal.Author})."
+            + (left > 0 ? $" Czeka jeszcze: {left}." : string.Empty));
+        if (only is null)
+        {
+            _selection.Remove(proposal.Id);
+        }
+        else
+        {
+            // A single item's decision keeps the ticks of the others.
+            _selection[proposal.Id].ExceptWith(keys);
+        }
+
         await ReloadAsync();
     }
 
@@ -416,17 +460,18 @@ else
         {
             using var reader = new StreamReader(e.File.OpenReadStream(MaxImportBytes));
             var changes = LocalChanges.Parse(await reader.ReadToEndAsync());
-            await Proposals.SaveAsync(new Proposal
+            var author = Path.GetFileNameWithoutExtension(e.File.Name);
+            await Proposals.UpdateAsync(new Proposal
             {
                 Id = Guid.NewGuid().ToString("N"),
-                Author = Path.GetFileNameWithoutExtension(e.File.Name),
+                Author = author.Length > 40 ? author[..40] : author,
                 Comment = "Zgłoszenie z pliku",
                 CreatedAt = changes.ExportedAt == default ? DateTimeOffset.Now : changes.ExportedAt,
                 Changes = changes,
             });
             Show($"Dodano zgłoszenie z pliku {e.File.Name} ({ProposalText.Changes(changes.Count)}).");
         }
-        catch (Exception ex) when (ex is FormatException or IOException)
+        catch (Exception ex) when (ex is FormatException or IOException or PublishException)
         {
             Show(ex.Message, error: true);
         }
@@ -434,9 +479,26 @@ else
         await ReloadAsync();
     }
 
+    /// <summary>
+    /// Takes an item out of the wiki changes; one that came from a proposal goes back to waiting for a decision.
+    /// </summary>
     private async Task RemoveWikiAsync(string key)
     {
         await ChangeSets.Wiki.RemoveAsync(key);
+        foreach (var proposal in Unsent.Where(p => p.ApprovedKeys.Contains(key)))
+        {
+            try
+            {
+                await Proposals.UpdateAsync(proposal.Reopen(key));
+                _selection.Remove(proposal.Id);
+                Show($"Wycofano z wiki; zmiana od: {proposal.Author} wraca do „Czekają na akceptację”.");
+            }
+            catch (PublishException ex)
+            {
+                Show($"Wycofano z wiki, ale nie udało się przywrócić zgłoszenia na serwerze: {ex.Message}", error: true);
+            }
+        }
+
         await ReloadAsync();
     }
 
@@ -463,7 +525,7 @@ else
         using var zip = new MemoryStream();
         using (var archive = new ZipArchive(zip, ZipArchiveMode.Create, leaveOpen: true))
         {
-            foreach (var file in files)
+            foreach (var file in files.Where(f => !f.Deleted))
             {
                 await using var entry = archive.CreateEntry($"data/{file.Path}").Open();
                 await entry.WriteAsync(file.Content);
@@ -503,7 +565,8 @@ else
 
     /// <summary>
     /// Commits the files the wiki changes; the wiki changes are then cleared, as they are in the repository and reach the
-    /// site with its next deployment.
+    /// site with its next deployment. When the repository moved on since the site was built, the changes go on top of
+    /// its current data, unless someone changed the same items there: those are shown as conflicts first.
     /// </summary>
     private async Task PublishAsync()
     {
@@ -512,7 +575,24 @@ else
         {
             var original = await Client.GetOriginalAsync();
             var changes = await ChangeSets.Wiki.GetAllAsync();
-            var files = RepositoryExport.ChangedFiles(original, changes);
+            var target = await Publisher.GetDataAsync(original);
+            if (!SameVersion(target.Version, original.Version))
+            {
+                var made = changes.BaseVersion.Length > 0 && !SameVersion(changes.BaseVersion, original.Version)
+                    ? await DataAtAsync(changes.BaseVersion) ?? original
+                    : original;
+                _conflicts = ItemConflicts.Find(made, target, changes)
+                    .Where(key => !_keepMine.Contains(key))
+                    .Select(key => ConflictOf(key, made, target, changes))
+                    .ToList();
+                if (_conflicts.Count > 0)
+                {
+                    Show($"Nie wysłano: w repozytorium zmieniono te same pozycje ({_conflicts.Count}). Rozstrzygnij konflikty poniżej.", error: true);
+                    return;
+                }
+            }
+
+            var files = RepositoryExport.ChangedFiles(target, changes);
             if (files.Count == 0)
             {
                 Show("Wiki nie zmienia żadnego pliku danych.");
@@ -524,21 +604,30 @@ else
                 : _commitMessage.Trim();
 
             // Approved proposals not sent yet: their authors go into the commit, and they remember the commit.
-            var sent = _decided.Where(p => p.Status == ProposalStatus.Approved && p.PublishedIn is null).ToList();
+            var sent = Unsent;
             var authors = sent.Select(p => p.Author).Distinct().ToList();
             if (authors.Count > 0)
             {
                 message += $"\n\nZgłoszenia: {string.Join(", ", authors)}";
             }
 
-            var result = await Publisher.PublishAsync(message, original.Version, files);
+            var result = await Publisher.PublishAsync(message, target.Version, files);
             foreach (var proposal in sent)
             {
-                await Proposals.SaveAsync(proposal with { PublishedIn = result.Sha });
+                try
+                {
+                    await Proposals.UpdateAsync(proposal with { PublishedIn = result.Sha });
+                }
+                catch (PublishException)
+                {
+                    // The commit is made; the proposal only misses the link to it in the history.
+                }
             }
 
             await ChangeSets.Wiki.ClearAsync();
             _commitMessage = null;
+            _conflicts = null;
+            _keepMine.Clear();
             if (result.Changed)
             {
                 _deployments?.Watch(result.Sha);
@@ -558,6 +647,69 @@ else
         {
             _busy = false;
         }
+    }
+
+    /// <summary>The site's data version (a short commit id) and the repository's commit id name the same commit.</summary>
+    private static bool SameVersion(string a, string b) =>
+        a.Length > 0 && b.Length > 0 && (a.StartsWith(b, StringComparison.OrdinalIgnoreCase) || b.StartsWith(a, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The repository's data at a version, or null when it is not a commit (e.g. a local build).</summary>
+    private async Task<GameData?> DataAtAsync(string version)
+    {
+        try
+        {
+            return await Publisher.GetDataAsync(_original!, version);
+        }
+        catch (PublishException)
+        {
+            return null;
+        }
+    }
+
+    private Conflict ConflictOf(string key, GameData made, GameData now, LocalBackup changes)
+    {
+        var (kind, id) = ItemLabel.Split(key);
+        JsonElement? Element(GameData data) => ItemConflicts.Json(data, key) is { } json ? JsonDocument.Parse(json).RootElement : null;
+        var before = Element(made);
+        return new Conflict(
+            key,
+            ItemLabel.Of(_data!, kind, id, before),
+            ItemDiff.Changes(before, Element(now)),
+            ItemDiff.Changes(before, Element(changes.ApplyTo(made))));
+    }
+
+    private void KeepMine(Conflict conflict)
+    {
+        _keepMine.Add(conflict.Key);
+        _conflicts!.Remove(conflict);
+        if (_conflicts.Count == 0)
+        {
+            Show("Konflikty rozstrzygnięte. Wyślij zmiany ponownie.");
+        }
+    }
+
+    private async Task TakeTheirsAsync(Conflict conflict)
+    {
+        await ChangeSets.Wiki.RemoveAsync(conflict.Key);
+        _conflicts!.Remove(conflict);
+        Show(_conflicts.Count == 0
+            ? "Konflikty rozstrzygnięte. Wyślij zmiany ponownie."
+            : $"Usunięto ze zmian wiki: {conflict.Label}; zostanie wersja z repozytorium.");
+        await ReloadAsync();
+    }
+
+    /// <summary>Adds the changes that undo a sent commit to the wiki changes, to be sent like any other.</summary>
+    private async Task RevertAsync(WikiCommit commit, LocalBackup changes)
+    {
+        if (!await ChangeSets.Wiki.MergeAsync(changes))
+        {
+            Show("Przeglądarka nie pozwoliła zapisać wiki (tryb prywatny lub brak miejsca).", error: true);
+            return;
+        }
+
+        _commitMessage ??= $"Cofnięcie: {commit.Title}";
+        Show($"Dodano do zmian wiki cofnięcie „{commit.Title}” ({ProposalText.Changes(changes.Count)}). Sprawdź je w „Zatwierdzone, do wysłania” i wyślij.");
+        await ReloadAsync();
     }
 
     private async Task ExportWikiAsync() =>

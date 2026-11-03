@@ -5,7 +5,7 @@ namespace Grimoire_Studio.Services;
 
 /// <summary>
 /// One set of changes over the data folder kept in this browser (see <see cref="ChangeSets"/>): roles, scripts, teams
-/// and jinxes, with export to and import from a file.
+/// and jinxes changed or removed, with export to and import from a file.
 /// </summary>
 public sealed class LocalChanges(LocalStore store, string prefix)
 {
@@ -15,6 +15,7 @@ public sealed class LocalChanges(LocalStore store, string prefix)
     public LocalScripts Scripts { get; } = new(store, prefix);
     public LocalTeams Teams { get; } = new(store, prefix);
     public LocalJinxes Jinxes { get; } = new(store, prefix);
+    public LocalRemovals Removed { get; } = new(store, prefix);
 
     private string BaseVersionKey => $"{prefix}-base";
 
@@ -26,6 +27,7 @@ public sealed class LocalChanges(LocalStore store, string prefix)
         Scripts = await Scripts.GetAllAsync(),
         Teams = await Teams.GetAllAsync(),
         Jinxes = await Jinxes.GetAllAsync(),
+        Removed = await Removed.GetAllAsync(),
     };
 
     /// <summary>Data with this change set applied on top of <paramref name="data"/>.</summary>
@@ -71,25 +73,48 @@ public sealed class LocalChanges(LocalStore store, string prefix)
     {
         var current = replace ? new LocalBackup() : await GetAllAsync();
         var baseVersion = current.Count == 0 && changes.BaseVersion.Length > 0 ? changes.BaseVersion : current.BaseVersion;
+
+        // An item is either changed or removed: the incoming state of it wins.
+        var edited = changes.Keys().Except(changes.Removed).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var removed = changes.Removed.ToHashSet(StringComparer.OrdinalIgnoreCase);
         return await store.SetAsync(BaseVersionKey, baseVersion)
-            & await Roles.ReplaceAllAsync(Merge(current.Roles, changes.Roles, r => r.Role.Id))
-            & await Scripts.ReplaceAllAsync(Merge(current.Scripts, changes.Scripts, s => s.Id))
-            & await Teams.ReplaceAllAsync(Merge(current.Teams, changes.Teams, t => t.Id))
-            & await Jinxes.ReplaceAllAsync(Merge(current.Jinxes, changes.Jinxes, j => j.Key));
+            & await Roles.ReplaceAllAsync(Merge(current.Roles, changes.Roles, r => r.Role.Id)
+                .Where(r => !removed.Contains(LocalBackup.RoleKey(r.Role.Id))))
+            & await Scripts.ReplaceAllAsync(Merge(current.Scripts, changes.Scripts, s => s.Id)
+                .Where(s => !removed.Contains(LocalBackup.ScriptKey(s.Id))))
+            & await Teams.ReplaceAllAsync(Merge(current.Teams, changes.Teams, t => t.Id)
+                .Where(t => !removed.Contains(LocalBackup.TeamKey(t.Id))))
+            & await Jinxes.ReplaceAllAsync(Merge(current.Jinxes, changes.Jinxes, j => j.Key))
+            & await Removed.ReplaceAllAsync(Merge(current.Removed, changes.Removed, k => k).Where(k => !edited.Contains(k)));
     }
 
-    /// <summary>Removes one item by its <see cref="LocalBackup.Keys"/> key: a new item disappears, a changed one is restored.</summary>
-    public Task<bool> RemoveAsync(string key)
+    /// <summary>
+    /// Removes a role, script or team (<see cref="LocalBackup.Keys"/> key): one that <paramref name="baseData"/> has is
+    /// marked removed, one created in this set just disappears.
+    /// </summary>
+    /// <returns>false when the browser refused to store.</returns>
+    public async Task<bool> MarkRemovedAsync(string key, GameData baseData)
+    {
+        var saved = await RemoveAsync(key);
+        return ItemConflicts.Json(baseData, key) is null ? saved : saved & await Removed.SaveAsync(key);
+    }
+
+    /// <summary>
+    /// Takes one item by its <see cref="LocalBackup.Keys"/> key out of this set: a new item disappears, a changed or
+    /// removed one is restored.
+    /// </summary>
+    public async Task<bool> RemoveAsync(string key)
     {
         var (kind, id) = (key[..key.IndexOf(':')], key[(key.IndexOf(':') + 1)..]);
-        return kind switch
+        var restored = await Removed.FindAsync(key) is null || await Removed.RemoveAsync(key);
+        return restored & await (kind switch
         {
             "role" => Roles.RemoveAsync(id),
             "script" => Scripts.RemoveAsync(id),
             "team" => Teams.RemoveAsync(id),
             "jinx" => Jinxes.RemoveAsync(id),
             _ => Task.FromResult(false),
-        };
+        });
     }
 
     /// <summary>
@@ -113,6 +138,7 @@ public sealed class LocalChanges(LocalStore store, string prefix)
             .Concat(all.Jinxes
                 .Where(j => IsUnchanged(baseData, j))
                 .Select(LocalBackup.JinxKey))
+            .Concat(all.Removed.Where(key => ItemConflicts.Json(baseData, key) is null))
             .ToList();
 
         foreach (var key in stale)
@@ -150,7 +176,8 @@ public sealed class LocalChanges(LocalStore store, string prefix)
             & await Roles.ReplaceAllAsync([])
             & await Scripts.ReplaceAllAsync([])
             & await Teams.ReplaceAllAsync([])
-            & await Jinxes.ReplaceAllAsync([]);
+            & await Jinxes.ReplaceAllAsync([])
+            & await Removed.ReplaceAllAsync([]);
 
     private static List<T> Merge<T>(IEnumerable<T> current, IEnumerable<T> incoming, Func<T, string> id)
     {

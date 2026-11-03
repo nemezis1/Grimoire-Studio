@@ -16,6 +16,9 @@ public sealed record Role
     /// <summary>Home script id (tb, bmr, snv) or empty for experimental / other roles.</summary>
     public string Edition { get; init; } = string.Empty;
 
+    /// <summary>Marked experimental by The Pandemonium Institute (not in a printed edition yet, may still change).</summary>
+    public bool IsExperimental { get; init; }
+
     /// <summary>Team id: one of <see cref="TeamIds"/> or a team added locally.</summary>
     public string Team { get; init; } = TeamIds.Townsfolk;
 

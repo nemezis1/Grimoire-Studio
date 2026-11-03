@@ -51,6 +51,12 @@ else
                                         title="@(!isBuiltin && count > 0 ? "Najpierw przenieś role do innej drużyny." : null)"
                                         @onclick="() => RemoveAsync(team.Id)">@(isBuiltin ? "Przywróć oryginał" : "Usuń")</button>
                             }
+                            @if (isBuiltin)
+                            {
+                                <RemoveItemButton Key="@LocalBackup.TeamKey(team.Id)" Label="Usuń drużynę…"
+                                                  BlockedReason="@(count > 0 ? "Najpierw przenieś role do innej drużyny." : null)"
+                                                  OnRemoved="ReloadAsync" />
+                            }
                         </div>
                     </div>
                     <p class="muted small">

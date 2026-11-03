@@ -101,6 +101,48 @@ public static class GameDataQueries
         };
     }
 
+    /// <summary>
+    /// Data without the roles, scripts and teams whose keys (<see cref="LocalBackup.RoleKey"/>…) are in
+    /// <paramref name="removed"/>. A removed role also leaves the scripts and jinxes that named it.
+    /// </summary>
+    public static GameData Without(this GameData data, IEnumerable<string> removed)
+    {
+        var keys = removed.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (keys.Count == 0)
+        {
+            return data;
+        }
+
+        bool Kept(string key) => !keys.Contains(key);
+        var scripts = data.Scripts.Scripts
+            .Where(s => Kept(LocalBackup.ScriptKey(s.Id)))
+            .Select(s => s.Roles.All(r => Kept(LocalBackup.RoleKey(r)))
+                ? s
+                : s with { Roles = s.Roles.Where(r => Kept(LocalBackup.RoleKey(r))).ToList() })
+            .ToList();
+
+        return data with
+        {
+            Roles = data.Roles.Where(r => Kept(LocalBackup.RoleKey(r.Id))).ToList(),
+            Fabled = data.Fabled.Where(r => Kept(LocalBackup.RoleKey(r.Id))).ToList(),
+            Teams = data.Teams.Where(t => Kept(LocalBackup.TeamKey(t.Id))).ToList(),
+            Scripts = data.Scripts with { Scripts = scripts },
+            Jinxes = data.Jinxes
+                .Where(o => Kept(LocalBackup.RoleKey(o.Id)))
+                .SelectMany<RoleJinxes, RoleJinxes>(o =>
+                {
+                    if (o.Jinxes.All(j => Kept(LocalBackup.RoleKey(j.Id))))
+                    {
+                        return [o];
+                    }
+
+                    var left = o.Jinxes.Where(j => Kept(LocalBackup.RoleKey(j.Id))).ToList();
+                    return left.Count > 0 ? [o with { Jinxes = left }] : [];
+                })
+                .ToList(),
+        };
+    }
+
     public static TeamInfo? FindTeam(this GameData data, string id) =>
         data.Teams.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.OrdinalIgnoreCase));
 

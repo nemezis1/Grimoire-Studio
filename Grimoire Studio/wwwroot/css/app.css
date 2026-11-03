@@ -191,6 +191,23 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .site-nav a:hover { background: var(--bg); }
 .site-nav a.active { background: var(--accent); color: var(--accent-text); }
 
+/* Proposals waiting for a decision, on the admin link. */
+.nav-count {
+    display: inline-block;
+    min-width: 1.3rem;
+    margin-left: 0.3rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: #c42020;
+    color: #fff;
+    font-size: 0.75rem;
+    line-height: 1.3rem;
+    text-align: center;
+}
+
+/* Second step of removing a role, script or team. */
+.remove-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+
 .page { padding-block: 1.5rem 3rem; }
 
 .site-footer {
@@ -767,6 +784,18 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     font-weight: normal;
 }
 
+/* Experimental role: solid, so it does not read as a local change. */
+.experimental-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: #6b46c1;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: normal;
+}
+
 /* Status of a change on the scripts list: waiting for an admin, or in the wiki but not in the repository yet. */
 .local-badge--pending { border-color: #b7791f; color: #b7791f; }
 .local-badge--wiki { border-color: #2b6cb0; color: #2b6cb0; }
@@ -1189,6 +1218,16 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 }
 .proposal-changes__part { margin: 0.75rem 0 0.25rem; font-size: 0.9rem; color: var(--muted); }
 .admin-part { margin: 1.25rem 0 0.5rem; font-size: 1.1rem; }
+
+/* Admin panel sections in frames; panels inside them (proposals, conflicts) stand out from the frame. */
+.admin-section > .admin-part:first-child,
+.admin-section > .title-row:first-child .admin-part,
+.admin-section > h2:first-child { margin-top: 0; }
+.admin-section .panel { background: var(--bg); }
+.admin-section > .panel:last-child { margin-bottom: 0; }
+
+/* Where a wiki change came from: a proposal, or a direct edit. */
+.change-origin { margin-left: 0.4rem; font-size: 0.8rem; color: var(--muted); }
 
 /* ---------- Smaller windows and phones: the top of each page takes as little height as it can ---------- */
 

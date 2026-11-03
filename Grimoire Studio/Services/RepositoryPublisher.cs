@@ -7,8 +7,8 @@ using Microsoft.Extensions.Configuration;
 namespace Grimoire_Studio.Services;
 
 /// <summary>
-/// Sends approved wiki changes to the repository through the publishing service (the Cloudflare Worker in worker/).
-/// Admins sign in with their personal key; it is kept for this tab only (sessionStorage).
+/// Sends approved wiki changes to the repository through the publishing service (the Cloudflare Worker in worker/),
+/// and proposals to the admins. Admins sign in with their personal key; it is kept for this tab only (sessionStorage).
 /// </summary>
 public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore store, HttpClient site)
 {
@@ -31,6 +31,9 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
 
     /// <summary>The signed-in admin is an owner (in the Worker's ADMIN_KEYS secret) and manages the other admins.</summary>
     public bool IsOwner { get; private set; }
+
+    /// <summary>Raised after signing in or out.</summary>
+    public event Action? SignedInChanged;
 
     /// <summary>
     /// Signs in again with the key kept for this tab, if any. Every caller waits for the same sign-in, so components
@@ -63,6 +66,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         AdminName = reply.Name;
         IsOwner = reply.Owner;
         await store.SetSessionAsync(KeyStorage, _key);
+        SignedInChanged?.Invoke();
     }
 
     public async Task SignOutAsync()
@@ -71,6 +75,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         AdminName = null;
         IsOwner = false;
         await store.SetSessionAsync(KeyStorage, null);
+        SignedInChanged?.Invoke();
     }
 
     /// <summary>Commits <paramref name="files"/> (paths relative to the data folder) to the repository.</summary>
@@ -87,7 +92,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         {
             message,
             baseVersion,
-            files = files.Select(f => new { path = $"data/{f.Path}", content = Convert.ToBase64String(f.Content) }),
+            files = files.Select(f => new { path = $"data/{f.Path}", content = Convert.ToBase64String(f.Content), delete = f.Deleted }),
         });
         return await SendAsync<PublishResult>(request);
     }
@@ -173,14 +178,125 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
 
     private string RequireKey() => _key ?? throw new PublishException("Najpierw zaloguj się kluczem administratora.");
 
-    private HttpRequestMessage Request(HttpMethod method, string path, string key)
+    /// <summary>Sends a proposal for the admins (anyone may); returns it as stored, with the id it is read back by.</summary>
+    /// <exception cref="PublishException">The service refused it (too many proposals, too big) or is unreachable.</exception>
+    public async Task<Proposal> SubmitProposalAsync(Proposal proposal)
+    {
+        using var request = Request(HttpMethod.Post, "proposals", null);
+        request.Content = JsonContent.Create(
+            new { proposal.Author, proposal.Comment, proposal.Changes }, options: GameData.JsonOptions);
+        return await SendAsync<Proposal>(request, GameData.JsonOptions);
+    }
+
+    /// <summary>Number of proposals waiting for a decision.</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<int> GetPendingCountAsync()
+    {
+        using var request = Request(HttpMethod.Get, "proposals?pending", RequireKey());
+        return (await SendAsync<PendingReply>(request)).Pending;
+    }
+
+    /// <summary>A proposal as the admins left it; null when it is gone (removed, or expired after the decision).</summary>
+    /// <exception cref="PublishException">The service is unreachable.</exception>
+    public async Task<Proposal?> GetProposalAsync(string id)
+    {
+        using var request = Request(HttpMethod.Get, $"proposals/{Uri.EscapeDataString(id)}", null);
+        try
+        {
+            return await SendAsync<Proposal>(request, GameData.JsonOptions);
+        }
+        catch (PublishException ex) when (ex.Status == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Proposals on the server; ones this version of the app cannot read are left out.</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<IReadOnlyList<Proposal>> GetProposalsAsync()
+    {
+        using var request = Request(HttpMethod.Get, "proposals", RequireKey());
+        var reply = await SendAsync<ProposalsReply>(request);
+        var proposals = new List<Proposal>();
+        foreach (var item in reply.Proposals)
+        {
+            try
+            {
+                if (item.Deserialize<Proposal>(GameData.JsonOptions) is { } proposal)
+                {
+                    proposals.Add(proposal);
+                }
+            }
+            catch (JsonException)
+            {
+                // Sent by hand or by another version: not shown rather than hiding all the others.
+            }
+        }
+
+        return proposals;
+    }
+
+    /// <summary>Stores an admin's version of a proposal on the server (a decision, or one added from a file).</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task SaveProposalAsync(Proposal proposal)
+    {
+        using var request = Request(HttpMethod.Put, $"proposals/{Uri.EscapeDataString(proposal.Id)}", RequireKey());
+        request.Content = JsonContent.Create(proposal, options: GameData.JsonOptions);
+        await SendAsync<JsonElement>(request);
+    }
+
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task DeleteProposalAsync(string id)
+    {
+        using var request = Request(HttpMethod.Delete, $"proposals/{Uri.EscapeDataString(id)}", RequireKey());
+        await SendAsync<JsonElement>(request);
+    }
+
+    /// <summary>
+    /// The data folder as the repository has it at <paramref name="version"/> (a commit), or at the head of the branch
+    /// without it; <see cref="GameData.Version"/> is the commit. Files missing there are taken from <paramref name="fallback"/>.
+    /// </summary>
+    /// <exception cref="PublishException">Not signed in, an unknown version, or the service refused.</exception>
+    public async Task<GameData> GetDataAsync(GameData fallback, string? version = null)
+    {
+        var path = version is null ? "data" : $"data?ref={Uri.EscapeDataString(version)}";
+        using var request = Request(HttpMethod.Get, path, RequireKey());
+        var reply = await SendAsync<DataReply>(request);
+
+        T? Read<T>(string file)
+            where T : class =>
+            reply.Files.GetValueOrDefault(file) is { } text ? JsonSerializer.Deserialize<T>(text, GameData.JsonOptions) : null;
+
+        try
+        {
+            return new GameData
+            {
+                Roles = Read<List<Role>>(GameData.RolesFile) ?? fallback.Roles,
+                Fabled = Read<List<Role>>(GameData.FabledFile) ?? fallback.Fabled,
+                Scripts = Read<ScriptCatalog>(GameData.ScriptsFile) ?? fallback.Scripts,
+                Jinxes = Read<List<RoleJinxes>>(GameData.JinxesFile) ?? fallback.Jinxes,
+                Teams = Read<List<TeamInfo>>(GameData.TeamsFile) ?? fallback.Teams,
+                Version = reply.Sha,
+            };
+        }
+        catch (JsonException)
+        {
+            throw new PublishException("Pliki danych w repozytorium mają nieznany format.");
+        }
+    }
+
+    private HttpRequestMessage Request(HttpMethod method, string path, string? key)
     {
         var request = new HttpRequestMessage(method, $"{ApiUrl}/{path}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+        if (key is not null)
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+        }
+
         return request;
     }
 
-    private static async Task<T> SendAsync<T>(HttpRequestMessage request)
+    private static async Task<T> SendAsync<T>(HttpRequestMessage request, JsonSerializerOptions? options = null)
     {
         HttpResponseMessage response;
         try
@@ -196,7 +312,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         {
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<T>(JsonSerializerOptions.Web)
+                return await response.Content.ReadFromJsonAsync<T>(options ?? JsonSerializerOptions.Web)
                     ?? throw new PublishException("Usługa zapisu zwróciła pustą odpowiedź.");
             }
 
@@ -231,4 +347,10 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     private sealed record StatusReply(IReadOnlyList<DeploymentRun> Runs);
 
     private sealed record ErrorReply(string? Error, IReadOnlyList<string>? Conflicts);
+
+    private sealed record PendingReply(int Pending);
+
+    private sealed record ProposalsReply(IReadOnlyList<JsonElement> Proposals);
+
+    private sealed record DataReply(string Sha, IReadOnlyDictionary<string, string?> Files);
 }

@@ -66,7 +66,9 @@ else
                 <span class="muted small">Zgłoszone zostaną zmiany zaznaczone na liście poniżej.</span>
                 <button class="button button--ghost" @onclick="() => _selected.UnionWith(_changes.Keys())">Zaznacz wszystkie</button>
                 <button class="button button--ghost" @onclick="() => _selected.Clear()">Odznacz wszystkie</button>
-                <button class="button" disabled="@(string.IsNullOrWhiteSpace(_author) || _selected.Count == 0)" @onclick="SubmitAsync">Zgłoś do wiki (@ProposalText.Changes(_selected.Count))</button>
+                <button class="button" disabled="@(string.IsNullOrWhiteSpace(_author) || _selected.Count == 0 || _busy)" @onclick="SubmitAsync">
+                    @(_busy ? "Wysyłanie…" : $"Zgłoś do wiki ({ProposalText.Changes(_selected.Count)})")
+                </button>
             </div>
         </section>
     }
@@ -96,7 +98,7 @@ else
                             <span class="change-list__fields">@proposal.Comment</span>
                         }
                     </span>
-                    <ProposalDetails Proposal="proposal" Base="@(proposal.Status == ProposalStatus.Pending ? _base : proposal.DecidedBase(_original!))" Data="_data" />
+                    <ProposalDetails Proposal="proposal" Base="_base" Data="_data" />
                 </li>
             }
         </ul>
@@ -120,6 +122,7 @@ else
     private bool _replaceOnImport;
     private bool _confirmClear;
     private bool _clearAfterSubmit = true;
+    private bool _busy;
 
     /// <summary>Keys of the changes ticked for the proposal (<see cref="LocalBackup.Keys"/>).</summary>
     private readonly HashSet<string> _selected = [];
@@ -133,6 +136,10 @@ else
     {
         _author = await Store.GetSettingAsync(AuthorKey) ?? string.Empty;
         await ReloadAsync();
+
+        // Decisions made since the last visit.
+        await Proposals.RefreshMineAsync();
+        _mine = (await Proposals.GetAllAsync()).OrderByDescending(p => p.CreatedAt).ToList();
     }
 
     private async Task ReloadAsync()
@@ -159,19 +166,27 @@ else
 
     private async Task SubmitAsync()
     {
-        var proposal = new Proposal
+        Proposal proposal;
+        _busy = true;
+        try
         {
-            Id = Guid.NewGuid().ToString("N"),
-            Author = _author.Trim(),
-            Comment = _comment.Trim(),
-            CreatedAt = DateTimeOffset.Now,
-            Changes = _changes!.Only(_selected),
-        };
-
-        if (!await Proposals.SaveAsync(proposal))
+            proposal = await Proposals.SubmitAsync(new Proposal
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Author = _author.Trim(),
+                Comment = _comment.Trim(),
+                CreatedAt = DateTimeOffset.Now,
+                Changes = _changes!.Only(_selected),
+            });
+        }
+        catch (Exception ex) when (ex is PublishException or IOException)
         {
-            Show("Przeglądarka nie pozwoliła zapisać zgłoszenia (tryb prywatny lub brak miejsca).", error: true);
+            Show($"Nie udało się wysłać zgłoszenia: {ex.Message}", error: true);
             return;
+        }
+        finally
+        {
+            _busy = false;
         }
 
         await Store.SetSettingAsync(AuthorKey, proposal.Author);

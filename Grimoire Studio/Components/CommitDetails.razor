@@ -1,5 +1,7 @@
-@* Folded list of what one repository commit changed, read from the repository when first unfolded. *@
+@* Folded list of what one repository commit changed, read from the repository when first unfolded; it can be undone. *@
+@using System.Text.Json
 @inject RepositoryPublisher Publisher
+@inject HttpClient Http
 
 <details class="proposal-changes">
     <summary @onclick="LoadAsync">Pokaż zmiany</summary>
@@ -7,18 +9,18 @@
     {
         <p class="notice notice--error">@_error</p>
     }
-    else if (_items is null)
+    else if (_changes is null)
     {
         <p class="muted small">Wczytywanie zmian z repozytorium…</p>
     }
-    else if (_items.Count == 0)
+    else if (_changes.Items.Count == 0)
     {
         <p class="muted small">Commit nie zmienia ról, skryptów, drużyn ani jinxów.</p>
     }
     else
     {
         <ul class="change-list">
-            @foreach (var item in _items)
+            @foreach (var item in _changes.Items)
             {
                 var rows = ItemDiff.Changes(item.Before, item.After);
                 var role = item.Kind == "role" ? Data.FindRole(item.Id) : null;
@@ -30,7 +32,7 @@
                         }
                         else
                         {
-                            <strong>@Name(item)</strong>
+                            <strong>@ItemLabel.Of(Data, item.Kind, item.Id, item.After ?? item.Before)</strong>
                         }
                         <span class="local-badge">@Badge(item)</span>
                         @if (item.Before is not null && item.After is not null && rows.Count > 0)
@@ -42,6 +44,39 @@
                 </li>
             }
         </ul>
+
+        @if (OnRevert.HasDelegate)
+        {
+            @if (_revert is null)
+            {
+                <button class="button button--ghost" disabled="@_busy" @onclick="PrepareRevertAsync">@(_busy ? "Przygotowywanie…" : "Cofnij te zmiany…")</button>
+            }
+            else
+            {
+                <div class="panel">
+                    <p>
+                        Cofnięcie doda do zmian wiki poprzednie wersje: @(_revert.Labels.Count == 0 ? "nic" : string.Join(", ", _revert.Labels)).
+                        Trafią do „Zatwierdzone, do wysłania”; do repozytorium wyślesz je jak inne zmiany.
+                    </p>
+                    @if (_revert.ChangedLater.Count > 0)
+                    {
+                        <p class="notice notice--warning">
+                            Zmienione po tym commicie: @string.Join(", ", _revert.ChangedLater). Cofnięcie usunie też te późniejsze zmiany.
+                        </p>
+                    }
+                    @if (_revert.Changes.Removed.Count > 0)
+                    {
+                        <p class="notice notice--warning">
+                            Dodane w tym commicie, więc cofnięcie je usunie: @string.Join(", ", _revert.Removed).
+                        </p>
+                    }
+                    <div class="field-row">
+                        <button class="button" disabled="@(_revert.Changes.Count == 0)" @onclick="RevertAsync">Dodaj cofnięcie do zmian wiki</button>
+                        <button class="button button--ghost" @onclick="() => _revert = null">Anuluj</button>
+                    </div>
+                </div>
+            }
+        }
     }
 </details>
 
@@ -53,12 +88,24 @@
     [Parameter, EditorRequired]
     public GameData Data { get; set; } = default!;
 
-    private IReadOnlyList<CommitItem>? _items;
+    /// <summary>The wiki now, to tell which items changed again after the commit.</summary>
+    [Parameter]
+    public GameData? Wiki { get; set; }
+
+    /// <summary>Takes the changes that undo the commit; without it the commit cannot be undone here.</summary>
+    [Parameter]
+    public EventCallback<LocalBackup> OnRevert { get; set; }
+
+    private CommitChanges? _changes;
     private string? _error;
+    private Revert? _revert;
+    private bool _busy;
+
+    private sealed record Revert(LocalBackup Changes, IReadOnlyList<string> Labels, IReadOnlyList<string> ChangedLater, IReadOnlyList<string> Removed);
 
     private async Task LoadAsync()
     {
-        if (_items is not null)
+        if (_changes is not null)
         {
             return;
         }
@@ -66,7 +113,7 @@
         try
         {
             _error = null;
-            _items = (await Publisher.GetCommitChangesAsync(Commit.Sha)).Items;
+            _changes = await Publisher.GetCommitChangesAsync(Commit.Sha);
         }
         catch (PublishException ex)
         {
@@ -74,20 +121,126 @@
         }
     }
 
-    private string Name(CommitItem item) => item.Kind switch
+    /// <summary>
+    /// The items as they were before the commit: changed and removed ones come back, added jinxes are removed, and a
+    /// changed icon is taken from the commit before. Added roles, scripts and teams are removed.
+    /// </summary>
+    private async Task PrepareRevertAsync()
     {
-        "script" => Data.FindScript(item.Id)?.Name ?? Text(item, "name"),
-        "team" => Data.FindTeam(item.Id)?.PluralPl ?? Text(item, "pluralPl"),
-        "jinx" => string.Join(" + ", item.Id.Split('/').Select(id => Data.FindRole(id)?.NamePl ?? id)),
-        _ => Text(item, "namePl"),
-    };
+        _busy = true;
+        try
+        {
+            var (roles, scripts, teams, jinxes) = (new List<LocalRole>(), new List<Script>(), new List<TeamInfo>(), new List<JinxOverride>());
+            var (labels, later, removed, removedKeys) = (new List<string>(), new List<string>(), new List<string>(), new List<string>());
+            foreach (var item in _changes!.Items)
+            {
+                var label = ItemLabel.Of(Data, item.Kind, item.Id, item.After ?? item.Before);
+                var key = $"{item.Kind}:{item.Id}";
+                if (item.Before is null && item.After is not null && item.Kind != "jinx")
+                {
+                    removed.Add(label);
+                    removedKeys.Add(key);
+                    continue;
+                }
 
-    /// <summary>A text field of the item after the commit (before it, when removed), or its id.</summary>
-    private static string Text(CommitItem item, string field) =>
-        (item.After ?? item.Before) is { ValueKind: System.Text.Json.JsonValueKind.Object } obj
-            && obj.TryGetProperty(field, out var value) && value.ValueKind == System.Text.Json.JsonValueKind.String
-            ? value.GetString()!
-            : item.Id;
+                switch (item.Kind)
+                {
+                    case "role":
+                        var role = item.Before?.Deserialize<Role>(GameData.JsonOptions) ?? Wiki?.FindRole(item.Id);
+                        if (role is null)
+                        {
+                            continue;
+                        }
+
+                        var icon = item.IconChanged && _changes.Parent is { } parent ? await IconAsync(parent, item.Id) : null;
+                        roles.Add(new LocalRole(role, icon));
+                        if (item.After is { } roleAfter && ChangedLater(key, roleAfter.Deserialize<Role>(GameData.JsonOptions)))
+                        {
+                            later.Add(label);
+                        }
+
+                        break;
+
+                    case "script":
+                        scripts.Add(item.Before!.Value.Deserialize<Script>(GameData.JsonOptions)!);
+                        if (item.After is { } scriptAfter && ChangedLater(key, scriptAfter.Deserialize<Script>(GameData.JsonOptions)))
+                        {
+                            later.Add(label);
+                        }
+
+                        break;
+
+                    case "team":
+                        teams.Add(item.Before!.Value.Deserialize<TeamInfo>(GameData.JsonOptions)!);
+                        if (item.After is { } teamAfter && ChangedLater(key, teamAfter.Deserialize<TeamInfo>(GameData.JsonOptions)))
+                        {
+                            later.Add(label);
+                        }
+
+                        break;
+
+                    case "jinx":
+                        var json = (item.Before ?? item.After)!.Value;
+                        var owner = json.GetProperty("owner").GetString()!;
+                        jinxes.Add(new JinxOverride
+                        {
+                            OwnerId = owner,
+                            Jinx = json.Deserialize<Jinx>(GameData.JsonOptions)!,
+                            Removed = item.Before is null,
+                        });
+                        if (item.After is { } jinxAfter && ChangedLater(key, jinxAfter.Deserialize<Jinx>(GameData.JsonOptions)))
+                        {
+                            later.Add(label);
+                        }
+
+                        break;
+
+                    default:
+                        continue;
+                }
+
+                labels.Add(label);
+            }
+
+            _revert = new Revert(
+                new LocalBackup { BaseVersion = Commit.Sha, Roles = roles, Scripts = scripts, Teams = teams, Jinxes = jinxes, Removed = removedKeys },
+                labels,
+                later,
+                removed);
+        }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or HttpRequestException)
+        {
+            _error = $"Nie udało się przygotować cofnięcia: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>The item in the wiki now differs from what the commit left.</summary>
+    private bool ChangedLater<T>(string key, T? after) =>
+        Wiki is not null && after is not null && ItemConflicts.Json(Wiki, key) != DataFiles.ToJson(after);
+
+    /// <summary>A role's icon at a commit, as a data URL; null when the role had none there.</summary>
+    private async Task<string?> IconAsync(string sha, string roleId)
+    {
+        if (ItemDiffTable.IconAt(Commit.Url, sha, roleId) is not { } url)
+        {
+            return null;
+        }
+
+        using var response = await Http.GetAsync(url);
+        return response.IsSuccessStatusCode
+            ? "data:image/png;base64," + Convert.ToBase64String(await response.Content.ReadAsByteArrayAsync())
+            : null;
+    }
+
+    private async Task RevertAsync()
+    {
+        await OnRevert.InvokeAsync(_revert!.Changes);
+        _revert = null;
+    }
 
     private static string Badge(CommitItem item)
     {

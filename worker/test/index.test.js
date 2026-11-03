@@ -16,7 +16,17 @@ const env = {
 /** In-memory stand-in for a Cloudflare KV namespace. */
 const kvStore = () => {
     const values = new Map();
-    return { get: async key => values.get(key) ?? null, put: async (key, value) => void values.set(key, value) };
+    const metadata = new Map();
+    return {
+        values,
+        get: async key => values.get(key) ?? null,
+        put: async (key, value, options) => void (values.set(key, value), metadata.set(key, options?.metadata)),
+        delete: async key => void values.delete(key),
+        list: async ({ prefix = '' } = {}) => ({
+            keys: [...values.keys()].filter(k => k.startsWith(prefix)).sort().map(name => ({ name, metadata: metadata.get(name) })),
+            list_complete: true,
+        }),
+    };
 };
 
 /** In-memory stand-in for the GitHub API: one branch, commits, trees and a compare endpoint. */
@@ -356,4 +366,92 @@ test('item history refuses unknown kinds and odd ids', async () => {
     assert.equal((await call('GET', '/api/item-history?kind=team&id=imp')).status, 400);
     assert.equal((await call('GET', '/api/item-history?kind=role&id=../x')).status, 400);
     assert.equal((await call('GET', '/api/item-history?kind=role&id=chef', { key: null })).status, 401);
+});
+
+const proposal = { author: 'Ola', comment: 'Literówka', changes: { roles: [{ role: { id: 'chef' }, iconUrl: null }] } };
+
+test('anyone sends a proposal and reads it back by its id, with only the fields a visitor may set', async () => {
+    const response = await call('POST', '/api/proposals', { key: null, body: { ...proposal, status: 'approved', id: 'x' } });
+    assert.equal(response.status, 201);
+    const sent = await response.json();
+    assert.equal(sent.status, 'pending');
+    assert.notEqual(sent.id, 'x');
+    assert.match(sent.id, /^[A-Za-z0-9_-]{24}$/);
+
+    const read = await (await call('GET', `/api/proposals/${sent.id}`, { key: null })).json();
+    assert.deepEqual([read.author, read.comment, read.changes.roles[0].role.id], ['Ola', 'Literówka', 'chef']);
+});
+
+test('a proposal needs an author and some changes', async () => {
+    assert.equal((await call('POST', '/api/proposals', { key: null, body: { ...proposal, author: ' ' } })).status, 400);
+    assert.equal((await call('POST', '/api/proposals', { key: null, body: { ...proposal, changes: { roles: [] } } })).status, 400);
+    assert.equal((await call('POST', '/api/proposals', { key: null, body: { ...proposal, changes: { roles: 'x' } } })).status, 400);
+});
+
+test('one address sends at most ten proposals an hour', async () => {
+    for (let i = 0; i < 10; i++) {
+        assert.equal((await call('POST', '/api/proposals', { key: null, body: proposal })).status, 201);
+    }
+    assert.equal((await call('POST', '/api/proposals', { key: null, body: proposal })).status, 429);
+});
+
+test('admins list, decide and remove proposals; visitors cannot', async () => {
+    const sent = await (await call('POST', '/api/proposals', { key: null, body: proposal })).json();
+    assert.equal((await call('GET', '/api/proposals', { key: null })).status, 401);
+    assert.equal((await call('PUT', `/api/proposals/${sent.id}`, { key: null, body: sent })).status, 401);
+
+    const { proposals } = await (await call('GET', '/api/proposals')).json();
+    assert.deepEqual(proposals.map(p => p.id), [sent.id]);
+
+    const decided = await call('PUT', `/api/proposals/${sent.id}`, { body: { ...sent, status: 'approved', publishedIn: 'abc1234' } });
+    assert.equal(decided.status, 200);
+    assert.equal((await (await call('GET', `/api/proposals/${sent.id}`, { key: null })).json()).publishedIn, 'abc1234');
+    assert.equal((await call('PUT', `/api/proposals/${sent.id}`, { body: { ...sent, status: 'maybe' } })).status, 400);
+    assert.equal((await call('PUT', `/api/proposals/${sent.id}`, { body: { ...sent, id: 'another-id-1234567' } })).status, 400);
+
+    assert.equal((await call('DELETE', `/api/proposals/${sent.id}`)).status, 200);
+    assert.equal((await call('GET', `/api/proposals/${sent.id}`, { key: null })).status, 404);
+    assert.equal((await call('GET', '/api/proposals/short', { key: null })).status, 400);
+});
+
+test('data gives the data files at the head of the branch or at a commit', async () => {
+    github.files = { aaaaaaa1111: { 'data/roles.json': [{ id: 'chef' }] }, c1c1c1c1: { 'data/roles.json': [] } };
+    github.details.c1c1c1c = { sha: 'c1c1c1c1' };
+
+    const head = await (await call('GET', '/api/data')).json();
+    assert.equal(head.sha, 'aaaaaaa1111');
+    assert.deepEqual(JSON.parse(head.files['roles.json']), [{ id: 'chef' }]);
+    assert.equal(head.files['teams.json'], null);
+
+    const old = await (await call('GET', '/api/data?ref=c1c1c1c')).json();
+    assert.equal(old.sha, 'c1c1c1c1');
+    assert.equal((await call('GET', '/api/data?ref=main')).status, 400);
+    assert.equal((await call('GET', '/api/data', { key: null })).status, 401);
+});
+
+test('a proposal may only remove items, named by kind and id', async () => {
+    const removal = { ...proposal, changes: { removed: ['role:chef', 'script:tb'] } };
+    assert.equal((await call('POST', '/api/proposals', { key: null, body: removal })).status, 201);
+    const odd = { ...proposal, changes: { removed: ['role:../x'] } };
+    assert.equal((await call('POST', '/api/proposals', { key: null, body: odd })).status, 400);
+});
+
+test('commit removes files marked delete', async () => {
+    const response = await call('POST', '/api/commit', {
+        body: { message: 'Bez kucharza', baseVersion: 'aaaaaaa', files: [file('data/roles.json'), { path: 'data/icons/chef.png', delete: true }] },
+    });
+
+    assert.equal(response.status, 200);
+    const tree = github.calls.find(c => c.path === 'git/trees').body.tree;
+    assert.deepEqual(tree.map(t => [t.path, t.sha === null]), [['data/roles.json', false], ['data/icons/chef.png', true]]);
+    assert.equal(github.calls.filter(c => c.path === 'git/blobs').length, 1);
+});
+
+test('admins get the number of pending proposals without reading them', async () => {
+    const sent = await (await call('POST', '/api/proposals', { key: null, body: proposal })).json();
+    await call('POST', '/api/proposals', { key: null, body: proposal });
+    await call('PUT', `/api/proposals/${sent.id}`, { body: { ...sent, status: 'rejected' } });
+
+    assert.deepEqual(await (await call('GET', '/api/proposals?pending')).json(), { pending: 1 });
+    assert.equal((await call('GET', '/api/proposals?pending', { key: null })).status, 401);
 });
