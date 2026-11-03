@@ -163,6 +163,14 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         return await SendAsync<ItemHistory>(request);
     }
 
+    /// <summary>Roles, scripts, teams and jinxes one commit changed.</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<CommitChanges> GetCommitChangesAsync(string sha)
+    {
+        using var request = Request(HttpMethod.Get, $"commit-changes?sha={Uri.EscapeDataString(sha)}", RequireKey());
+        return await SendAsync<CommitChanges>(request);
+    }
+
     private string RequireKey() => _key ?? throw new PublishException("Najpierw zaloguj się kluczem administratora.");
 
     private HttpRequestMessage Request(HttpMethod method, string path, string key)

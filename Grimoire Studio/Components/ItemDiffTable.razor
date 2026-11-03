@@ -1,0 +1,50 @@
+@* Folded "Było / Jest" table of one item read from the repository (ItemDiff rows, optionally the new icon). *@
+
+@if (Rows.Count > 0 || Icon is not null)
+{
+    <details class="change-details" open="@Open">
+        <summary>Różnice</summary>
+        <table>
+            <thead>
+                <tr><th></th><th>Było</th><th>Jest</th></tr>
+            </thead>
+            <tbody>
+                @if (Icon is not null)
+                {
+                    <tr>
+                        <th>Ikona</th>
+                        <td class="change-details__before"></td>
+                        <td class="change-details__after"><img src="@Icon" alt="" /></td>
+                    </tr>
+                }
+                @foreach (var (label, before, after) in Rows)
+                {
+                    <tr>
+                        <th>@label</th>
+                        <td class="change-details__before">@before</td>
+                        <td class="change-details__after">@after</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </details>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<(string Label, string Before, string After)> Rows { get; set; } = [];
+
+    /// <summary>Address of the new icon, when it changed.</summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public bool Open { get; set; }
+
+    /// <summary>A role's icon as of a commit, from the commit's GitHub address; null when the address is not GitHub's.</summary>
+    public static string? IconAt(string commitUrl, string sha, string roleId)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(commitUrl, @"github\.com/([^/]+/[^/]+)/commit/");
+        return match.Success ? $"https://raw.githubusercontent.com/{match.Groups[1].Value}/{sha}/data/icons/{roleId}.png" : null;
+    }
+}

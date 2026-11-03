@@ -84,6 +84,11 @@ async function route(request, env) {
         return json(await itemHistory(params.get('kind'), params.get('id'), params.get('file'), env));
     }
 
+    if (request.method === 'GET' && pathname === `${API}commit-changes`) {
+        await authenticate(request, env);
+        return json(await commitChanges(new URL(request.url).searchParams.get('sha'), env));
+    }
+
     if (pathname === `${API}admins` || pathname.startsWith(`${API}admins/`)) {
         const owner = await authenticate(request, env);
         if (!owner.owner) {
@@ -297,6 +302,61 @@ export async function itemHistory(kind, id, file, env) {
         // Older changes may exist beyond the commits looked at.
         complete: commits.length < ITEM_COMMITS_LIMIT,
     };
+}
+
+// Items of each data file by key, for comparing two versions of it.
+const FILE_ITEMS = {
+    roles: data => (data ?? []).map(role => ['role', role.id, role]),
+    fabled: data => (data ?? []).map(role => ['role', role.id, role]),
+    scripts: data => (data?.scripts ?? []).map(script => ['script', script.id, script]),
+    teams: data => (data ?? []).map(team => ['team', team.id, team]),
+    hatred: data => (data ?? []).flatMap(owner =>
+        (owner.hatred ?? []).map(jinx => ['jinx', `${owner.id}/${jinx.id}`, { owner: owner.id, ...jinx }])),
+};
+
+/** Roles, scripts, teams and jinxes one commit changed, with each item before and after (null when it did not exist). */
+export async function commitChanges(sha, env) {
+    if (!sha || !/^[0-9a-f]{7,40}$/.test(sha)) {
+        throw new HttpError(400, 'Nieznany commit.');
+    }
+
+    const github = new GitHub(env);
+    const detail = await github.get(`commits/${sha}`);
+    const parent = detail.parents?.[0]?.sha;
+    const items = [];
+    for (const file of detail.files ?? []) {
+        const name = /^data\/([a-z]+)\.json$/.exec(file.filename)?.[1];
+        const icon = /^data\/icons\/([a-z0-9]+)\.png$/.exec(file.filename)?.[1];
+        if (icon) {
+            items.push({ kind: 'role', id: icon, before: null, after: null, iconChanged: true });
+        }
+        if (!FILE_ITEMS[name]) {
+            continue;
+        }
+
+        const [after, before] = await Promise.all([
+            github.fileAt(detail.sha, file.filename),
+            parent ? github.fileAt(parent, file.filename) : null,
+        ]);
+        const old = new Map(FILE_ITEMS[name](before).map(([kind, id, item]) => [`${kind}:${id}`, item]));
+        const now = new Map(FILE_ITEMS[name](after).map(([kind, id, item]) => [`${kind}:${id}`, item]));
+        for (const key of new Set([...old.keys(), ...now.keys()])) {
+            if (JSON.stringify(old.get(key)) !== JSON.stringify(now.get(key))) {
+                const [kind, id] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
+                items.push({ kind, id, before: old.get(key) ?? null, after: now.get(key) ?? null, iconChanged: false });
+            }
+        }
+    }
+
+    // A role whose data and icon both changed is one item.
+    const merged = new Map();
+    for (const item of items) {
+        const key = `${item.kind}:${item.id}`;
+        const known = merged.get(key);
+        const data = known?.iconChanged && !item.iconChanged ? item : known ?? item;
+        merged.set(key, { ...data, iconChanged: Boolean(known?.iconChanged || item.iconChanged) });
+    }
+    return { items: [...merged.values()] };
 }
 
 // --- Admin keys -------------------------------------------------------------------------------------------------

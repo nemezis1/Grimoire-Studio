@@ -1,0 +1,103 @@
+@* Folded list of what one repository commit changed, read from the repository when first unfolded. *@
+@inject RepositoryPublisher Publisher
+
+<details class="proposal-changes">
+    <summary @onclick="LoadAsync">Pokaż zmiany</summary>
+    @if (_error is not null)
+    {
+        <p class="notice notice--error">@_error</p>
+    }
+    else if (_items is null)
+    {
+        <p class="muted small">Wczytywanie zmian z repozytorium…</p>
+    }
+    else if (_items.Count == 0)
+    {
+        <p class="muted small">Commit nie zmienia ról, skryptów, drużyn ani jinxów.</p>
+    }
+    else
+    {
+        <ul class="change-list">
+            @foreach (var item in _items)
+            {
+                var rows = ItemDiff.Changes(item.Before, item.After);
+                var role = item.Kind == "role" ? Data.FindRole(item.Id) : null;
+                <li style="@(role is null ? null : Teams.Style(role.Team))">
+                    <span class="change-list__what">
+                        @if (role is not null)
+                        {
+                            <RoleLink Role="role" />
+                        }
+                        else
+                        {
+                            <strong>@Name(item)</strong>
+                        }
+                        <span class="local-badge">@Badge(item)</span>
+                        @if (item.Before is not null && item.After is not null && rows.Count > 0)
+                        {
+                            <span class="change-list__fields">@string.Join(", ", rows.Select(r => r.Label))</span>
+                        }
+                    </span>
+                    <ItemDiffTable Rows="rows" Icon="@(item.IconChanged ? ItemDiffTable.IconAt(Commit.Url, Commit.Sha, item.Id) : null)" Open="true" />
+                </li>
+            }
+        </ul>
+    }
+</details>
+
+@code {
+    [Parameter, EditorRequired]
+    public WikiCommit Commit { get; set; } = default!;
+
+    /// <summary>Data used for names and team colours.</summary>
+    [Parameter, EditorRequired]
+    public GameData Data { get; set; } = default!;
+
+    private IReadOnlyList<CommitItem>? _items;
+    private string? _error;
+
+    private async Task LoadAsync()
+    {
+        if (_items is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            _error = null;
+            _items = (await Publisher.GetCommitChangesAsync(Commit.Sha)).Items;
+        }
+        catch (PublishException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private string Name(CommitItem item) => item.Kind switch
+    {
+        "script" => Data.FindScript(item.Id)?.Name ?? Text(item, "name"),
+        "team" => Data.FindTeam(item.Id)?.PluralPl ?? Text(item, "pluralPl"),
+        "jinx" => string.Join(" + ", item.Id.Split('/').Select(id => Data.FindRole(id)?.NamePl ?? id)),
+        _ => Text(item, "namePl"),
+    };
+
+    /// <summary>A text field of the item after the commit (before it, when removed), or its id.</summary>
+    private static string Text(CommitItem item, string field) =>
+        (item.After ?? item.Before) is { ValueKind: System.Text.Json.JsonValueKind.Object } obj
+            && obj.TryGetProperty(field, out var value) && value.ValueKind == System.Text.Json.JsonValueKind.String
+            ? value.GetString()!
+            : item.Id;
+
+    private static string Badge(CommitItem item)
+    {
+        var masculine = item.Kind is "script" or "jinx";
+        return (item.Before, item.After) switch
+        {
+            (null, not null) => masculine ? "dodany" : "dodana",
+            (not null, null) => masculine ? "usunięty" : "usunięta",
+            (null, null) => "nowa ikona",
+            _ => (masculine ? "zmieniony" : "zmieniona") + (item.IconChanged ? ", nowa ikona" : null),
+        };
+    }
+}

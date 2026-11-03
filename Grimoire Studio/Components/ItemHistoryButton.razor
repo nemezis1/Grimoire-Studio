@@ -53,35 +53,8 @@
                                     <span class="change-list__fields">@string.Join(", ", rows.Select(r => r.Label))</span>
                                 }
                             </span>
-                            @if (rows.Count > 0 || entry.IconChanged)
-                            {
-                                <details class="change-details" open="@(entry == _history.Entries[0])">
-                                    <summary>Różnice</summary>
-                                    <table>
-                                        <thead>
-                                            <tr><th></th><th>Było</th><th>Jest</th></tr>
-                                        </thead>
-                                        <tbody>
-                                            @if (entry.IconChanged && IconAt(entry) is { } icon)
-                                            {
-                                                <tr>
-                                                    <th>Ikona</th>
-                                                    <td class="change-details__before"></td>
-                                                    <td class="change-details__after"><img src="@icon" alt="" /></td>
-                                                </tr>
-                                            }
-                                            @foreach (var (label, before, after) in rows)
-                                            {
-                                                <tr>
-                                                    <th>@label</th>
-                                                    <td class="change-details__before">@before</td>
-                                                    <td class="change-details__after">@after</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </details>
-                            }
+                            <ItemDiffTable Rows="rows" Icon="@(entry.IconChanged && Kind == "role" ? ItemDiffTable.IconAt(entry.Url, entry.Sha, Id) : null)"
+                                           Open="@(entry == _history.Entries[0])" />
                         </li>
                     }
                 </ul>
@@ -154,13 +127,4 @@
         (null, null) => "nowa ikona",
         _ => entry.IconChanged ? "zmieniona, nowa ikona" : "zmieniona",
     };
-
-    /// <summary>The role's icon as of that commit (repository and commit taken from the commit's address).</summary>
-    private string? IconAt(ItemChange entry)
-    {
-        var match = System.Text.RegularExpressions.Regex.Match(entry.Url, @"github\.com/([^/]+/[^/]+)/commit/");
-        return Kind == "role" && match.Success
-            ? $"https://raw.githubusercontent.com/{match.Groups[1].Value}/{entry.Sha}/data/icons/{Id}.png"
-            : null;
-    }
 }

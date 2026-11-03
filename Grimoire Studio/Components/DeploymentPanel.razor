@@ -1,74 +1,81 @@
-@* Deployments of the wiki changes sent by admins, down to the last deployed one; checks again while one is running. *@
+@*
+    Wiki changes being deployed: shown after sending (and while any sent change is still deploying), gone once the
+    deployment succeeds; a failed deployment of the changes sent from here stays until the next check finds none running.
+*@
 @inject RepositoryPublisher Publisher
 @implements IDisposable
 
-<div class="deployments">
-    <div class="form-list__head">
-        <h3>Wdrożenia zmian wiki</h3>
-        <button class="button button--ghost" disabled="@_loading" @onclick="RefreshAsync">@(_loading ? "Sprawdzanie…" : "Odśwież")</button>
-    </div>
+@if (_error is not null || _watching || Shown.Count > 0)
+{
+    <div class="deployments">
+        <div class="form-list__head">
+            <h3>Wdrażanie zmian wiki</h3>
+            <button class="button button--ghost" disabled="@_loading" @onclick="RefreshAsync">@(_loading ? "Sprawdzanie…" : "Odśwież")</button>
+        </div>
 
-    @if (_error is not null)
-    {
-        <p class="notice notice--error">@_error</p>
-    }
-    else if (_status is not null)
-    {
-        <p class="small">
-            Strona działa w wersji <code>@Short(_status.LiveVersion)</code>.
-            @if (_status.AnyRunning)
-            {
-                <span class="muted">Trwa wdrażanie – po jego końcu zmiany będą widoczne dla wszystkich (sprawdzam co @PollSeconds s).</span>
-            }
-            @if (IsNewerThanLoaded)
-            {
-                <strong>Ta karta ma starszą wersję: odśwież stronę (F5), żeby zobaczyć zmiany.</strong>
-            }
-        </p>
-        @if (_status.Runs.Count == 0)
+        @if (_error is not null)
         {
-            <p class="muted small">Brak wysłanych zmian w toku.</p>
+            <p class="notice notice--error">@_error</p>
         }
-        <ul class="change-list">
-            @foreach (var run in _status.Runs)
+        else
+        {
+            @if (Shown.Any(r => r.IsRunning) || (_watching && Shown.Count == 0))
             {
-                <li>
-                    <span class="change-list__what">
-                        <span class="local-badge deployment--@(run.IsRunning ? "running" : run.Succeeded ? "done" : "failed")">@run.StatusText</span>
-                        @run.Title
-                        <span class="change-list__fields">
-                            <a href="@run.Url" target="_blank" rel="noopener noreferrer"><code>@run.ShortSha</code></a>
-                            · @run.Author · @run.StartedAt.ToLocalTime().ToString("g")
-                            @if (Short(_status.LiveVersion) == run.ShortSha)
-                            {
-                                <span> · na stronie</span>
-                            }
-                        </span>
-                    </span>
-                </li>
+                <p class="muted small">
+                    Po końcu wdrażania zmiany będą widoczne dla wszystkich; ta karta pokaże je po odświeżeniu strony (F5).
+                    Sprawdzam co @PollSeconds s.
+                </p>
             }
-        </ul>
-    }
-</div>
+            @if (_watching && Shown.Count == 0)
+            {
+                <p class="muted small">Czekam, aż GitHub zacznie wdrażanie…</p>
+            }
+            <ul class="change-list">
+                @foreach (var run in Shown)
+                {
+                    <li>
+                        <span class="change-list__what">
+                            <span class="local-badge deployment--@(run.IsRunning ? "running" : run.Succeeded ? "done" : "failed")">@run.StatusText</span>
+                            @run.Title
+                            <span class="change-list__fields">
+                                <a href="@run.Url" target="_blank" rel="noopener noreferrer"><code>@run.ShortSha</code></a>
+                                · @run.Author · @run.StartedAt.ToLocalTime().ToString("g")
+                            </span>
+                        </span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+}
 
 @code {
     private const int PollSeconds = 15;
 
-    /// <summary>Data version this tab loaded; a newer live version means the admin should reload.</summary>
+    /// <summary>Told after each check, so the history can show how its commits deployed.</summary>
     [Parameter]
-    public string LoadedVersion { get; set; } = string.Empty;
+    public EventCallback<DeploymentStatus> StatusChanged { get; set; }
 
     private DeploymentStatus? _status;
     private string? _error;
     private bool _loading;
     private CancellationTokenSource? _polling;
 
-    private bool IsNewerThanLoaded =>
-        _status is { LiveVersion.Length: > 0 } && LoadedVersion.Length > 0 && Short(_status.LiveVersion) != Short(LoadedVersion);
+    /// <summary>Commit sent from this tab whose deployment is followed until it succeeds.</summary>
+    private string? _sent;
+
+    /// <summary>Changes were sent and their deployment has not finished (or not shown up) yet.</summary>
+    private bool _watching;
+
+    /// <summary>Running deployments, plus the one of the changes sent from here when it did not succeed.</summary>
+    private List<DeploymentRun> Shown =>
+        _status?.Runs.Where(r => r.IsRunning || (!r.Succeeded && IsSent(r))).ToList() ?? [];
+
+    private bool IsSent(DeploymentRun run) => _sent is not null && run.Sha.StartsWith(_sent, StringComparison.OrdinalIgnoreCase);
 
     protected override Task OnInitializedAsync() => RefreshAsync();
 
-    /// <summary>Checks now, and keeps checking while a deployment runs (e.g. right after sending changes).</summary>
+    /// <summary>Checks now, and keeps checking while a deployment runs.</summary>
     public async Task RefreshAsync()
     {
         _loading = true;
@@ -76,6 +83,7 @@
         {
             _status = await Publisher.GetDeploymentsAsync();
             _error = null;
+            await StatusChanged.InvokeAsync(_status);
         }
         catch (PublishException ex)
         {
@@ -86,6 +94,11 @@
             _loading = false;
         }
 
+        if (_status?.Runs.FirstOrDefault(IsSent) is { IsRunning: false })
+        {
+            _watching = false;
+        }
+
         if (_status?.AnyRunning == true && _polling is null)
         {
             _polling = new CancellationTokenSource();
@@ -93,9 +106,14 @@
         }
     }
 
-    /// <summary>A push starts its run a few seconds later: after sending, poll even before the run shows up.</summary>
-    public void Watch()
+    /// <summary>
+    /// Follows the deployment of a commit just sent. A push starts its run a few seconds later, so it polls even before
+    /// the run shows up.
+    /// </summary>
+    public void Watch(string sha)
     {
+        _sent = sha;
+        _watching = true;
         if (_polling is null)
         {
             _polling = new CancellationTokenSource();
@@ -130,11 +148,14 @@
         finally
         {
             _polling = null;
+            if (_watching && !cancel.IsCancellationRequested)
+            {
+                // The run never showed up within the checks: stop waiting for it.
+                _watching = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
-
-    // A commit id is shortened; a build date (local builds) stays whole.
-    private static string Short(string version) => version.Length > 7 && version.All(Uri.IsHexDigit) ? version[..7] : version;
 
     public void Dispose() => _polling?.Cancel();
 }

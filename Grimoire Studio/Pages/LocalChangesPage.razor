@@ -96,7 +96,7 @@ else
                             <span class="change-list__fields">@proposal.Comment</span>
                         }
                     </span>
-                    <ProposalDetails Proposal="proposal" Base="@(proposal.Status == ProposalStatus.Pending ? _base : _original!)" Data="_data" />
+                    <ProposalDetails Proposal="proposal" Base="@(proposal.Status == ProposalStatus.Pending ? _base : proposal.DecidedBase(_original!))" Data="_data" />
                 </li>
             }
         </ul>

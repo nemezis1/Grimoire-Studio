@@ -240,7 +240,8 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 /* Admin panel: deployments of the site. */
 .deployments { margin-top: 1rem; }
 .deployments h3 { margin: 0; font-size: 1rem; }
-.local-badge.deployment--running, .local-badge.deployment--done, .local-badge.deployment--failed { margin: 0 0.4rem 0 0; border: 0; color: #fff; }
+.local-badge.deployment--running, .local-badge.deployment--done, .local-badge.deployment--failed { border: 0; color: #fff; }
+.deployments .local-badge { margin: 0 0.4rem 0 0; }
 .local-badge.deployment--running { background: #d96a1a; }
 .local-badge.deployment--done { background: #2f8f4e; }
 .local-badge.deployment--failed { background: #c42020; }
@@ -1187,6 +1188,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     .script-editor__selected { flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.25rem; }
 }
 .proposal-changes__part { margin: 0.75rem 0 0.25rem; font-size: 0.9rem; color: var(--muted); }
+.admin-part { margin: 1.25rem 0 0.5rem; font-size: 1.1rem; }
 
 /* ---------- Smaller windows and phones: the top of each page takes as little height as it can ---------- */
 

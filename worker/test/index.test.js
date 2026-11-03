@@ -35,6 +35,8 @@ beforeEach(async () => {
         // History for commits?path= listings (newest first) and the files at each commit (raw.githubusercontent.com).
         history: {},
         files: {},
+        // Single commits (commits/<sha>): changed files and parents.
+        details: {},
     };
     globalThis.fetch = async (url, init = {}) => {
         const reply = (value, status = 200) => new Response(JSON.stringify(value), { status });
@@ -51,6 +53,8 @@ beforeEach(async () => {
 
         const listing = /^commits\?sha=main&path=([^&]+)&per_page=\d+$/.exec(path);
         if (listing) return reply(github.history[decodeURIComponent(listing[1])] ?? []);
+        const single = /^commits\/([0-9a-f]+)$/.exec(path);
+        if (single) return single[1] in github.details ? reply(github.details[single[1]]) : reply({ message: 'Not Found' }, 404);
 
         if (path === 'git/ref/heads/main') return reply({ object: { sha: github.head } });
         if (path.startsWith('git/commits/')) return reply(github.commits[path.slice('git/commits/'.length)]);
@@ -315,6 +319,37 @@ test('item history finds a jinx stored under either role', async () => {
     const { entries } = await (await call('GET', '/api/item-history?kind=jinx&id=chef/imp')).json();
 
     assert.deepEqual(entries.map(e => [e.sha, e.before, e.after?.owner, e.after?.reasonPl]), [['c2', null, 'imp', 'nowy']]);
+});
+
+test('commit changes lists the items a commit changed', async () => {
+    github.details.c2c2c2c = {
+        sha: 'c2c2c2c',
+        parents: [{ sha: 'c1c1c1c' }],
+        files: [{ filename: 'data/icons/chef.png' }, { filename: 'data/roles.json' }, { filename: 'data/hatred.json' }, { filename: 'README.md' }],
+    };
+    github.files = {
+        c2c2c2c: {
+            'data/roles.json': [{ id: 'chef', namePl: 'Kucharz' }, { id: 'imp', namePl: 'Bies' }, { id: 'monk', namePl: 'Mnich' }],
+            'data/hatred.json': [{ id: 'imp', hatred: [{ id: 'chef', reasonPl: 'nowy' }] }],
+        },
+        c1c1c1c: {
+            'data/roles.json': [{ id: 'chef', namePl: 'Kuchaż' }, { id: 'imp', namePl: 'Bies' }],
+            'data/hatred.json': [],
+        },
+    };
+
+    const { items } = await (await call('GET', '/api/commit-changes?sha=c2c2c2c')).json();
+
+    assert.deepEqual(items.map(i => [i.kind, i.id, i.before?.namePl ?? null, i.after?.namePl ?? i.after?.reasonPl ?? null, i.iconChanged]), [
+        ['role', 'chef', 'Kuchaż', 'Kucharz', true],
+        ['role', 'monk', null, 'Mnich', false],
+        ['jinx', 'imp/chef', null, 'nowy', false],
+    ]);
+});
+
+test('commit changes refuses odd shas', async () => {
+    assert.equal((await call('GET', '/api/commit-changes?sha=../x')).status, 400);
+    assert.equal((await call('GET', '/api/commit-changes?sha=c2c2c2c', { key: null })).status, 401);
 });
 
 test('item history refuses unknown kinds and odd ids', async () => {

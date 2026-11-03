@@ -22,4 +22,13 @@ public sealed record Proposal
 
     /// <summary>Number of items approved (when only some were accepted).</summary>
     public int ApprovedCount { get; init; }
+
+    /// <summary>
+    /// The changed items as the wiki had them when the proposal was decided (new items are missing), so the history can
+    /// still show the differences once the changes are in the data folder; null for proposals decided before it was kept.
+    /// </summary>
+    public LocalBackup? Before { get; init; }
+
+    /// <summary>Data the history compares the changes with: <see cref="Before"/>, or <paramref name="fallback"/> without it.</summary>
+    public GameData DecidedBase(GameData fallback) => Before?.ApplyTo(new GameData()) ?? fallback;
 }

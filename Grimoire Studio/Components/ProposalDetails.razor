@@ -2,6 +2,13 @@
 
 <details class="proposal-changes">
     <summary>Pokaż zmiany</summary>
+    @if (Proposal.Status != ProposalStatus.Pending && Proposal.Before is null)
+    {
+        <p class="muted small">
+            Zgłoszenie rozpatrzone, zanim zapamiętywano stan sprzed zmian: porównanie z danymi strony, które mogą już
+            zawierać te zmiany. Pełne różnice pokazuje „Historia zmian” na stronie roli, skryptu lub jinxa.
+        </p>
+    }
     @* Older proposals did not record the accepted items; they are shown as one list. *@
     @if (Proposal.Status == ProposalStatus.Approved && Proposal.ApprovedKeys.Count > 0 && Proposal.ApprovedKeys.Count < Proposal.Changes.Count)
     {
@@ -23,8 +30,8 @@
     public Proposal Proposal { get; set; } = default!;
 
     /// <summary>
-    /// Data to compare with. For a decided proposal pass the data folder: the wiki may already contain the changes, so
-    /// comparing with it would show no differences.
+    /// Data to compare with. For a decided proposal pass <see cref="Proposal.DecidedBase"/>: the wiki and later the data
+    /// folder contain the approved changes, so comparing with them would show no differences.
     /// </summary>
     [Parameter, EditorRequired]
     public GameData Base { get; set; } = default!;

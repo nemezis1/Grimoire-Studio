@@ -51,6 +51,25 @@ public sealed record LocalBackup
             .WithScripts(Scripts)
             .WithJinxes(Jinxes);
 
+    /// <summary>
+    /// These items as they are in <paramref name="data"/>, for comparing with later; items missing there (new ones) are
+    /// left out.
+    /// </summary>
+    public LocalBackup As(GameData data) => this with
+    {
+        Roles = Roles.Select(r => data.FindRole(r.Role.Id)).OfType<Role>().Select(r => new LocalRole(r, null)).ToList(),
+        Scripts = Scripts.Select(s => data.FindScript(s.Id)).OfType<Script>().ToList(),
+        Teams = Teams.Select(t => data.FindTeam(t.Id)).OfType<TeamInfo>().ToList(),
+        Jinxes = Jinxes
+            .Select(j => (j.OwnerId, Jinx: data.Jinxes
+                .Where(o => string.Equals(o.Id, j.OwnerId, StringComparison.OrdinalIgnoreCase))
+                .SelectMany(o => o.Jinxes)
+                .FirstOrDefault(x => string.Equals(x.Id, j.Jinx.Id, StringComparison.OrdinalIgnoreCase))))
+            .Where(x => x.Jinx is not null)
+            .Select(x => new JinxOverride { OwnerId = x.OwnerId, Jinx = x.Jinx! })
+            .ToList(),
+    };
+
     /// <summary>The items whose keys are in <paramref name="keys"/>.</summary>
     public LocalBackup Only(IReadOnlySet<string> keys) => this with
     {
