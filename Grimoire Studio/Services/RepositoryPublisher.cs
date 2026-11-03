@@ -188,12 +188,15 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         return await SendAsync<Proposal>(request, GameData.JsonOptions);
     }
 
-    /// <summary>Number of proposals waiting for a decision.</summary>
+    /// <summary>
+    /// Ids of the proposals waiting for a decision. The server lists them with a delay of up to a minute, so decisions
+    /// just made may not show yet (see <see cref="Proposals.PendingCount"/>).
+    /// </summary>
     /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
-    public async Task<int> GetPendingCountAsync()
+    public async Task<IReadOnlyList<string>> GetPendingAsync()
     {
         using var request = Request(HttpMethod.Get, "proposals?pending", RequireKey());
-        return (await SendAsync<PendingReply>(request)).Pending;
+        return (await SendAsync<PendingReply>(request)).Ids;
     }
 
     /// <summary>A proposal as the admins left it; null when it is gone (removed, or expired after the decision).</summary>
@@ -348,7 +351,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
 
     private sealed record ErrorReply(string? Error, IReadOnlyList<string>? Conflicts);
 
-    private sealed record PendingReply(int Pending);
+    private sealed record PendingReply(IReadOnlyList<string> Ids);
 
     private sealed record ProposalsReply(IReadOnlyList<JsonElement> Proposals);
 

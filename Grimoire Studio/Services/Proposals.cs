@@ -12,6 +12,12 @@ public sealed class Proposals(LocalStore store, RepositoryPublisher publisher) :
     /// <summary>Raised after an admin decided, changed or removed a proposal here.</summary>
     public event Action? Changed;
 
+    /// <summary>How long the server's list of pending proposals may miss a change (KV listings lag behind writes).</summary>
+    private static readonly TimeSpan ListingDelay = TimeSpan.FromMinutes(2);
+
+    /// <summary>Proposals sent, decided or removed here lately: whether each is pending now, and when that changed.</summary>
+    private readonly Dictionary<string, (bool Pending, DateTimeOffset At)> _recent = [];
+
     /// <summary>Proposals go to the server (otherwise they stay in this browser).</summary>
     public bool OnServer => publisher.IsConfigured;
 
@@ -21,6 +27,7 @@ public sealed class Proposals(LocalStore store, RepositoryPublisher publisher) :
     public async Task<Proposal> SubmitAsync(Proposal proposal)
     {
         var stored = OnServer ? await publisher.SubmitProposalAsync(proposal) : proposal;
+        Remember(stored.Id, pending: true);
         if (!await SaveAsync(stored) && !OnServer)
         {
             throw new IOException("Przeglądarka nie pozwoliła zapisać zgłoszenia (tryb prywatny lub brak miejsca).");
@@ -84,6 +91,7 @@ public sealed class Proposals(LocalStore store, RepositoryPublisher publisher) :
     /// <exception cref="PublishException">The server refused it.</exception>
     public async Task UpdateAsync(Proposal proposal)
     {
+        Remember(proposal.Id, proposal.Status == ProposalStatus.Pending);
         if (publisher.AdminName is not null)
         {
             await publisher.SaveProposalAsync(proposal);
@@ -101,6 +109,7 @@ public sealed class Proposals(LocalStore store, RepositoryPublisher publisher) :
     /// <exception cref="PublishException">The server refused it.</exception>
     public async Task DeleteAsync(string id)
     {
+        Remember(id, pending: false);
         if (publisher.AdminName is not null)
         {
             await publisher.DeleteProposalAsync(id);
@@ -109,4 +118,29 @@ public sealed class Proposals(LocalStore store, RepositoryPublisher publisher) :
         await RemoveAsync(id);
         Changed?.Invoke();
     }
+
+    /// <summary>
+    /// Number of proposals waiting for a decision: the server's list (<paramref name="serverIds"/>) with the changes
+    /// made here that it may not show yet.
+    /// </summary>
+    public int PendingCount(IEnumerable<string> serverIds)
+    {
+        var pending = serverIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var since = DateTimeOffset.Now - ListingDelay;
+        foreach (var (id, (isPending, at)) in _recent.Where(r => r.Value.At >= since))
+        {
+            if (isPending)
+            {
+                pending.Add(id);
+            }
+            else
+            {
+                pending.Remove(id);
+            }
+        }
+
+        return pending.Count;
+    }
+
+    private void Remember(string id, bool pending) => _recent[id] = (pending, DateTimeOffset.Now);
 }

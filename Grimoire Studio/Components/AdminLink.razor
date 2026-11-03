@@ -50,7 +50,7 @@
 
         try
         {
-            _pending = await Publisher.GetPendingCountAsync();
+            _pending = Proposals.PendingCount(await Publisher.GetPendingAsync());
         }
         catch (PublishException)
         {

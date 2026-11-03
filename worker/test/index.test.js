@@ -449,9 +449,9 @@ test('commit removes files marked delete', async () => {
 
 test('admins get the number of pending proposals without reading them', async () => {
     const sent = await (await call('POST', '/api/proposals', { key: null, body: proposal })).json();
-    await call('POST', '/api/proposals', { key: null, body: proposal });
+    const other = await (await call('POST', '/api/proposals', { key: null, body: proposal })).json();
     await call('PUT', `/api/proposals/${sent.id}`, { body: { ...sent, status: 'rejected' } });
 
-    assert.deepEqual(await (await call('GET', '/api/proposals?pending')).json(), { pending: 1 });
+    assert.deepEqual(await (await call('GET', '/api/proposals?pending')).json(), { pending: 1, ids: [other.id] });
     assert.equal((await call('GET', '/api/proposals?pending', { key: null })).status, 401);
 });

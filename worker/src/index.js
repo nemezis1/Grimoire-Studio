@@ -104,7 +104,7 @@ async function route(request, env) {
         if (request.method === 'GET') {
             await authenticate(request, env);
             return json(new URL(request.url).searchParams.has('pending')
-                ? { pending: await pendingProposals(env) }
+                ? await pendingSummary(env)
                 : await listProposals(env));
         }
     }
@@ -245,7 +245,7 @@ async function submitProposal(request, env) {
     }
 
     const changes = validChanges(body?.changes);
-    if (await pendingProposals(env) >= MAX_PENDING_PROPOSALS) {
+    if ((await pendingProposals(env)).length >= MAX_PENDING_PROPOSALS) {
         throw new HttpError(429, 'Za dużo zgłoszeń czeka na decyzję. Spróbuj za jakiś czas.');
     }
 
@@ -308,10 +308,21 @@ async function proposalKeys(env) {
     return keys;
 }
 
-/** Number of proposals waiting for a decision, from the listing's metadata (no proposal is read). */
+/** Ids of the proposals waiting for a decision, from the listing's metadata (no proposal is read). */
 async function pendingProposals(env) {
     requireStore(env);
-    return (await proposalKeys(env)).filter(key => key.metadata?.status === 'pending').length;
+    return (await proposalKeys(env))
+        .filter(key => key.metadata?.status === 'pending')
+        .map(key => key.name.slice(PROPOSAL_PREFIX.length));
+}
+
+/**
+ * The pending proposals' number and ids. KV listings lag behind writes (up to a minute), so the ids let the admin's
+ * browser correct the number with the decisions it has just made.
+ */
+async function pendingSummary(env) {
+    const ids = await pendingProposals(env);
+    return { pending: ids.length, ids };
 }
 
 async function listProposals(env) {
