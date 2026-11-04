@@ -13,6 +13,7 @@ https://grimoire-studio.botc-wiki.workers.dev/
 | `GrimoireStudio.Data/` | modele danych, wczytywanie i walidacja (net8.0, współdzielone z aplikacją Blood) |
 | `GrimoireStudio.Data.Tests/` | testy; sprawdzają też spójność plików w `data/` |
 | `Grimoire Studio/` | aplikacja webowa (Blazor WebAssembly) |
+| `GrimoireStudio.App.Tests/` | testy komponentów aplikacji (bUnit), m.in. panelu administratora i listy zmian |
 | `worker/` | Cloudflare Worker: serwuje stronę i usługę zapisu zmian do repozytorium (`/api/`) |
 
 ## Dane
