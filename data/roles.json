@@ -2568,12 +2568,12 @@
   {
     "id": "shugenja",
     "nameEn": "Shugenja",
-    "namePl": "«Shugenja»",
+    "namePl": "Shugenja",
     "edition": "",
     "team": "townsfolk",
     "firstNight": 451,
     "firstNightReminderEn": "Point clockwise or anticlockwise.",
-    "firstNightReminderPl": "«Wskaż kierunek zgodny lub przeciwny do ruchu wskazówek zegara.»",
+    "firstNightReminderPl": "Wskaż kierunek zgodny lub przeciwny do ruchu wskazówek zegara.",
     "otherNight": 0,
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
@@ -2581,12 +2581,12 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "You start knowing if your closest evil player is clockwise or anti-clockwise. If equidistant, this info is arbitrary.",
-    "abilityPl": "«Rozpoczynając grę, dowiadujesz się, czy najbliższy zły gracz siedzi zgodnie z ruchem wskazówek zegara, czy przeciwnie. Jeśli są w równej odległości, ta informacja jest dowolna.»"
+    "abilityPl": "Rozpoczynając grę, dowiadujesz się, czy najbliższy zły gracz siedzi zgodnie z ruchem wskazówek zegara, czy przeciwnie. Jeśli są w równej odległości, ta informacja jest dowolna."
   },
   {
     "id": "banshee",
     "nameEn": "Banshee",
-    "namePl": "«Banshee»",
+    "namePl": "Banshee",
     "edition": "",
     "team": "townsfolk",
     "firstNight": 0,
@@ -2594,12 +2594,12 @@
     "firstNightReminderPl": "",
     "otherNight": 421,
     "otherNightReminderEn": "If the Banshee was killed by the Demon tonight, announce that the Banshee has died.",
-    "otherNightReminderPl": "«Jeśli Banshee została tej nocy zabita przez Demona, ogłoś, że Banshee zginęła.»",
+    "otherNightReminderPl": "Jeśli Banshee została tej nocy zabita przez Demona, ogłoś, że Banshee zginęła.",
     "remindersEn": [ "Has Ability" ],
-    "remindersPl": [ "«Ma zdolność»" ],
+    "remindersPl": [ "Ma zdolność" ],
     "setup": false,
     "abilityEn": "If the Demon kills you, all players learn this. From now on, you may nominate twice per day and vote twice per nomination.",
-    "abilityPl": "«Jeśli zabije cię Demon, wszyscy gracze się o tym dowiadują. Od tej chwili możesz nominować dwa razy dziennie i głosować dwa razy przy każdej nominacji.»"
+    "abilityPl": "Jeśli zabije cię Demon, wszyscy gracze się o tym dowiadują. Od tej chwili możesz nominować dwa razy dziennie i głosować dwa razy przy każdej nominacji."
   },
   {
     "id": "ogre",
@@ -2622,7 +2622,7 @@
   {
     "id": "plaguedoctor",
     "nameEn": "Plague Doctor",
-    "namePl": "«Doktor Plaga»",
+    "namePl": "Doktor Plaga",
     "edition": "",
     "team": "outsider",
     "firstNight": 0,
@@ -2630,17 +2630,17 @@
     "firstNightReminderPl": "",
     "otherNight": 411,
     "otherNightReminderEn": "If the Plague Doctor died, the Storyteller gained a Minion ability. If you haven’t done this yet, do so now.",
-    "otherNightReminderPl": "«Jeśli Doktor Plaga zginął, Narrator zyskał zdolność Sługusa. Jeśli jeszcze tego nie zrobiłeś, zrób to teraz.»",
+    "otherNightReminderPl": "Jeśli Doktor Plaga zginął, Narrator zyskał zdolność Sługusa. Jeśli jeszcze tego nie zrobiłeś, zrób to teraz.",
     "remindersEn": [ "Storyteller Ability" ],
-    "remindersPl": [ "«Zdolność Narratora»" ],
+    "remindersPl": [ "Zdolność Narratora" ],
     "setup": false,
     "abilityEn": "When you die, the Storyteller gains a Minion ability.",
-    "abilityPl": "«Gdy zginiesz, Narrator zyskuje zdolność Sługusa.»"
+    "abilityPl": "Gdy zginiesz, Narrator zyskuje zdolność Sługusa."
   },
   {
     "id": "hatter",
     "nameEn": "Hatter",
-    "namePl": "«Kapelusznik»",
+    "namePl": "Kapelusznik",
     "edition": "",
     "team": "outsider",
     "firstNight": 0,
@@ -2648,30 +2648,30 @@
     "firstNightReminderPl": "",
     "otherNight": 381,
     "otherNightReminderEn": "If the Hatter died, wake the Minions & Demons. Each may choose a new character. If they do, show the 'You are' token & their new character token.",
-    "otherNightReminderPl": "«Jeśli Kapelusznik zginął, obudź Sługusy i Demony. Każdy może wybrać nową postać. Jeśli to zrobi, pokaż kartę 'Jesteś' i żeton jego nowej postaci.»",
+    "otherNightReminderPl": "Jeśli Kapelusznik zginął, obudź Sługusy i Demony. Każdy może wybrać nową postać. Jeśli to zrobi, pokaż kartę 'Jesteś' i żeton jego nowej postaci.",
     "remindersEn": [ "Tea Party Tonight" ],
-    "remindersPl": [ "«Herbatka tej nocy»" ],
+    "remindersPl": [ "Herbatka tej nocy" ],
     "setup": false,
     "abilityEn": "If you died today or tonight, the Minion & Demon players may choose new Minion & Demon characters to be.",
-    "abilityPl": "«Jeśli zginąłeś dziś lub tej nocy, gracze Sługusów i Demona mogą wybrać nowe postacie Sługusów i Demona.»"
+    "abilityPl": "Jeśli zginąłeś dziś lub tej nocy, Sługusy i Demon mogą wybrać nowe postacie Sługusów i Demona."
   },
   {
     "id": "harpy",
     "nameEn": "Harpy",
-    "namePl": "«Harpia»",
+    "namePl": "Harpia",
     "edition": "",
     "team": "minion",
     "firstNight": 261,
     "firstNightReminderEn": "The Harpy chooses 2 players. Put the Harpy to sleep. Wake the 1st target. Show the 'This character selected you' token, the Harpy token, then point to the 2nd target.",
-    "firstNightReminderPl": "«Harpia wybiera 2 graczy. Uśpij Harpię. Obudź pierwszy cel. Pokaż kartę 'Ta postać cię wybrała', żeton Harpii, a potem wskaż drugi cel.»",
+    "firstNightReminderPl": "Harpia wybiera 2 graczy. Uśpij Harpię. Obudź pierwszy cel. Pokaż kartę 'Ta postać cię wybrała', żeton Harpii, a potem wskaż drugi cel.",
     "otherNight": 171,
     "otherNightReminderEn": "The Harpy chooses 2 players. Put the Harpy to sleep. Wake the 1st target. Show the 'This character selected you' token, the Harpy token, then point to the 2nd target.",
-    "otherNightReminderPl": "«Harpia wybiera 2 graczy. Uśpij Harpię. Obudź pierwszy cel. Pokaż kartę 'Ta postać cię wybrała', żeton Harpii, a potem wskaż drugi cel.»",
+    "otherNightReminderPl": "Harpia wybiera 2 graczy. Uśpij Harpię. Obudź pierwszy cel. Pokaż kartę 'Ta postać cię wybrała', żeton Harpii, a potem wskaż drugi cel.",
     "remindersEn": [ "Mad", "2nd" ],
-    "remindersPl": [ "«Obłąkany»", "«Drugi»" ],
+    "remindersPl": [ "Obłąkany", "Drugi" ],
     "setup": false,
     "abilityEn": "Each night, choose 2 players: tomorrow, the 1st player is mad that the 2nd is evil, or one or both might die.",
-    "abilityPl": "«Każdej nocy wybierz 2 graczy: jutro pierwszy z nich jest obłąkany, że drugi jest zły, albo jeden lub obaj mogą zginąć.»"
+    "abilityPl": "Każdej nocy wybierz 2 graczy: jutro pierwszy z nich jest obłąkany, że drugi jest zły, albo jeden lub obaj mogą zginąć."
   },
   {
     "id": "xaan",
@@ -2712,20 +2712,20 @@
   {
     "id": "summoner",
     "nameEn": "Summoner",
-    "namePl": "«Przywoływacz»",
+    "namePl": "Przywoływacz",
     "edition": "",
     "team": "minion",
     "firstNight": 81,
     "firstNightReminderEn": "Show the 'These characters are not in play' token. Show 3 not-in-play good character tokens.",
-    "firstNightReminderPl": "«Pokaż kartę 'Tych postaci nie ma w grze'. Pokaż 3 żetony dobrych postaci spoza gry.»",
+    "firstNightReminderPl": "Pokaż kartę 'Tych postaci nie ma w grze'. Pokaż 3 żetony dobrych postaci spoza gry.",
     "otherNight": 191,
     "otherNightReminderEn": "Change the Summoner reminder token to the relevant night. If it is night 3, the Summoner chooses a player & a Demon character. Put the Summoner to sleep. Wake the target. Show the 'You are' and Demon tokens & give a thumbs-down.",
-    "otherNightReminderPl": "«Zmień znacznik Przywoływacza na odpowiednią noc. Jeśli to noc 3, Przywoływacz wybiera gracza i postać Demona. Uśpij Przywoływacza. Obudź cel. Pokaż kartę 'Jesteś' i żeton Demona, a potem kciuk w dół.»",
+    "otherNightReminderPl": "Zmień znacznik Przywoływacza na odpowiednią noc. Jeśli to noc 3, Przywoływacz wybiera gracza i postać Demona. Uśpij Przywoływacza. Obudź cel. Pokaż kartę 'Jesteś' i żeton Demona, a potem kciuk w dół.",
     "remindersEn": [ "Night 1", "Night 2", "Night 3" ],
-    "remindersPl": [ "«Noc 1»", "«Noc 2»", "«Noc 3»" ],
+    "remindersPl": [ "Noc 1", "Noc 2", "Noc 3" ],
     "setup": true,
     "abilityEn": "You get 3 bluffs. On the 3rd night, choose a player: they become an evil Demon of your choice. [No Demon]",
-    "abilityPl": "«Dostajesz 3 blefy. Trzeciej nocy wybierz gracza: staje się złym Demonem, którego wybierzesz. [Brak Demona]»"
+    "abilityPl": "Dostajesz 3 blefy. Trzeciej nocy wybierz gracza: staje się złym Demonem, którego wybierzesz. [Brak Demona]"
   },
   {
     "id": "vizier",
@@ -2748,20 +2748,20 @@
   {
     "id": "organgrinder",
     "nameEn": "Organ Grinder",
-    "namePl": "«Kataryniarz»",
+    "namePl": "Kataryniarz",
     "edition": "",
     "team": "minion",
     "firstNight": 211,
     "firstNightReminderEn": "The Organ Grinder either nods their head yes to be drunk, or shakes their head no to be sober.",
-    "firstNightReminderPl": "«Kataryniarz kiwa głową na tak, aby być pijanym, albo kręci głową na nie, aby być trzeźwym.»",
+    "firstNightReminderPl": "Kataryniarz kiwa głową na tak, aby być pijanym, albo kręci głową na nie, aby być trzeźwym.",
     "otherNight": 121,
     "otherNightReminderEn": "The Organ Grinder either nods their head yes to be drunk, or shakes their head no to be sober.",
-    "otherNightReminderPl": "«Kataryniarz kiwa głową na tak, aby być pijanym, albo kręci głową na nie, aby być trzeźwym.»",
+    "otherNightReminderPl": "Kataryniarz kiwa głową na tak, aby być pijanym, albo kręci głową na nie, aby być trzeźwym.",
     "remindersEn": [ "About To Die", "Drunk" ],
-    "remindersPl": [ "«Zaraz zginie»", "«Pijany»" ],
+    "remindersPl": [ "Zaraz zginie", "Pijany" ],
     "setup": false,
     "abilityEn": "All players keep their eyes closed when voting and the vote tally is secret. Each night, choose if you are drunk until dusk.",
-    "abilityPl": "«Wszyscy gracze głosują z zamkniętymi oczami, a wynik głosowania jest tajny. Każdej nocy zdecyduj, czy jesteś pijany do zmierzchu.»"
+    "abilityPl": "Wszyscy gracze głosują z zamkniętymi oczami, a wynik głosowania jest tajny. Każdej nocy zdecyduj, czy jesteś pijany do zmierzchu."
   },
   {
     "id": "yaggababble",

@@ -20,7 +20,7 @@
       {
         "id": "organgrinder",
         "reasonEn": "If the Organ Grinder is causing eyes closed voting, the Butler may raise their hand to vote but their vote is only counted if their master voted too.",
-        "reasonPl": "«Jeśli przez Kataryniarza głosuje się z zamkniętymi oczami, Lokaj może podnieść rękę, ale jego głos liczy się tylko wtedy, gdy głosował też jego pan.»"
+        "reasonPl": "Jeśli przez Kataryniarza głosuje się z zamkniętymi oczami, Lokaj może podnieść rękę, ale jego głos liczy się tylko wtedy, gdy głosował też jego pan."
       }
     ]
   },
@@ -125,7 +125,7 @@
       {
         "id": "banshee",
         "reasonEn": "Each night*, the Leviathan chooses an alive good player (different to previous nights): a chosen Banshee dies & gains their ability.",
-        "reasonPl": "«Każdej nocy* Lewiatan wybiera żyjącego dobrego gracza (innego niż poprzednich nocy): wybrana Banshee ginie i zyskuje swoją zdolność.»"
+        "reasonPl": "Każdej nocy* Lewiatan wybiera żyjącego dobrego gracza (innego niż poprzednich nocy): wybrana Banshee ginie i zyskuje swoją zdolność."
       },
       {
         "id": "exorcist",
@@ -140,7 +140,7 @@
       {
         "id": "hatter",
         "reasonEn": "The Leviathan cannot enter play after day 5.",
-        "reasonPl": "«Lewiatan nie może wejść do gry po 5. dniu.»"
+        "reasonPl": "Lewiatan nie może wejść do gry po 5. dniu."
       },
       {
         "id": "king",
@@ -195,7 +195,7 @@
       {
         "id": "hatter",
         "reasonEn": "If the Hatter dies & the Demon chooses Lil' Monsta, they also choose a Minion to become.",
-        "reasonPl": "«Jeśli Kapelusznik zginie, a Demon wybierze Lil' Monstę, wybiera też Sługusa, którym się stanie.»"
+        "reasonPl": "Jeśli Kapelusznik zginie, a Demon wybierze Lil' Monstę, wybiera też Sługusa, którym się stanie."
       },
       {
         "id": "psychopath",
@@ -225,7 +225,7 @@
       {
         "id": "hatter",
         "reasonEn": "If Legion is created, all evil players become Legion. If Legion is in play, the Hatter has no ability.",
-        "reasonPl": "«Jeśli powstanie Legion, wszyscy źli gracze stają się Legionem. Jeśli Legion jest w grze, Kapelusznik nie ma zdolności.»"
+        "reasonPl": "Jeśli powstanie Legion, wszyscy źli gracze stają się Legionem. Jeśli Legion jest w grze, Kapelusznik nie ma zdolności."
       },
       {
         "id": "minstrel",
@@ -240,7 +240,7 @@
       {
         "id": "summoner",
         "reasonEn": "If Legion is summoned, all evil players become Legion.",
-        "reasonPl": "«Jeśli zostanie przywołany Legion, wszyscy źli gracze stają się Legionem.»"
+        "reasonPl": "Jeśli zostanie przywołany Legion, wszyscy źli gracze stają się Legionem."
       },
       {
         "id": "zealot",
@@ -370,7 +370,7 @@
       {
         "id": "summoner",
         "reasonEn": "If there would be a Marionette in play, they enter play after the Demon & must start as their neighbor.",
-        "reasonPl": "«Jeśli w grze miałaby być Marionetka, wchodzi do gry po Demonie i musi zaczynać jako jego sąsiad.»"
+        "reasonPl": "Jeśli w grze miałaby być Marionetka, wchodzi do gry po Demonie i musi zaczynać jako jego sąsiad."
       }
     ]
   },
@@ -435,7 +435,7 @@
       {
         "id": "banshee",
         "reasonEn": "Each night*, Riot chooses an alive good player (different to previous nights): a chosen Banshee dies & gains their ability.",
-        "reasonPl": "«Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrana Banshee ginie i zyskuje swoją zdolność.»"
+        "reasonPl": "Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrana Banshee ginie i zyskuje swoją zdolność."
       }
     ]
   },
@@ -480,12 +480,12 @@
       {
         "id": "organgrinder",
         "reasonEn": "If the Alchemist has the Organ Grinder ability, the Organ Grinder is in play. If both are sober, both are drunk.",
-        "reasonPl": "«Jeśli Alchemik ma zdolność Kataryniarza, Kataryniarz jest w grze. Jeśli obaj są trzeźwi, obaj są pijani.»"
+        "reasonPl": "Jeśli Alchemik ma zdolność Kataryniarza, Kataryniarz jest w grze. Jeśli obaj są trzeźwi, obaj są pijani."
       },
       {
         "id": "summoner",
         "reasonEn": "The Alchemist-Summoner does not get bluffs, and chooses which Demon but not which player. If they die before this happens, evil wins. [No Demon]",
-        "reasonPl": "«Alchemik-Przywoływacz nie dostaje blefów i wybiera Demona, ale nie gracza. Jeśli zginie, zanim to nastąpi, zło wygrywa. [Brak Demona]»"
+        "reasonPl": "Alchemik-Przywoływacz nie dostaje blefów i wybiera Demona, ale nie gracza. Jeśli zginie, zanim to nastąpi, zło wygrywa. [Brak Demona]"
       },
       {
         "id": "wraith",
@@ -625,47 +625,47 @@
       {
         "id": "baron",
         "reasonEn": "If the Storyteller would gain the Baron ability, up to two players become Outsiders.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Barona, maksymalnie dwóch graczy staje się Przybyszami.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Barona, maksymalnie dwóch graczy staje się Przybyszami."
       },
       {
         "id": "boomdandy",
         "reasonEn": "If the Storyteller would gain the Boomdandy ability, a player becomes the Boomdandy.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Bum-Dandy, jeden gracz staje się Bum-Dandy.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Bum-Dandy, jeden gracz staje się Bum-Dandy."
       },
       {
         "id": "eviltwin",
         "reasonEn": "If the Storyteller would gain the Evil Twin ability, a player becomes the Evil Twin.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Złego Bliźniaka, jeden gracz staje się Złym Bliźniakiem.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Złego Bliźniaka, jeden gracz staje się Złym Bliźniakiem."
       },
       {
         "id": "fearmonger",
         "reasonEn": "If the Storyteller would gain the Fearmonger ability, a Minion gains it, and learns this.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Straszydła, zyskuje ją Sługus i dowiaduje się o tym.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Straszydła, zyskuje ją Sługus i dowiaduje się o tym."
       },
       {
         "id": "goblin",
         "reasonEn": "If the Storyteller would gain the Goblin ability, a Minion gains it, and learns this.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Goblina, zyskuje ją Sługus i dowiaduje się o tym.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Goblina, zyskuje ją Sługus i dowiaduje się o tym."
       },
       {
         "id": "marionette",
         "reasonEn": "If the Storyteller would gain the Marionette ability, one of the Demon's good neighbors becomes the Marionette.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Marionetki, jeden z dobrych sąsiadów Demona staje się Marionetką.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Marionetki, jeden z dobrych sąsiadów Demona staje się Marionetką."
       },
       {
         "id": "scarletwoman",
         "reasonEn": "If the Storyteller would gain the Scarlet Woman ability, a Minion gains it, and learns this.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Kusicielki, zyskuje ją Sługus i dowiaduje się o tym.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Kusicielki, zyskuje ją Sługus i dowiaduje się o tym."
       },
       {
         "id": "spy",
         "reasonEn": "If the Storyteller would gain the Spy ability, a Minion gains it, and learns this.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Szpiega, zyskuje ją Sługus i dowiaduje się o tym.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Szpiega, zyskuje ją Sługus i dowiaduje się o tym."
       },
       {
         "id": "wraith",
         "reasonEn": "If the Storyteller would gain the Wraith ability, a Minion gains it, and learns this.",
-        "reasonPl": "«Jeśli Narrator miałby zyskać zdolność Zjawy, zyskuje ją Sługus i dowiaduje się o tym.»"
+        "reasonPl": "Jeśli Narrator miałby zyskać zdolność Zjawy, zyskuje ją Sługus i dowiaduje się o tym."
       }
     ]
   },
@@ -690,57 +690,57 @@
       {
         "id": "clockmaker",
         "reasonEn": "The Summoner registers as the Demon to the Clockmaker.",
-        "reasonPl": "«Przywoływacz jest rozpoznawany przez Zegarmistrza jako Demon.»"
+        "reasonPl": "Przywoływacz jest rozpoznawany przez Zegarmistrza jako Demon."
       },
       {
         "id": "courtier",
         "reasonEn": "If the living Summoner has no ability, the Storyteller has the Summoner ability.",
-        "reasonPl": "«Jeśli żyjący Przywoływacz nie ma zdolności, Narrator ma zdolność Przywoływacza.»"
+        "reasonPl": "Jeśli żyjący Przywoływacz nie ma zdolności, Narrator ma zdolność Przywoływacza."
       },
       {
         "id": "engineer",
         "reasonEn": "If the living Summoner is removed from play, the Storyteller has the Summoner ability.",
-        "reasonPl": "«Jeśli żyjący Przywoływacz zostanie usunięty z gry, Narrator ma zdolność Przywoływacza.»"
+        "reasonPl": "Jeśli żyjący Przywoływacz zostanie usunięty z gry, Narrator ma zdolność Przywoływacza."
       },
       {
         "id": "hatter",
         "reasonEn": "If the Summoner creates a second living Demon, deaths tonight are arbitrary.",
-        "reasonPl": "«Jeśli Przywoływacz stworzy drugiego żyjącego Demona, śmierci tej nocy są dowolne.»"
+        "reasonPl": "Jeśli Przywoływacz stworzy drugiego żyjącego Demona, śmierci tej nocy są dowolne."
       },
       {
         "id": "kazali",
         "reasonEn": "If the Summoner creates a second living Demon, deaths tonight are arbitrary.",
-        "reasonPl": "«Jeśli Przywoływacz stworzy drugiego żyjącego Demona, śmierci tej nocy są dowolne.»"
+        "reasonPl": "Jeśli Przywoływacz stworzy drugiego żyjącego Demona, śmierci tej nocy są dowolne."
       },
       {
         "id": "lordoftyphon",
         "reasonEn": "If a Lord of Typhon is summoned, they must neighbor a Minion & their other neighbor becomes an evil Minion.",
-        "reasonPl": "«Jeśli zostanie przywołany Władca Typhon, musi sąsiadować ze Sługusem, a jego drugi sąsiad staje się złym Sługusem.»"
+        "reasonPl": "Jeśli zostanie przywołany Władca Typhon, musi sąsiadować ze Sługusem, a jego drugi sąsiad staje się złym Sługusem."
       },
       {
         "id": "pithag",
         "reasonEn": "If the Summoner creates a second living Demon, deaths tonight are arbitrary.",
-        "reasonPl": "«Jeśli Przywoływacz stworzy drugiego żyjącego Demona, śmierci tej nocy są dowolne.»"
+        "reasonPl": "Jeśli Przywoływacz stworzy drugiego żyjącego Demona, śmierci tej nocy są dowolne."
       },
       {
         "id": "poppygrower",
         "reasonEn": "If the Poppy Grower is alive on the 3rd night, the Summoner chooses which Demon but not which player.",
-        "reasonPl": "«Jeśli Hodowca Maku żyje trzeciej nocy, Przywoływacz wybiera Demona, ale nie gracza.»"
+        "reasonPl": "Jeśli Hodowca Maku żyje trzeciej nocy, Przywoływacz wybiera Demona, ale nie gracza."
       },
       {
         "id": "preacher",
         "reasonEn": "If the living Summoner has no ability, the Storyteller has the Summoner ability.",
-        "reasonPl": "«Jeśli żyjący Przywoływacz nie ma zdolności, Narrator ma zdolność Przywoływacza.»"
+        "reasonPl": "Jeśli żyjący Przywoływacz nie ma zdolności, Narrator ma zdolność Przywoływacza."
       },
       {
         "id": "pukka",
         "reasonEn": "The Summoner may summon a Pukka on the 2nd night instead of the 3rd.",
-        "reasonPl": "«Przywoływacz może przywołać Pukkę drugiej nocy zamiast trzeciej.»"
+        "reasonPl": "Przywoływacz może przywołać Pukkę drugiej nocy zamiast trzeciej."
       },
       {
         "id": "zombuul",
         "reasonEn": "If the Summoner summons a dead player into the Zombuul, the Zombuul has already \"died once\".",
-        "reasonPl": "«Jeśli Przywoływacz zamieni martwego gracza w Zombula, Zombul „zginął już raz”.»"
+        "reasonPl": "Jeśli Przywoływacz zamieni martwego gracza w Zombula, Zombul „zginął już raz”."
       }
     ]
   },
@@ -790,7 +790,7 @@
       {
         "id": "banshee",
         "reasonEn": "If the Vortox kills the Banshee, all players learn that the Banshee has died.",
-        "reasonPl": "«Jeśli Vortox zabije Banshee, wszyscy gracze dowiadują się, że Banshee zginęła.»"
+        "reasonPl": "Jeśli Vortox zabije Banshee, wszyscy gracze dowiadują się, że Banshee zginęła."
       }
     ]
   },
