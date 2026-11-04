@@ -1,7 +1,7 @@
 @using Grimoire_Studio.Components
 
-<section class="print-group">
-    <h2 class="team-heading team--@(Team)" style="@Teams.Style(Team)">@Teams.Plural(Team)</h2>
+<section class="print-group @(TeamNameBeside ? "print-group--beside" : null) @(ColoredNames ? "print-group--colored" : null)" style="@Teams.Style(PrintColors.Team(Team, GoodEvil))">
+    <h2 class="team-heading team--@(Team)" style="@Teams.Style(PrintColors.Team(Team, GoodEvil))">@Teams.Plural(Team)</h2>
     <ul class="print-roles print-columns--@Columns @(AbilityBesideName ? "print-roles--beside" : null)">
         @foreach (var role in Roles)
         {
@@ -44,6 +44,18 @@
     /// <summary>English name in smaller type beside the Polish one (under it when the ability is beside).</summary>
     [Parameter]
     public bool EnglishNames { get; set; }
+
+    /// <summary>Only good and evil colours (see <see cref="PrintColors.Team"/>).</summary>
+    [Parameter]
+    public bool GoodEvil { get; set; }
+
+    /// <summary>Role names in the team's colour.</summary>
+    [Parameter]
+    public bool ColoredNames { get; set; }
+
+    /// <summary>Team name written upwards along the left of the roles instead of above them.</summary>
+    [Parameter]
+    public bool TeamNameBeside { get; set; }
 
     private RenderFragment? EnglishName(Role role) =>
         EnglishNames && role.NameEn.Length > 0 && role.NameEn != role.NamePl

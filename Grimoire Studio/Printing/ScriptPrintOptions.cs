@@ -20,6 +20,15 @@ public sealed class ScriptPrintOptions
     /// <summary>English role names in smaller type next to the Polish ones (under them when the ability is beside).</summary>
     public bool ShowEnglishNames { get; set; }
 
+    /// <summary>Role names on the character sheet in their team's colour.</summary>
+    public bool ColoredNames { get; set; }
+
+    /// <summary>Only good and evil colours: outsiders in the townsfolk colour, minions in the demon colour.</summary>
+    public bool GoodEvilColors { get; set; }
+
+    /// <summary>Team name written upwards along the left of its roles instead of above them.</summary>
+    public bool TeamNameBeside { get; set; }
+
     public bool ShowPlayerCount { get; set; } = true;
 
     /// <summary>Second page with travellers, fabled and jinxes (when the script has any).</summary>
@@ -31,6 +40,9 @@ public sealed class ScriptPrintOptions
 
     /// <summary>Storyteller instructions (night reminders) under each step of the night order.</summary>
     public bool NightShowsReminder { get; set; } = true;
+
+    /// <summary>Role names in the night order in their team's colour.</summary>
+    public bool NightColoredNames { get; set; } = true;
 
     /// <summary>Role ability under the name in the night order.</summary>
     public bool NightShowsAbility { get; set; }

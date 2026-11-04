@@ -19,6 +19,9 @@
                 <label><input type="radio" name="columns" checked="@(_options.Columns == 2)" @onchange="() => Update(o => o.Columns = 2)" /> Dwie kolumny</label>
                 <label><input type="checkbox" checked="@_options.AbilityBesideName" @onchange="e => Update(o => o.AbilityBesideName = e.Value is true)" /> Opis roli obok nazwy</label>
                 <label><input type="checkbox" checked="@_options.ShowEnglishNames" @onchange="e => Update(o => o.ShowEnglishNames = e.Value is true)" /> Angielskie nazwy ról</label>
+                <label><input type="checkbox" checked="@_options.ColoredNames" @onchange="e => Update(o => o.ColoredNames = e.Value is true)" /> Nazwy ról w kolorach drużyn</label>
+                <label title="Przybysze w kolorze Mieszkańców, Sługusy w kolorze Demonów; także w kolejności nocy i tabeli graczy"><input type="checkbox" checked="@_options.GoodEvilColors" @onchange="e => Update(o => o.GoodEvilColors = e.Value is true)" /> Kolory tylko dobro / zło</label>
+                <label><input type="checkbox" checked="@_options.TeamNameBeside" @onchange="e => Update(o => o.TeamNameBeside = e.Value is true)" /> Nazwa drużyny z boku sekcji</label>
                 <label><input type="checkbox" checked="@_options.ShowPlayerCount" @onchange="e => Update(o => o.ShowPlayerCount = e.Value is true)" /> Tabela liczby graczy</label>
                 <label><input type="checkbox" checked="@_options.IncludeExtras" @onchange="e => Update(o => o.IncludeExtras = e.Value is true)" /> Wędrowcy, legendy i jinxy (osobna strona)</label>
             </div>
@@ -32,6 +35,7 @@
                 <label><input type="checkbox" checked="@_options.NightShowsEvilInfo" @onchange="e => Update(o => o.NightShowsEvilInfo = e.Value is true)" /> Informacje dla sługusów i demona</label>
                 <label><input type="checkbox" checked="@_options.NightShowsAbility" @onchange="e => Update(o => o.NightShowsAbility = e.Value is true)" /> Opis roli</label>
                 <label><input type="checkbox" checked="@_options.NightShowsReminder" @onchange="e => Update(o => o.NightShowsReminder = e.Value is true)" /> Opis dla narratora</label>
+                <label><input type="checkbox" checked="@_options.NightColoredNames" @onchange="e => Update(o => o.NightColoredNames = e.Value is true)" /> Nazwy ról w kolorach drużyn</label>
                 <label><input type="checkbox" checked="@_options.FlipOtherNights" @onchange="e => Update(o => o.FlipOtherNights = e.Value is true)" /> Pozostałe noce do góry nogami</label>
             </div>
         </section>
@@ -73,7 +77,7 @@
             <PrintPage Title="@Script.Name" Script="Script" Bottom="@(nightStar ? NightStarNote : null)">
                 @foreach (var group in core)
                 {
-                    <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" EnglishNames="_options.ShowEnglishNames" />
+                    <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" EnglishNames="_options.ShowEnglishNames" TeamNameBeside="_options.TeamNameBeside" ColoredNames="_options.ColoredNames" GoodEvil="_options.GoodEvilColors" />
                 }
             </PrintPage>
 
@@ -89,7 +93,7 @@
                     }
                     @foreach (var group in showExtras ? extras : [])
                     {
-                        <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" EnglishNames="_options.ShowEnglishNames" />
+                        <PrintRoleGroup Team="@group.Key" Roles="group.ToList()" Columns="_options.Columns" AbilityBesideName="_options.AbilityBesideName" EnglishNames="_options.ShowEnglishNames" TeamNameBeside="_options.TeamNameBeside" ColoredNames="_options.ColoredNames" GoodEvil="_options.GoodEvilColors" />
                     }
                     @if (showExtras && jinxes.Count > 0)
                     {
@@ -114,8 +118,8 @@
             {
                 <PrintPage Title="@Script.Name" Script="Script" FillHeight="true">
                     <div class="print-nights">
-                        <PrintNightList Title="Pierwsza noc" Steps="NightSteps(true)" FirstNight="true" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" EnglishNames="_options.ShowEnglishNames" />
-                        <PrintNightList Title="Pozostałe noce" Steps="NightSteps(false)" FirstNight="false" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" EnglishNames="_options.ShowEnglishNames" Flipped="_options.FlipOtherNights" />
+                        <PrintNightList Title="Pierwsza noc" Steps="NightSteps(true)" FirstNight="true" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" EnglishNames="_options.ShowEnglishNames" ColoredNames="_options.NightColoredNames" GoodEvil="_options.GoodEvilColors" />
+                        <PrintNightList Title="Pozostałe noce" Steps="NightSteps(false)" FirstNight="false" ShowAbility="_options.NightShowsAbility" ShowReminder="_options.NightShowsReminder" EnglishNames="_options.ShowEnglishNames" Flipped="_options.FlipOtherNights" ColoredNames="_options.NightColoredNames" GoodEvil="_options.GoodEvilColors" />
                     </div>
                 </PrintPage>
             }
@@ -145,7 +149,7 @@
                 (TeamIds.Demon, c => c.Demons),
             })
             {
-                <tr class="team--@(team)" style="@Teams.Style(team)">
+                <tr class="team--@(team)" style="@Teams.Style(PrintColors.Team(team, _options.GoodEvilColors))">
                     <th>@Teams.Plural(team)</th>
                     @foreach (var row in PlayerCount.Table)
                     {
@@ -216,6 +220,10 @@
         options.Columns = defaults.Columns;
         options.AbilityBesideName = defaults.AbilityBesideName;
         options.ShowEnglishNames = defaults.ShowEnglishNames;
+        options.TeamNameBeside = defaults.TeamNameBeside;
+        options.ColoredNames = defaults.ColoredNames;
+        options.GoodEvilColors = defaults.GoodEvilColors;
+        options.NightColoredNames = defaults.NightColoredNames;
         options.Scale = defaults.Scale;
         options.ShowPlayerCount = defaults.ShowPlayerCount;
         options.IncludeExtras = defaults.IncludeExtras;

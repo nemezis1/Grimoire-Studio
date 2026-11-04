@@ -1,6 +1,6 @@
 @using Grimoire_Studio.Components
 
-<section class="print-night @(Flipped ? "print-night--flipped" : null)">
+<section class="print-night @(Flipped ? "print-night--flipped" : null) @(ColoredNames ? null : "print-night--plain-names")">
     <h2>@Title</h2>
     @if (Steps.Count == 0)
     {
@@ -14,7 +14,7 @@
                 @if (step.Role is { } role)
                 {
                     var reminder = FirstNight ? role.FirstNightReminderPl : role.OtherNightReminderPl;
-                    <li class="team--@(role.Team)" style="@Teams.Style(role.Team)">
+                    <li class="team--@(role.Team)" style="@Teams.Style(PrintColors.Team(role.Team, GoodEvil))">
                         <RoleIcon Role="role" Size="sm" />
                         <div>
                             <strong>@role.NamePl</strong>
@@ -36,7 +36,7 @@
                 else
                 {
                     var (team, icon, name, text) = Info(step.Kind);
-                    <li class="print-night__info team--@(team)" style="@Teams.Style(team)">
+                    <li class="print-night__info team--@(team)" style="@Teams.Style(PrintColors.Team(team, GoodEvil))">
                         <img class="role-icon role-icon--sm" src="@icon" alt="" />
                         <div>
                             <strong>@name</strong>
@@ -73,6 +73,14 @@
     /// <summary>English name in smaller type beside the Polish one.</summary>
     [Parameter]
     public bool EnglishNames { get; set; }
+
+    /// <summary>Only good and evil colours (see <see cref="PrintColors.Team"/>).</summary>
+    [Parameter]
+    public bool GoodEvil { get; set; }
+
+    /// <summary>Role names in their team's colour.</summary>
+    [Parameter]
+    public bool ColoredNames { get; set; } = true;
 
     /// <summary>Rotated by 180°, for a sheet read from both sides of a table.</summary>
     [Parameter]

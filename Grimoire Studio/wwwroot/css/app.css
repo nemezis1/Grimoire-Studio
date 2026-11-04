@@ -1064,6 +1064,11 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .print-group h2 { margin: 0 0 1.5mm; font-size: 1.45em; color: #111111; }
 .print-group .team-heading { padding-left: 2mm; border-left-width: 1mm; }
 
+/* Team name along the left of its roles, read upwards; the group is at least as tall as the name. */
+.print-group--beside { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 2.5mm; }
+.print-group--colored .print-roles__row strong { color: var(--team); }
+.print-group--beside h2 { margin: 0; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; white-space: nowrap; font-size: 1.2em; }
+
 .print-roles, .print-jinxes { list-style: none; margin: 0; padding: 0; display: grid; column-gap: 6mm; }
 .print-columns--1 { grid-template-columns: minmax(0, 1fr); }
 .print-columns--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1101,6 +1106,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .print-night ol { list-style: none; margin: 0; padding: 0; }
 .print-night li { display: flex; gap: 1.5mm; padding: 0.6mm 0; border-bottom: 0.2mm solid #dddddd; break-inside: avoid; }
 .print-night li strong { color: var(--team, #111111); }
+.print-night--plain-names li strong { color: #111111; }
 .print-night li .role-icon { width: 2.2em; height: 2.2em; }
 /* Only descriptions shrink when a night column does not fit (--desc-scale, set by fitPages). */
 .print-night p { margin: 0; font-size: calc(0.85em * var(--desc-scale, 1)); color: #444444; }
