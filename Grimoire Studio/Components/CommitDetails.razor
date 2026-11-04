@@ -19,31 +19,37 @@
     }
     else
     {
-        <ul class="change-list">
-            @foreach (var item in _changes.Items)
-            {
-                var rows = ItemDiff.Changes(item.Before, item.After);
-                var role = item.Kind == "role" ? Data.FindRole(item.Id) : null;
-                <li style="@(role is null ? null : Teams.Style(role.Team))">
-                    <span class="change-list__what">
-                        @if (role is not null)
-                        {
-                            <RoleLink Role="role" />
-                        }
-                        else
-                        {
-                            <strong>@ItemLabel.Of(Data, item.Kind, item.Id, item.After ?? item.Before)</strong>
-                        }
-                        <span class="local-badge">@Badge(item)</span>
-                        @if (item.Before is not null && item.After is not null && rows.Count > 0)
-                        {
-                            <span class="change-list__fields">@string.Join(", ", rows.Select(r => r.Label))</span>
-                        }
-                    </span>
-                    <ItemDiffTable Rows="rows" Icon="@(item.IconChanged ? ItemDiffTable.IconAt(Commit.Url, Commit.Sha, item.Id) : null)" Open="true" />
-                </li>
-            }
-        </ul>
+        @foreach (var (title, items) in Groups())
+        {
+            <details class="change-group" open>
+                <summary><h3>@title (@items.Count)</h3></summary>
+                <ul class="change-list">
+                    @foreach (var item in items)
+                    {
+                        var rows = ItemDiff.Changes(item.Before, item.After);
+                        var role = item.Kind == "role" ? Data.FindRole(item.Id) : null;
+                        <li style="@(role is null ? null : Teams.Style(role.Team))">
+                            <span class="change-list__what">
+                                @if (role is not null)
+                                {
+                                    <RoleLink Role="role" />
+                                }
+                                else
+                                {
+                                    <strong>@ItemLabel.Of(Data, item.Kind, item.Id, item.After ?? item.Before)</strong>
+                                }
+                                <span class="local-badge">@Badge(item)</span>
+                                @if (item.Before is not null && item.After is not null && rows.Count > 0)
+                                {
+                                    <span class="change-list__fields">@string.Join(", ", rows.Select(r => r.Label))</span>
+                                }
+                            </span>
+                            <ItemDiffTable Rows="rows" Icon="@(item.IconChanged ? ItemDiffTable.IconAt(Commit.Url, Commit.Sha, item.Id) : null)" Open="true" />
+                        </li>
+                    }
+                </ul>
+            </details>
+        }
 
         @if (OnRevert.HasDelegate)
         {
@@ -100,6 +106,9 @@
     private string? _error;
     private Revert? _revert;
     private bool _busy;
+
+    /// <summary>Kinds of items in the order and with the headings of the wiki's change lists.</summary>
+    private static readonly (string Kind, string Title)[] Kinds = [("role", "Role"), ("script", "Skrypty"), ("team", "Drużyny"), ("jinx", "Jinxy")];
 
     private sealed record Revert(LocalBackup Changes, IReadOnlyList<string> Labels, IReadOnlyList<string> ChangedLater, IReadOnlyList<string> Removed);
 
@@ -240,6 +249,31 @@
     {
         await OnRevert.InvokeAsync(_revert!.Changes);
         _revert = null;
+    }
+
+    /// <summary>
+    /// The commit's items grouped like the wiki's change lists: by kind, then the removed roles, scripts and teams
+    /// (removed jinxes stay with the jinxes, as there).
+    /// </summary>
+    private IEnumerable<(string Title, List<CommitItem> Items)> Groups()
+    {
+        var removed = _changes!.Items.Where(i => i.Kind != "jinx" && i.Before is not null && i.After is null).ToList();
+        foreach (var (kind, title) in Kinds)
+        {
+            var items = _changes.Items
+                .Where(i => i.Kind == kind && !removed.Contains(i))
+                .OrderBy(i => ItemLabel.Of(Data, i.Kind, i.Id, i.After ?? i.Before), StringComparer.CurrentCulture)
+                .ToList();
+            if (items.Count > 0)
+            {
+                yield return (title, items);
+            }
+        }
+
+        if (removed.Count > 0)
+        {
+            yield return ("Usunięte", removed);
+        }
     }
 
     private static string Badge(CommitItem item)

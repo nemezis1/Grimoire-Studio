@@ -25,46 +25,28 @@
 }
 else
 {
-    <section class="panel form">
-        <h2>Edycja wiki</h2>
-        <label class="field field--inline">
-            <input type="checkbox" checked="@ChangeSets.EditingWiki" @onchange="e => SetEditingWikiAsync(e.Value is true)" />
-            <span>Edytuję wiki bezpośrednio: edytory ról, skryptów, drużyn i jinxów zapisują do wiki zamiast do „Moich zmian”</span>
-        </label>
-        <div class="field-row">
-            <button class="button button--ghost" @onclick="LeaveAdminAsync">Wyjdź z trybu administratora</button>
-        </div>
-    </section>
-
-    @if (Publisher.IsConfigured)
-    {
-        <section class="panel form">
-            <h2>Zapis do repozytorium</h2>
-            @if (Publisher.AdminName is { } adminName)
-            {
-                <div class="field-row">
-                    <span>Zalogowano jako <strong>@adminName</strong>: zmiany wiki wyślesz przyciskiem „Wyślij do repozytorium”.</span>
-                    <button class="button button--ghost" @onclick="SignOutAsync">Wyloguj</button>
-                </div>
-                <DeploymentPanel @ref="_deployments" StatusChanged="status => _deployStatus = status" />
-                @if (Publisher.IsOwner)
-                {
-                    <AdminsPanel />
-                }
-            }
-            else
-            {
-                <div class="field-row">
-                    <label class="field">
-                        <span>Klucz administratora</span>
-                        <input type="password" autocomplete="off" @bind="_adminKey" @bind:event="oninput" />
-                    </label>
-                    <button class="button" disabled="@(string.IsNullOrWhiteSpace(_adminKey) || _busy)" @onclick="SignInAsync">Zaloguj</button>
-                </div>
-                <p class="muted small">Klucz dostajesz od właściciela strony. Zostaje tylko w tej karcie przeglądarki.</p>
-            }
-        </section>
-    }
+    @* Who is signed in, and the way out of the admin mode. *@
+    <div class="admin-session">
+        @if (!Publisher.IsConfigured)
+        {
+            <span class="muted">Zapis do repozytorium nie jest skonfigurowany: zmiany wiki wyeksportujesz do pliku.</span>
+        }
+        else if (Publisher.AdminName is { } adminName)
+        {
+            <span>Zalogowano jako <strong>@adminName</strong></span>
+            <button class="button button--ghost" @onclick="SignOutAsync">Wyloguj</button>
+        }
+        else
+        {
+            <label class="field">
+                <span>Klucz administratora</span>
+                <input type="password" autocomplete="off" @bind="_adminKey" @bind:event="oninput" />
+            </label>
+            <button class="button" disabled="@(string.IsNullOrWhiteSpace(_adminKey) || _busy)" @onclick="SignInAsync">Zaloguj</button>
+            <span class="muted small">Klucz dostajesz od właściciela strony. Zostaje tylko w tej karcie przeglądarki.</span>
+        }
+        <button class="button button--ghost admin-session__leave" @onclick="LeaveAdminAsync">Wyjdź z trybu administratora</button>
+    </div>
 
     @if (_message is not null)
     {
@@ -155,6 +137,10 @@ else
             Zatwierdzone zgłoszenia i zmiany wprowadzone bezpośrednio w wiki, względem danych strony; przy każdej pozycji
             widać, skąd pochodzi. Są zapisane tylko w tej przeglądarce, dopóki ich nie wyślesz; plik eksportu to kopia zapasowa.
         </p>
+        <label class="field field--inline">
+            <input type="checkbox" checked="@ChangeSets.EditingWiki" @onchange="e => SetEditingWikiAsync(e.Value is true)" />
+            <span>Edytuję wiki bezpośrednio: edytory ról, skryptów, drużyn i jinxów zapisują tutaj zamiast do „Moich zmian”</span>
+        </label>
         @if (_outdated.GetValueOrDefault(WikiKey) is { } wikiOutdated)
         {
             <p class="notice notice--warning">@wikiOutdated</p>
@@ -201,11 +187,23 @@ else
     @if (History.Count > 0)
     {
         <section class="panel admin-section">
-            <h2>Historia</h2>
+            <div class="title-row">
+                <h2>Historia</h2>
+                <div class="script-actions">
+                    <DeploymentPanel @ref="_deployments" StatusChanged="status => _deployStatus = status" />
+                </div>
+            </div>
             <p class="muted small">
                 Zmiany wysłane do repozytorium, czyli te, które są (albo za chwilę będą) w wiki. Wysłany commit można cofnąć
                 w „Pokaż zmiany”. Historię jednej roli, skryptu lub jinxa pokazuje przycisk „Historia zmian” na ich stronach.
             </p>
+            @if (_deployStatus?.AnyRunning == true)
+            {
+                <p class="muted small">
+                    Trwa wdrażanie; stan sprawdzam co @DeploymentPanel.PollSeconds s. Po jego końcu zmiany będą widoczne dla
+                    wszystkich, a ta karta pokaże je po odświeżeniu strony (F5).
+                </p>
+            }
             <ul class="change-list">
                 @foreach (var (commit, proposals) in History)
                 {
@@ -246,6 +244,14 @@ else
     else if (Publisher.IsConfigured && Publisher.AdminName is null)
     {
         <p class="muted small">Historię zmian wysłanych do repozytorium zobaczysz po zalogowaniu.</p>
+    }
+
+    @if (Publisher.AdminName is not null && Publisher.IsOwner)
+    {
+        <details class="panel admin-section admin-admins">
+            <summary><h2>Administratorzy</h2></summary>
+            <AdminsPanel />
+        </details>
     }
 }
 
@@ -660,7 +666,7 @@ else
 
             Show(result.Changed
                 ? $"Wysłano do repozytorium (commit {result.Sha[..7]}): {string.Join(", ", files.Select(f => f.Path))}. "
-                    + "Strona pokaże zmiany po wdrożeniu (zwykle 2–3 minuty) – postęp widać w „Wdrażanie zmian wiki”."
+                    + "Strona pokaże zmiany po wdrożeniu (zwykle 2–3 minuty) – postęp widać w „Historii”."
                 : "Repozytorium ma już te zmiany.");
             await ReloadAsync();
         }

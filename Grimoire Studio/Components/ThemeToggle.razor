@@ -1,0 +1,25 @@
+@* Switches between the light and dark theme; the choice is kept in this browser (see grimoireTheme in index.html). *@
+@inject IJSRuntime JS
+
+<button class="theme-toggle" title="@(_dark ? "Przełącz na jasny motyw" : "Przełącz na ciemny motyw")" aria-pressed="@_dark" @onclick="ToggleAsync">
+    @(_dark ? "☀ Jasny" : "☾ Ciemny")
+</button>
+
+@code {
+    private bool _dark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dark = await JS.InvokeAsync<string>("grimoireTheme.current") == "dark";
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleAsync()
+    {
+        _dark = !_dark;
+        await JS.InvokeVoidAsync("grimoireTheme.set", _dark ? "dark" : "light");
+    }
+}

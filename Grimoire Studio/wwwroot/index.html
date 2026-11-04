@@ -10,6 +10,24 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="icon-192.png" />
     <link rel="stylesheet" href="css/app.css" />
+    <script>
+        // The theme picked with the header switch, set before the page draws so it does not flash the other one.
+        window.grimoireTheme = {
+            key: 'grimoire-studio.theme',
+            current() {
+                return document.documentElement.dataset.theme
+                    ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            },
+            set(theme) {
+                document.documentElement.dataset.theme = theme;
+                try { localStorage.setItem(grimoireTheme.key, theme); } catch { }
+            },
+        };
+        try {
+            const theme = localStorage.getItem(grimoireTheme.key);
+            if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+        } catch { }
+    </script>
     <!-- If you add any scoped CSS files, uncomment the following to load them
     <link href="Grimoire Studio.styles.css" rel="stylesheet" /> -->
     <script type="importmap"></script>

@@ -117,8 +117,9 @@ code {
     --team: var(--muted);
 }
 
+/* Dark colours: the system's choice, unless the header switch picked a theme (data-theme on <html>). */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
         --bg: #141210;
         --surface: #1f1c19;
         --text: #ece6dc;
@@ -129,11 +130,23 @@ code {
     }
 }
 
+:root[data-theme="dark"] {
+    --bg: #141210;
+    --surface: #1f1c19;
+    --text: #ece6dc;
+    --muted: #a39a8e;
+    --border: #34302b;
+    --accent: #c2543f;
+    --accent-text: #ffffff;
+}
+
 
 *, *::before, *::after { box-sizing: border-box; }
 
 /* Reserve the scrollbar space on every page, so short pages are not wider than long ones. */
 html { color-scheme: light dark; scrollbar-gutter: stable; }
+html[data-theme="light"] { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
 
 body {
     margin: 0;
@@ -180,6 +193,20 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 .site-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; }
 .site-menu { display: none; }
+
+/* Light / dark theme switch, at the right end of the header. */
+.theme-toggle {
+    order: 1;
+    margin-left: auto;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+.theme-toggle:hover { background: var(--bg); }
 
 .site-nav a {
     padding: 0.4rem 0.75rem;
@@ -248,7 +275,6 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 /* Admin panel: the owner's list of admins; a new key is shown once. */
 .admins { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-.admins h3 { margin: 0 0 0.25rem; font-size: 1rem; }
 .admins__key { margin-bottom: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--accent); border-radius: var(--radius); }
 .admins__key p { margin: 0 0 0.5rem; }
 .admins__key .field-row { margin-bottom: 0; }
@@ -801,9 +827,12 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .local-badge--wiki { border-color: #2b6cb0; color: #2b6cb0; }
 
 @media (prefers-color-scheme: dark) {
-    .local-badge--pending { border-color: #e0a84a; color: #e0a84a; }
-    .local-badge--wiki { border-color: #6aa9e9; color: #6aa9e9; }
+    :root:not([data-theme="light"]) .local-badge--pending { border-color: #e0a84a; color: #e0a84a; }
+    :root:not([data-theme="light"]) .local-badge--wiki { border-color: #6aa9e9; color: #6aa9e9; }
 }
+
+:root[data-theme="dark"] .local-badge--pending { border-color: #e0a84a; color: #e0a84a; }
+:root[data-theme="dark"] .local-badge--wiki { border-color: #6aa9e9; color: #6aa9e9; }
 
 /* Page actions next to the title in the page header. */
 .script-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-left: 0.5rem; }
@@ -1226,6 +1255,20 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .admin-section .panel { background: var(--bg); }
 .admin-section > .panel:last-child { margin-bottom: 0; }
 
+/* The admin's session in one line above the panel: who is signed in, sign in / out, leave the admin mode. */
+.admin-session { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem 1rem; margin-bottom: 1rem; }
+.admin-session .field { margin: 0; }
+.admin-session__leave { margin-left: auto; }
+
+/* The owner's list of admins, folded at the bottom. */
+.admin-admins > summary { cursor: pointer; }
+.admin-admins > summary h2 { display: inline; margin: 0; }
+.admin-admins .admins { margin-top: 0.75rem; padding-top: 0; border-top: 0; }
+
+/* Groups of a change list (roles, scripts…), folded by clicking their heading. */
+.change-group > summary { margin: 1rem 0 0.5rem; cursor: pointer; }
+.change-group > summary h3 { display: inline; margin: 0; }
+
 /* Where a wiki change came from: a proposal, or a direct edit. */
 .change-origin { margin-left: 0.4rem; font-size: 0.8rem; color: var(--muted); }
 
@@ -1271,9 +1314,9 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 /* Narrow windows: the menu folds behind one button. */
 @media (max-width: 900px) {
     .site-header__inner { min-height: 48px; }
+    .theme-toggle { order: 0; }
     .site-menu {
         display: inline-flex;
-        margin-left: auto;
         padding: 0.35rem 0.75rem;
         border: 1px solid var(--border);
         border-radius: 8px;

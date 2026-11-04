@@ -8,153 +8,163 @@ else
 {
     @if (Changes.Roles.Count > 0)
     {
-        <h3>Role (@Changes.Roles.Count)</h3>
-        <ul class="change-list">
-            @foreach (var local in Changes.Roles.OrderBy(r => r.Role.NamePl, StringComparer.CurrentCulture))
-            {
-                var original = Base.FindRole(local.Role.Id);
-                <li style="@Teams.Style(local.Role.Team)">
-                    @Checkbox(LocalBackup.RoleKey(local.Role.Id))
-                    <span class="change-list__what">
-                        <RoleLink Role="local.Role" />
-                        <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
-                        @Origin(LocalBackup.RoleKey(local.Role.Id))
-                        @if (original is not null)
+        <details class="change-group" open>
+            <summary><h3>Role (@Changes.Roles.Count)</h3></summary>
+            <ul class="change-list">
+                @foreach (var local in Changes.Roles.OrderBy(r => r.Role.NamePl, StringComparer.CurrentCulture))
+                {
+                    var original = Base.FindRole(local.Role.Id);
+                    <li style="@Teams.Style(local.Role.Team)">
+                        @Checkbox(LocalBackup.RoleKey(local.Role.Id))
+                        <span class="change-list__what">
+                            <RoleLink Role="local.Role" />
+                            <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
+                            @Origin(LocalBackup.RoleKey(local.Role.Id))
+                            @if (original is not null)
+                            {
+                                <span class="change-list__fields">@Fields(LocalDiff.Role(original, local))</span>
+                            }
+                        </span>
+                        @if (EditLinks)
                         {
-                            <span class="change-list__fields">@Fields(LocalDiff.Role(original, local))</span>
+                            <a class="button button--ghost" href="roles/@local.Role.Id/edit">Edytuj</a>
                         }
-                    </span>
-                    @if (EditLinks)
-                    {
-                        <a class="button button--ghost" href="roles/@local.Role.Id/edit">Edytuj</a>
-                    }
-                    @RemoveButton(LocalBackup.RoleKey(local.Role.Id), original is null)
-                    @ItemActions(LocalBackup.RoleKey(local.Role.Id))
-                    @Details(LocalDiff.RoleDetails(original, local, BeforeIcon(local.Role.Id), Teams.Singular))
-                </li>
-            }
-        </ul>
+                        @RemoveButton(LocalBackup.RoleKey(local.Role.Id), original is null)
+                        @ItemActions(LocalBackup.RoleKey(local.Role.Id))
+                        @Details(LocalDiff.RoleDetails(original, local, BeforeIcon(local.Role.Id), Teams.Singular))
+                    </li>
+                }
+            </ul>
+        </details>
     }
 
     @if (Changes.Scripts.Count > 0)
     {
-        <h3>Skrypty (@Changes.Scripts.Count)</h3>
-        <ul class="change-list">
-            @foreach (var local in Changes.Scripts.OrderBy(s => s.Name, StringComparer.CurrentCulture))
-            {
-                var original = Base.FindScript(local.Id);
-                <li>
-                    @Checkbox(LocalBackup.ScriptKey(local.Id))
-                    <span class="change-list__what">
-                        <a href="scripts/@local.Id">@local.Name</a>
-                        <span class="local-badge">@(original is null ? "nowy" : "zmieniony")</span>
-                        @Origin(LocalBackup.ScriptKey(local.Id))
-                        <span class="change-list__fields">@(original is null ? $"{local.Roles.Count} ról" : Fields(LocalDiff.Script(original, local)))</span>
-                    </span>
-                    @if (EditLinks)
-                    {
-                        <a class="button button--ghost" href="scripts/@local.Id/edit">Edytuj</a>
-                    }
-                    @RemoveButton(LocalBackup.ScriptKey(local.Id), original is null)
-                    @ItemActions(LocalBackup.ScriptKey(local.Id))
-                    @Details(LocalDiff.ScriptDetails(original, local, RoleName))
-                </li>
-            }
-        </ul>
+        <details class="change-group" open>
+            <summary><h3>Skrypty (@Changes.Scripts.Count)</h3></summary>
+            <ul class="change-list">
+                @foreach (var local in Changes.Scripts.OrderBy(s => s.Name, StringComparer.CurrentCulture))
+                {
+                    var original = Base.FindScript(local.Id);
+                    <li>
+                        @Checkbox(LocalBackup.ScriptKey(local.Id))
+                        <span class="change-list__what">
+                            <a href="scripts/@local.Id">@local.Name</a>
+                            <span class="local-badge">@(original is null ? "nowy" : "zmieniony")</span>
+                            @Origin(LocalBackup.ScriptKey(local.Id))
+                            <span class="change-list__fields">@(original is null ? $"{local.Roles.Count} ról" : Fields(LocalDiff.Script(original, local)))</span>
+                        </span>
+                        @if (EditLinks)
+                        {
+                            <a class="button button--ghost" href="scripts/@local.Id/edit">Edytuj</a>
+                        }
+                        @RemoveButton(LocalBackup.ScriptKey(local.Id), original is null)
+                        @ItemActions(LocalBackup.ScriptKey(local.Id))
+                        @Details(LocalDiff.ScriptDetails(original, local, RoleName))
+                    </li>
+                }
+            </ul>
+        </details>
     }
 
     @if (Changes.Teams.Count > 0)
     {
-        <h3>Drużyny (@Changes.Teams.Count)</h3>
-        <ul class="change-list">
-            @foreach (var local in Changes.Teams.OrderBy(t => t.Order))
-            {
-                var original = Base.FindTeam(local.Id);
-                var used = original is null && Data.AllRoles.Any(r => r.Team == local.Id);
-                <li style="--team: @local.Color">
-                    @Checkbox(LocalBackup.TeamKey(local.Id))
-                    <span class="change-list__what">
-                        <a href="teams">@local.PluralPl</a>
-                        <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
-                        @Origin(LocalBackup.TeamKey(local.Id))
-                        @if (original is not null)
-                        {
-                            <span class="change-list__fields">@Fields(LocalDiff.Team(original, local))</span>
-                        }
-                    </span>
-                    @RemoveButton(LocalBackup.TeamKey(local.Id), original is null, used ? "Najpierw przenieś role do innej drużyny." : null)
-                    @ItemActions(LocalBackup.TeamKey(local.Id))
-                    @Details(LocalDiff.TeamDetails(original, local))
-                </li>
-            }
-        </ul>
+        <details class="change-group" open>
+            <summary><h3>Drużyny (@Changes.Teams.Count)</h3></summary>
+            <ul class="change-list">
+                @foreach (var local in Changes.Teams.OrderBy(t => t.Order))
+                {
+                    var original = Base.FindTeam(local.Id);
+                    var used = original is null && Data.AllRoles.Any(r => r.Team == local.Id);
+                    <li style="--team: @local.Color">
+                        @Checkbox(LocalBackup.TeamKey(local.Id))
+                        <span class="change-list__what">
+                            <a href="teams">@local.PluralPl</a>
+                            <span class="local-badge">@(original is null ? "nowa" : "zmieniona")</span>
+                            @Origin(LocalBackup.TeamKey(local.Id))
+                            @if (original is not null)
+                            {
+                                <span class="change-list__fields">@Fields(LocalDiff.Team(original, local))</span>
+                            }
+                        </span>
+                        @RemoveButton(LocalBackup.TeamKey(local.Id), original is null, used ? "Najpierw przenieś role do innej drużyny." : null)
+                        @ItemActions(LocalBackup.TeamKey(local.Id))
+                        @Details(LocalDiff.TeamDetails(original, local))
+                    </li>
+                }
+            </ul>
+        </details>
     }
 
     @if (Changes.Jinxes.Count > 0)
     {
-        <h3>Jinxy (@Changes.Jinxes.Count)</h3>
-        <ul class="change-list">
-            @foreach (var local in Changes.Jinxes)
-            {
-                var owner = Data.FindRole(local.OwnerId);
-                var other = Data.FindRole(local.Jinx.Id);
-                var isNew = !Base.Jinxes.Any(o => string.Equals(o.Id, local.OwnerId, StringComparison.OrdinalIgnoreCase)
-                    && o.Jinxes.Any(j => string.Equals(j.Id, local.Jinx.Id, StringComparison.OrdinalIgnoreCase)));
-                <li>
-                    @Checkbox(LocalBackup.JinxKey(local))
-                    <span class="change-list__what">
-                        @(owner?.NamePl ?? local.OwnerId) + @(other?.NamePl ?? local.Jinx.Id)
-                        <span class="local-badge">@(local.Removed ? "usunięty" : isNew ? "nowy" : "zmieniony")</span>
-                        @Origin(LocalBackup.JinxKey(local))
-                        @if (!local.Removed && ShowJinxText)
+        <details class="change-group" open>
+            <summary><h3>Jinxy (@Changes.Jinxes.Count)</h3></summary>
+            <ul class="change-list">
+                @foreach (var local in Changes.Jinxes)
+                {
+                    var owner = Data.FindRole(local.OwnerId);
+                    var other = Data.FindRole(local.Jinx.Id);
+                    var isNew = !Base.Jinxes.Any(o => string.Equals(o.Id, local.OwnerId, StringComparison.OrdinalIgnoreCase)
+                        && o.Jinxes.Any(j => string.Equals(j.Id, local.Jinx.Id, StringComparison.OrdinalIgnoreCase)));
+                    <li>
+                        @Checkbox(LocalBackup.JinxKey(local))
+                        <span class="change-list__what">
+                            @(owner?.NamePl ?? local.OwnerId) + @(other?.NamePl ?? local.Jinx.Id)
+                            <span class="local-badge">@(local.Removed ? "usunięty" : isNew ? "nowy" : "zmieniony")</span>
+                            @Origin(LocalBackup.JinxKey(local))
+                            @if (!local.Removed && ShowJinxText)
+                            {
+                                <span class="change-list__fields">@local.Jinx.ReasonPl</span>
+                            }
+                        </span>
+                        @if (EditLinks)
                         {
-                            <span class="change-list__fields">@local.Jinx.ReasonPl</span>
+                            <a class="button button--ghost" href="roles/@local.OwnerId/jinxes">Edytuj</a>
                         }
-                    </span>
-                    @if (EditLinks)
-                    {
-                        <a class="button button--ghost" href="roles/@local.OwnerId/jinxes">Edytuj</a>
-                    }
-                    @RemoveButton(LocalBackup.JinxKey(local), isNew)
-                    @ItemActions(LocalBackup.JinxKey(local))
-                    @Details(LocalDiff.JinxDetails(FindJinx(local), local))
-                </li>
-            }
-        </ul>
+                        @RemoveButton(LocalBackup.JinxKey(local), isNew)
+                        @ItemActions(LocalBackup.JinxKey(local))
+                        @Details(LocalDiff.JinxDetails(FindJinx(local), local))
+                    </li>
+                }
+            </ul>
+        </details>
     }
 
     @if (Changes.Removed.Count > 0)
     {
-        <h3>Usunięte (@Changes.Removed.Count)</h3>
-        <ul class="change-list">
-            @foreach (var key in Changes.Removed)
-            {
-                var (kind, id) = ItemLabel.Split(key);
-                var role = kind == "role" ? Base.FindRole(id) : null;
-                var scripts = role is null ? [] : Base.ScriptsWithRole(id).Select(s => s.Name).ToList();
-                <li style="@(role is null ? null : Teams.Style(role.Team))">
-                    @Checkbox(key)
-                    <span class="change-list__what">
-                        @if (role is not null)
-                        {
-                            <RoleLink Role="role" />
-                        }
-                        else
-                        {
-                            <strong>@ItemLabel.Of(Base, kind, id)</strong>
-                        }
-                        <span class="local-badge">@(kind == "script" ? "usunięty skrypt" : kind == "team" ? "usunięta drużyna" : "usunięta")</span>
-                        @Origin(key)
-                        @if (scripts.Count > 0)
-                        {
-                            <span class="change-list__fields">znika też ze skryptów: @string.Join(", ", scripts)</span>
-                        }
-                    </span>
-                    @RemoveButton(key, isNew: false)
-                    @ItemActions(key)
-                </li>
-            }
-        </ul>
+        <details class="change-group" open>
+            <summary><h3>Usunięte (@Changes.Removed.Count)</h3></summary>
+            <ul class="change-list">
+                @foreach (var key in Changes.Removed)
+                {
+                    var (kind, id) = ItemLabel.Split(key);
+                    var role = kind == "role" ? Base.FindRole(id) : null;
+                    var scripts = role is null ? [] : Base.ScriptsWithRole(id).Select(s => s.Name).ToList();
+                    <li style="@(role is null ? null : Teams.Style(role.Team))">
+                        @Checkbox(key)
+                        <span class="change-list__what">
+                            @if (role is not null)
+                            {
+                                <RoleLink Role="role" />
+                            }
+                            else
+                            {
+                                <strong>@ItemLabel.Of(Base, kind, id)</strong>
+                            }
+                            <span class="local-badge">@(kind == "script" ? "usunięty skrypt" : kind == "team" ? "usunięta drużyna" : "usunięta")</span>
+                            @Origin(key)
+                            @if (scripts.Count > 0)
+                            {
+                                <span class="change-list__fields">znika też ze skryptów: @string.Join(", ", scripts)</span>
+                            }
+                        </span>
+                        @RemoveButton(key, isNew: false)
+                        @ItemActions(key)
+                    </li>
+                }
+            </ul>
+        </details>
     }
 }
 
@@ -192,6 +202,10 @@ else
     /// <summary>When set, every item says where it came from: its text here, or a direct wiki edit without one.</summary>
     [Parameter]
     public IReadOnlyDictionary<string, string>? Origins { get; set; }
+
+    /// <summary>When set, items with a text here get it as an extra badge (e.g. sent for approval).</summary>
+    [Parameter]
+    public IReadOnlyDictionary<string, string>? Tags { get; set; }
 
     [Parameter]
     public bool ShowJinxText { get; set; }
@@ -261,6 +275,11 @@ else
 
     private RenderFragment Origin(string key) => __builder =>
     {
+        if (Tags?.GetValueOrDefault(key) is { } tag)
+        {
+            <span class="local-badge local-badge--pending">@tag</span>
+        }
+
         if (Origins is not null)
         {
             <span class="change-origin">@(Origins.GetValueOrDefault(key) ?? "zmiana bezpośrednio w wiki")</span>

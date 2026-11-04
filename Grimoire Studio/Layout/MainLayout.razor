@@ -6,6 +6,7 @@
 <header class="site-header">
     <div class="site-header__inner">
         <a class="site-title" href="">Grimoire Studio</a>
+        <ThemeToggle />
         @* Narrow screens: the links fold behind this button, so the header stays one line. *@
         <button class="site-menu" aria-expanded="@_menuOpen" aria-controls="site-nav" @onclick="() => _menuOpen = !_menuOpen">
             @(_menuOpen ? "✕ Zamknij" : "☰ Menu")

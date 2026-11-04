@@ -1,4 +1,5 @@
 @page "/changes"
+@using System.Text.Json
 @inject GameDataClient Client
 @inject ChangeSets ChangeSets
 @inject Proposals Proposals
@@ -79,7 +80,7 @@ else
         <p class="notice notice--warning">@outdated</p>
     }
 
-    <ChangeSetView Changes="_changes" Base="_base" Data="_data" EditLinks="true" OnRemove="RemoveAsync"
+    <ChangeSetView Changes="_changes" Base="_base" Data="_data" EditLinks="true" OnRemove="RemoveAsync" Tags="_sent"
                    Selected="_changes.Count > 0 ? _selected : null" SelectedChanged="() => { }">
         <p>Nie ma lokalnych zmian. Rolę, skrypt lub drużynę zmienisz przyciskiem „Edytuj” na ich stronie.</p>
     </ChangeSetView>
@@ -128,6 +129,10 @@ else
     /// <summary>Keys of the changes ticked for the proposal (<see cref="LocalBackup.Keys"/>).</summary>
     private readonly HashSet<string> _selected = [];
     private HashSet<string> _known = [];
+
+    /// <summary>Changes waiting for approval in one of my proposals: unchanged since sent, or changed after.</summary>
+    private Dictionary<string, string> _sent = [];
+    private HashSet<string> _sentUnchanged = [];
     private string _author = string.Empty;
     private string _comment = string.Empty;
     private string? _message;
@@ -141,7 +146,7 @@ else
 
         // Decisions made since the last visit.
         await Proposals.RefreshMineAsync();
-        _mine = (await Proposals.GetAllAsync()).OrderByDescending(p => p.CreatedAt).ToList();
+        await ReloadAsync();
     }
 
     private async Task ReloadAsync()
@@ -150,16 +155,51 @@ else
         _base = await Client.GetWikiAsync();
         _original = await Client.GetOriginalAsync();
         _changes = await Personal.GetAllAsync();
+        _mine = (await Proposals.GetAllAsync()).OrderByDescending(p => p.CreatedAt).ToList();
         _outdated = await OutdatedCheck.WarningAsync(_changes, _base);
 
-        // Changes seen for the first time start selected; unticked ones stay unticked, removed ones drop out.
+        // Changes seen for the first time start selected, unless they wait for approval as they are; unticked ones stay
+        // unticked, removed ones drop out, just sent ones are unticked, and sent ones changed since are ticked again.
         var keys = _changes.Keys().ToHashSet();
+        var sentUnchanged = FindSent(keys);
         _selected.IntersectWith(keys);
-        _selected.UnionWith(keys.Except(_known));
+        _selected.UnionWith(keys.Except(_known).Except(sentUnchanged));
+        _selected.UnionWith(_sentUnchanged.Intersect(keys).Except(sentUnchanged));
+        _selected.ExceptWith(sentUnchanged.Except(_sentUnchanged));
         _known = keys;
-
-        _mine = (await Proposals.GetAllAsync()).OrderByDescending(p => p.CreatedAt).ToList();
+        _sentUnchanged = sentUnchanged;
     }
+
+    /// <summary>
+    /// Fills <see cref="_sent"/> from my proposals waiting for a decision; returns the keys sent exactly as they are now.
+    /// </summary>
+    private HashSet<string> FindSent(IReadOnlySet<string> keys)
+    {
+        _sent = [];
+        var unchanged = new HashSet<string>();
+        foreach (var proposal in _mine.Where(p => p.Status == ProposalStatus.Pending).OrderBy(p => p.CreatedAt))
+        {
+            foreach (var key in proposal.UndecidedKeys().Where(keys.Contains))
+            {
+                var same = ItemJson(proposal.Changes, key) == ItemJson(_changes!, key);
+                _sent[key] = same ? "wysłane do akceptacji" : "zmienione po wysłaniu do akceptacji";
+                if (same)
+                {
+                    unchanged.Add(key);
+                }
+                else
+                {
+                    unchanged.Remove(key);
+                }
+            }
+        }
+
+        return unchanged;
+    }
+
+    /// <summary>One item of a change set, for comparing it with another change set's.</summary>
+    private static string ItemJson(LocalBackup changes, string key) =>
+        JsonSerializer.Serialize(changes.Only(new HashSet<string> { key }) with { BaseVersion = string.Empty, ExportedAt = default }, GameData.JsonOptions);
 
     private async Task RemoveAsync(string key)
     {
