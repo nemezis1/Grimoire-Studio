@@ -1,0 +1,148 @@
+@* What the picked roles give for play (ScriptAnalysis): folded to one status line, opened for the details. *@
+
+@if (Roles.Count > 0)
+{
+    var analysis = ScriptAnalysis.Analyze(Data, Roles);
+    var warnings = Warnings(analysis).ToList();
+    var concerns = warnings.Count + analysis.Missing.Count;
+
+    <details class="script-analysis @(concerns > 0 ? "script-analysis--warn" : null)">
+        <summary>
+            <span class="script-analysis__status">@(concerns > 0 ? "⚠" : "✓") @Status(analysis)</span>
+            @if (concerns > 0)
+            {
+                <span class="muted small">@Concerns(concerns)</span>
+            }
+        </summary>
+
+        <div class="script-analysis__body">
+            <table class="script-analysis__teams">
+                <thead>
+                    <tr><th>Drużyna</th><th title="Role tej drużyny w skrypcie">W skrypcie</th><th title="Najwięcej w jednej grze (15 graczy)">W grze</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var team in analysis.Teams)
+                    {
+                        <tr class="@(team.ShortFrom is null ? null : "script-analysis__short")">
+                            <th><span class="team-heading team--@(team.Team)" style="@Teams.Style(team.Team)">@Teams.Plural(team.Team)</span></th>
+                            <td>@team.Count</td>
+                            <td>
+                                do @team.Needed
+                                @if (team.ShortFrom is { } from)
+                                {
+                                    <span class="small">(brakuje od @from graczy)</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (warnings.Count > 0)
+            {
+                <ul class="script-analysis__warnings">
+                    @foreach (var warning in warnings)
+                    {
+                        <li>@warning</li>
+                    }
+                </ul>
+            }
+
+            @foreach (var (role, needed) in analysis.Missing)
+            {
+                <p class="script-analysis__missing">
+                    <RoleIcon Role="needed" Size="sm" />
+                    <span>
+                        @if (needed.Id == ScriptAnalysis.JinxFabled)
+                        {
+                            @:Skrypt ma jinxy: dodaj @needed.NamePl, który je wprowadza do gry.
+                        }
+                        else
+                        {
+                            @:@role.NamePl działa tylko razem z rolą @needed.NamePl.
+                        }
+                    </span>
+                    @if (OnAdd.HasDelegate)
+                    {
+                        <button class="button button--ghost" @onclick="() => OnAdd.InvokeAsync(needed.Id)">Dodaj</button>
+                    }
+                </p>
+            }
+
+            <p class="small muted">
+                Budzą się: pierwszej nocy @analysis.FirstNightWakers, w kolejne noce @analysis.OtherNightWakers.
+                @if (analysis.SetupRoles.Count > 0)
+                {
+                    <br />
+                    @:Zmieniają przygotowanie gry: @string.Join(", ", analysis.SetupRoles.Select(r => r.NamePl)).
+                }
+            </p>
+
+            @if (analysis.Jinxes.Count > 0)
+            {
+                <h3>Jinxy w skrypcie (@analysis.Jinxes.Count)</h3>
+                <ul class="script-analysis__jinxes">
+                    @foreach (var (owner, other, jinx) in analysis.Jinxes)
+                    {
+                        <li>
+                            <strong>@owner.NamePl × @other.NamePl</strong>
+                            <span class="small muted">@jinx.ReasonPl</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </details>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public GameData Data { get; set; } = default!;
+
+    /// <summary>Roles picked for the script.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlyCollection<Role> Roles { get; set; } = [];
+
+    /// <summary>Adds a missing role (by id) to the script; without it no "Dodaj" button is shown.</summary>
+    [Parameter]
+    public EventCallback<string> OnAdd { get; set; }
+
+    private static string Status(ScriptAnalysis analysis) => analysis switch
+    {
+        { IsUnplayable: true } => "Nie da się w to zagrać",
+        { ShortFrom: null } => $"Wystarczy na {PlayerCount.MinPlayers}–{PlayerCount.MaxPlayers} graczy",
+        { ShortFrom: PlayerCount.MinPlayers } => $"Za mało ról nawet na {PlayerCount.MinPlayers} graczy",
+        { ShortFrom: { } from } => $"Wystarczy na {PlayerCount.MinPlayers}–{from - 1} graczy",
+    };
+
+    private static string Concerns(int count) => count switch
+    {
+        1 => "1 uwaga",
+        _ when count % 10 is >= 2 and <= 4 && count % 100 is < 12 or > 14 => $"{count} uwagi",
+        _ => $"{count} uwag",
+    };
+
+    /// <summary>Concerns about the script, each one sentence; missing partner roles are listed apart, with "Dodaj".</summary>
+    private IEnumerable<string> Warnings(ScriptAnalysis analysis)
+    {
+        foreach (var team in analysis.Teams.Where(t => t.Count == 0 && t.Team != TeamIds.Outsider))
+        {
+            yield return $"Skrypt nie ma żadnej roli z drużyny: {Teams.Plural(team.Team)}.";
+        }
+
+        if (analysis.BluffsShortFrom is { } bluffs && !analysis.IsUnplayable)
+        {
+            yield return $"Od {bluffs} graczy demon ma mniej niż {ScriptAnalysis.DemonBluffs} dobre role spoza gry do blefowania: dodaj mieszkańców lub przybyszów.";
+        }
+
+        if (analysis.FewOutsidersForSetup)
+        {
+            yield return "Role zmieniające przygotowanie mogą dodać przybyszów do gry: przyda się co najmniej 4 przybyszów.";
+        }
+
+        if (analysis.Count(TeamIds.Townsfolk) > 0 && analysis.FirstNightTownsfolk == 0)
+        {
+            yield return "Żaden mieszkaniec nie budzi się pierwszej nocy: dobrzy zaczynają grę bez informacji.";
+        }
+    }
+}

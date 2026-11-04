@@ -2,7 +2,7 @@
 @inject IJSRuntime JS
 
 <button class="theme-toggle" title="@(_dark ? "Przełącz na jasny motyw" : "Przełącz na ciemny motyw")" aria-pressed="@_dark" @onclick="ToggleAsync">
-    @(_dark ? "☀ Jasny" : "☾ Ciemny")
+    <span aria-hidden="true">@(_dark ? "☀" : "☾")</span><span class="theme-toggle__label">@(_dark ? "Jasny" : "Ciemny")</span>
 </button>
 
 @code {

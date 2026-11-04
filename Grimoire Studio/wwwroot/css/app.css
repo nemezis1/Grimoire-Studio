@@ -197,6 +197,9 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 /* Light / dark theme switch, at the right end of the header. */
 .theme-toggle {
     order: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     margin-left: auto;
     padding: 0.35rem 0.6rem;
     border: 1px solid var(--border);
@@ -557,7 +560,9 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
  * below the title and its parts scroll on their own (.pinned: a fixed top and a scrolling body).
  */
 @media (min-width: 1101px) {
+    /* Only the content scrolls (with its own gutter), so the header reaches the right edge. */
     html, body { height: 100%; overflow: hidden; }
+    html { scrollbar-gutter: auto; }
     #app { height: 100%; display: flex; flex-direction: column; }
     .site-header, .site-footer, .wiki-banner { flex: none; }
     .site-footer { padding-block: 0.5rem; }
@@ -1236,7 +1241,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 .page-head p { margin: 0; font-size: 0.85rem; }
 
 /* Script editor: name, id and picture side by side; search, filters and teams in as few rows as fit. */
-.script-head { display: flex; flex-wrap: wrap; gap: 0 1rem; align-items: flex-end; }
+.script-head { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
 .script-head__name { flex: 2 1 16rem; }
 .script-head__id { flex: 1 1 12rem; }
 .script-head__image { flex: 0 0 auto; }
@@ -1353,4 +1358,202 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     .script-head__toggle { width: 100%; margin-bottom: 0.75rem; text-align: left; }
     .script-head { display: none; }
     .script-head--open { display: flex; }
+}
+
+/* ---------- Search (header) ---------- */
+
+/* Magnifier button left of the theme switch; on wide screens it also names the shortcut. */
+.search-open {
+    order: 1;
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+.search-open:hover { background: var(--bg); }
+.search-open + .theme-toggle { margin-left: 0; }
+.search-open__key {
+    padding: 0 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.75rem;
+}
+
+html.search-is-open, html.search-is-open body { overflow: hidden; }
+
+.search-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.search-dialog {
+    position: fixed;
+    z-index: 101;
+    top: 10vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(600px, calc(100vw - 32px));
+    max-height: 75vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+.search-dialog__head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.search-dialog__icon { flex: none; color: var(--muted); }
+.search-dialog__input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.25rem;
+    border: none;
+    outline: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 1.05rem;
+}
+.search-dialog__input::-webkit-search-cancel-button { display: none; }
+.search-dialog__close {
+    flex: none;
+    min-width: 44px;
+    min-height: 44px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.search-dialog__close:hover { background: var(--bg); color: var(--text); }
+
+.search-dialog__results { flex: 1; min-height: 0; overflow-y: auto; padding: 0.25rem 0.5rem 0.75rem; overscroll-behavior: contain; }
+.search-dialog__note { padding: 1rem 0.5rem; margin: 0; }
+
+.search-group__label {
+    margin: 0.75rem 0.5rem 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.search-group { list-style: none; margin: 0; padding: 0; }
+
+.search-hit {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 44px;
+    padding: 0.35rem 0.5rem;
+    border-left: 3px solid transparent;
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+}
+.search-hit[style] { border-left-color: var(--team); }
+.search-hit--active { background: var(--bg); }
+.search-hit__picture { width: 28px; height: 28px; object-fit: contain; flex: none; }
+.search-hit__swatch { width: 28px; height: 28px; flex: none; border-radius: 50%; background: var(--team); }
+.search-hit__text { display: flex; flex-direction: column; min-width: 0; }
+.search-hit__title { font-weight: 600; }
+.search-hit__subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-group__more { display: inline-block; margin: 0.25rem 0.5rem; font-size: 0.85rem; }
+
+/* Phones: the button is only the magnifier, and the search takes the whole screen above the keyboard. */
+@media (max-width: 900px) {
+    .search-open { order: 0; }
+    .search-open__label, .search-open__key { display: none; }
+}
+
+@media (max-width: 700px) {
+    .search-backdrop { display: none; }
+    .search-dialog {
+        inset: 0;
+        top: 0;
+        left: 0;
+        transform: none;
+        width: auto;
+        height: 100dvh;
+        max-height: none;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    .search-dialog__input { font-size: 16px; } /* 16px keeps iOS from zooming in on focus */
+}
+
+/* ---------- Script analysis (script editor) ---------- */
+
+.script-analysis {
+    margin: 0 0 0.75rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid #3f8f4f;
+    border-radius: 8px;
+}
+.script-analysis--warn { border-left-color: #c98a1b; }
+.script-analysis > summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+    padding: 0.45rem 0.6rem;
+    cursor: pointer;
+    user-select: none;
+}
+.script-analysis__status { font-weight: 600; }
+.script-analysis__body { padding: 0 0.6rem 0.5rem; max-height: 45vh; overflow-y: auto; }
+.script-analysis__body h3 { font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
+.script-analysis__body p { margin: 0.4rem 0; }
+
+.script-analysis__teams { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.script-analysis__teams th, .script-analysis__teams td { padding: 0.2rem 0.3rem; text-align: left; font-weight: normal; }
+.script-analysis__teams thead th { color: var(--muted); font-size: 0.75rem; }
+.script-analysis__teams .team-heading { font-size: 0.85rem; margin: 0; }
+.script-analysis__short td { color: #c98a1b; font-weight: 600; }
+
+.script-analysis__warnings { margin: 0.5rem 0; padding-left: 1.1rem; font-size: 0.85rem; }
+.script-analysis__warnings li { margin: 0.2rem 0; }
+
+.script-analysis__missing { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+.script-analysis__missing > span { flex: 1; }
+.script-analysis__missing .button { padding: 0.25rem 0.6rem; }
+
+.script-analysis__jinxes { list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
+.script-analysis__jinxes li { display: flex; flex-direction: column; padding: 0.25rem 0; border-top: 1px solid var(--border); }
+.script-analysis__jinxes li:first-child { border-top: none; }
+
+/* Small phones: the header keeps one line with the theme switch as an icon. */
+@media (max-width: 520px) {
+    .site-header__inner { gap: 0.5rem; }
+    .theme-toggle__label { display: none; }
+    .theme-toggle, .search-open { min-width: 40px; justify-content: center; }
 }

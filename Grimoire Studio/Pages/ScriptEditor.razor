@@ -26,25 +26,22 @@ else
 
     <div class="script-editor fill-viewport">
         <section class="panel">
-            @* Name, id and picture in one row; they wrap on narrow screens. *@
+            @* Name, id and picture in one row without captions (placeholders and tooltips name them); they wrap on narrow screens. *@
             @* Narrow screens: name, id and picture fold into this one line (open for a new script). *@
             <button class="button button--ghost script-head__toggle" aria-expanded="@HeadOpen" @onclick="() => _headOpen = !HeadOpen">
                 @(string.IsNullOrWhiteSpace(_name) ? "Nazwa i obrazek" : _name) @(HeadOpen ? "▴" : "✎")
             </button>
             <div class="script-head @(HeadOpen ? "script-head--open" : null)">
                 <label class="field script-head__name">
-                    <span>Nazwa skryptu</span>
-                    <input type="text" @bind="_name" @bind:event="oninput" placeholder="np. Pełnia Zła" />
+                    <input type="text" @bind="_name" @bind:event="oninput" placeholder="Nazwa skryptu" aria-label="Nazwa skryptu" title="Nazwa skryptu" />
                 </label>
                 @if (IsNew)
                 {
                     <label class="field script-head__id">
-                        <span>Identyfikator (małe litery i cyfry)</span>
-                        <input type="text" value="@EffectiveId" @oninput="e => _id = e.Value?.ToString()" />
+                        <input type="text" value="@EffectiveId" @oninput="e => _id = e.Value?.ToString()" placeholder="Identyfikator" aria-label="Identyfikator (małe litery i cyfry)" title="Identyfikator (małe litery i cyfry)" />
                     </label>
                 }
                 <div class="field script-head__image">
-                    <span>Obrazek</span>
                     <div class="script-image">
                         <img class="script-image__preview" src="@(_image ?? GameDataClient.EditionIconUrl(_iconName))" alt="" />
                         <label class="button button--ghost button--file" title="Zmniejszany do @MaxImageSize px; widoczny na liście skryptów, stronie skryptu i wydruku">
@@ -123,6 +120,7 @@ else
                     .Where(x => x.Count > 0)
                     .Select(x => $"{x.Count} {Teams.Plural(x.Team).ToLowerInvariant()}"))
             </p>
+            <ScriptAnalysisView Data="_data" Roles="selected" OnAdd="Add" />
             <div class="script-editor__selected">
                 @foreach (var group in selected.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
                 {
@@ -260,6 +258,14 @@ else
         }
     }
 
+    private void Add(string roleId)
+    {
+        if (!_selected.Contains(roleId))
+        {
+            _selected.Add(roleId);
+        }
+    }
+
     /// <summary>Format and uniqueness of a new script's id (against the data folder and scripts saved locally).</summary>
     private string? IdError()
     {
@@ -269,6 +275,12 @@ else
         }
 
         var id = EffectiveId;
+        if (id.Length == 0)
+        {
+            // With no name yet the empty id is expected; saving asks for the name first.
+            return string.IsNullOrWhiteSpace(_name) ? null : "Podaj identyfikator skryptu.";
+        }
+
         if (!DataValidator.IsValidId(id))
         {
             return "Identyfikator może zawierać tylko małe litery (bez polskich znaków) i cyfry.";
@@ -277,9 +289,17 @@ else
         return _data?.FindScript(id) is { } other ? $"Skrypt o identyfikatorze „{id}” już istnieje ({other.Name})." : null;
     }
 
-    /// <summary>Id for a new script: the name in lowercase letters and digits, numbered when already taken.</summary>
+    /// <summary>
+    /// Id for a new script: the name in lowercase letters and digits, numbered when already taken; empty while there is
+    /// no name.
+    /// </summary>
     private string NewId()
     {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            return string.Empty;
+        }
+
         var baseId = new string(SearchText.Fold(_name).Where(char.IsAsciiLetterOrDigit).ToArray());
         if (baseId.Length == 0)
         {
