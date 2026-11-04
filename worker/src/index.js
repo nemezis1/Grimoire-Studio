@@ -291,8 +291,17 @@ async function limitProposals(request, env) {
     await env.ADMINS.put(key, String(count + 1), { expirationTtl: 60 * 60 });
 }
 
+/** Number of a proposal's items not approved or rejected yet. */
+function waitingChanges(proposal) {
+    const changes = proposal.changes ?? {};
+    const all = ['roles', 'scripts', 'teams', 'jinxes', 'removed']
+        .reduce((sum, list) => sum + (Array.isArray(changes[list]) ? changes[list].length : 0), 0);
+    const decided = new Set([...(proposal.approvedKeys ?? []), ...(proposal.rejectedKeys ?? [])]);
+    return Math.max(0, all - decided.size);
+}
+
 function putProposal(proposal, env) {
-    const metadata = { status: proposal.status, author: proposal.author };
+    const metadata = { status: proposal.status, author: proposal.author, waiting: waitingChanges(proposal) };
     return env.ADMINS.put(PROPOSAL_PREFIX + proposal.id, JSON.stringify(proposal),
         proposal.status === 'pending' ? { metadata } : { metadata, expirationTtl: DECIDED_PROPOSAL_SECONDS });
 }
@@ -308,21 +317,30 @@ async function proposalKeys(env) {
     return keys;
 }
 
-/** Ids of the proposals waiting for a decision, from the listing's metadata (no proposal is read). */
+/** Keys of the proposals waiting for a decision, from the listing (no proposal is read). */
 async function pendingProposals(env) {
     requireStore(env);
-    return (await proposalKeys(env))
-        .filter(key => key.metadata?.status === 'pending')
-        .map(key => key.name.slice(PROPOSAL_PREFIX.length));
+    return (await proposalKeys(env)).filter(key => key.metadata?.status === 'pending');
 }
 
 /**
- * The pending proposals' number and ids. KV listings lag behind writes (up to a minute), so the ids let the admin's
- * browser correct the number with the decisions it has just made.
+ * The number of changes waiting for a decision, in total and by proposal id. KV listings lag behind writes (up to a
+ * minute), so the ids let the admin's browser correct the numbers with the decisions it has just made. Proposals
+ * stored before the listing kept the number are read once.
  */
 async function pendingSummary(env) {
-    const ids = await pendingProposals(env);
-    return { pending: ids.length, ids };
+    const waiting = {};
+    for (const key of await pendingProposals(env)) {
+        let count = key.metadata.waiting;
+        if (typeof count !== 'number') {
+            const value = await env.ADMINS.get(key.name);
+            count = value ? waitingChanges(JSON.parse(value)) : 0;
+        }
+
+        waiting[key.name.slice(PROPOSAL_PREFIX.length)] = count;
+    }
+
+    return { pending: Object.values(waiting).reduce((sum, count) => sum + count, 0), waiting };
 }
 
 async function listProposals(env) {

@@ -1,5 +1,5 @@
 @*
-    The admin panel link; for a signed-in admin it shows how many proposals wait for a decision, checked on every page
+    The admin panel link; for a signed-in admin it shows how many proposed changes wait for a decision, checked on every page
     change and every few minutes.
 *@
 @inject RepositoryPublisher Publisher
@@ -11,7 +11,7 @@
     Admin
     @if (_pending > 0)
     {
-        <span class="nav-count" title="Zgłoszenia czekające na decyzję">@_pending</span>
+        <span class="nav-count" title="Zmiany ze zgłoszeń czekające na akceptację">@_pending</span>
     }
 </NavLink>
 
@@ -50,7 +50,7 @@
 
         try
         {
-            _pending = Proposals.PendingCount(await Publisher.GetPendingAsync());
+            _pending = Proposals.WaitingChanges(await Publisher.GetPendingAsync());
         }
         catch (PublishException)
         {

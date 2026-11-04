@@ -86,7 +86,13 @@ else
     </div>
 
     <section class="panel admin-section">
-        <h3 class="admin-part">Czekają na akceptację (@_pending.Count)</h3>
+        <h3 class="admin-part">
+            Czekają na akceptację (@ProposalText.Changes(_pending.Sum(p => p.UndecidedKeys().Count)))
+            @if (_pending.Count > 0)
+            {
+                <span class="muted small">zgłoszenia: @_pending.Count</span>
+            }
+        </h3>
         @if (_pending.Count == 0)
         {
             <p class="muted">Brak zgłoszeń. Zgłoszenia przychodzą ze strony „Moje zmiany” albo z plików eksportu.</p>
@@ -102,7 +108,7 @@ else
             var which = selected.Count == waiting.Count ? "wszystko" : $"zaznaczone ({selected.Count})";
             <section class="panel">
                 <div class="form-list__head">
-                    <h3>@proposal.Author <span class="muted small">@proposal.CreatedAt.ToLocalTime().ToString("g")</span></h3>
+                    <h3>@proposal.Author <span class="muted small">@proposal.CreatedAt.ToLocalTime().ToString("g") · @ProposalText.Changes(waiting.Count)</span></h3>
                     <div class="script-actions">
                         <button class="button" disabled="@(selected.Count == 0)" @onclick="() => DecideAsync(proposal, approve: true)">Zatwierdź @which</button>
                         <button class="button button--ghost" disabled="@(selected.Count == 0)" @onclick="() => DecideAsync(proposal, approve: false)">Odrzuć @which</button>

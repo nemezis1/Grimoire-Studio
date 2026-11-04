@@ -189,14 +189,14 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     }
 
     /// <summary>
-    /// Ids of the proposals waiting for a decision. The server lists them with a delay of up to a minute, so decisions
-    /// just made may not show yet (see <see cref="Proposals.PendingCount"/>).
+    /// Number of changes waiting for a decision, by proposal id. The server lists them with a delay of up to a minute,
+    /// so decisions just made may not show yet (see <see cref="Proposals.WaitingChanges"/>).
     /// </summary>
     /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
-    public async Task<IReadOnlyList<string>> GetPendingAsync()
+    public async Task<IReadOnlyDictionary<string, int>> GetPendingAsync()
     {
         using var request = Request(HttpMethod.Get, "proposals?pending", RequireKey());
-        return (await SendAsync<PendingReply>(request)).Ids;
+        return (await SendAsync<PendingReply>(request)).Waiting;
     }
 
     /// <summary>A proposal as the admins left it; null when it is gone (removed, or expired after the decision).</summary>
@@ -351,7 +351,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
 
     private sealed record ErrorReply(string? Error, IReadOnlyList<string>? Conflicts);
 
-    private sealed record PendingReply(IReadOnlyList<string> Ids);
+    private sealed record PendingReply(IReadOnlyDictionary<string, int> Waiting);
 
     private sealed record ProposalsReply(IReadOnlyList<JsonElement> Proposals);
 
