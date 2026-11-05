@@ -90,37 +90,37 @@
       {
         "id": "soldier",
         "reasonEn": "If the Leviathan nominates and executes the Soldier, good wins.",
-        "reasonPl": "«Jeśli Lewiatan nominuje i straci Żołnierza, wygrywa dobro.»"
+        "reasonPl": "Jeśli Lewiatan nominuje i straci Żołnierza, wygrywa dobro."
       },
       {
         "id": "monk",
         "reasonEn": "If the Leviathan nominates and executes the Monk-protected player, good wins.",
-        "reasonPl": "«Jeśli Lewiatan nominuje i straci gracza chronionego przez Mnicha, wygrywa dobro.»"
+        "reasonPl": "Jeśli Lewiatan nominuje i straci gracza chronionego przez Mnicha, wygrywa dobro."
       },
       {
         "id": "innkeeper",
         "reasonEn": "If the Leviathan nominates and executes an Innkeeper-protected player, good wins.",
-        "reasonPl": "«Jeśli Lewiatan nominuje i straci gracza chronionego przez Oberżystę, wygrywa dobro.»"
+        "reasonPl": "Jeśli Lewiatan nominuje i straci gracza chronionego przez Oberżystę, wygrywa dobro."
       },
       {
         "id": "ravenkeeper",
         "reasonEn": "Each night*, the Leviathan chooses an alive player (different to previous nights): a chosen Ravenkeeper uses their ability but does not die.",
-        "reasonPl": "«Każdej nocy* Lewiatan wybiera żyjącego gracza (innego niż poprzednich nocy): wybrany Opiekun Kruków używa swojej zdolności, ale nie ginie.»"
+        "reasonPl": "Każdej nocy* Lewiatan wybiera żyjącego gracza (innego niż poprzednich nocy): wybrany Opiekun Kruków używa swojej zdolności, ale nie ginie."
       },
       {
         "id": "sage",
         "reasonEn": "Each night*, the Leviathan chooses an alive good player (different to previous nights): a chosen Sage uses their ability but does not die.",
-        "reasonPl": "«Każdej nocy* Lewiatan wybiera żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Mędrzec używa swojej zdolności, ale nie ginie.»"
+        "reasonPl": "Każdej nocy* Lewiatan wybiera żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Mędrzec używa swojej zdolności, ale nie ginie."
       },
       {
         "id": "farmer",
         "reasonEn": "Each night*, the Leviathan chooses an alive good player (different to previous nights): a chosen Farmer uses their ability but does not die.",
-        "reasonPl": "«Każdej nocy* Lewiatan wybiera żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Farmer używa swojej zdolności, ale nie ginie.»"
+        "reasonPl": "Każdej nocy* Lewiatan wybiera żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Farmer używa swojej zdolności, ale nie ginie."
       },
       {
         "id": "mayor",
         "reasonEn": "If the Leviathan and the Mayor are alive on day 5 & no execution occurs, good wins.",
-        "reasonPl": "«Jeśli Lewiatan i Burmistrz żyją w 5. dniu i nie dojdzie do egzekucji, wygrywa dobro.»"
+        "reasonPl": "Jeśli Lewiatan i Burmistrz żyją w 5. dniu i nie dojdzie do egzekucji, wygrywa dobro."
       },
       {
         "id": "banshee",
@@ -130,12 +130,12 @@
       {
         "id": "exorcist",
         "reasonEn": "If the Leviathan nominates and executes the Exorcist-chosen player, good wins.",
-        "reasonPl": "«Jeśli Lewiatan nominuje i straci gracza wybranego przez Egzorcystę, wygrywa dobro.»"
+        "reasonPl": "Jeśli Lewiatan nominuje i straci gracza wybranego przez Egzorcystę, wygrywa dobro."
       },
       {
         "id": "grandmother",
         "reasonEn": "If the Leviathan is in play and the Grandchild dies by execution, evil wins.",
-        "reasonPl": "«Jeśli Lewiatan jest w grze, a Wnuk zginie w egzekucji, zło wygrywa.»"
+        "reasonPl": "Jeśli Lewiatan jest w grze, a Wnuk zginie w egzekucji, zło wygrywa."
       },
       {
         "id": "hatter",
@@ -145,12 +145,12 @@
       {
         "id": "king",
         "reasonEn": "If the Leviathan is in play, and at least 1 player is dead, the King learns an alive character each night.",
-        "reasonPl": "«Jeśli Lewiatan jest w grze i nie żyje co najmniej 1 gracz, Król każdej nocy poznaje żywą postać.»"
+        "reasonPl": "Jeśli Lewiatan jest w grze i nie żyje co najmniej 1 gracz, Król każdej nocy poznaje żywą postać."
       },
       {
         "id": "pithag",
         "reasonEn": "The Leviathan cannot enter play after day 5.",
-        "reasonPl": "«Lewiatan nie może wejść do gry po 5. dniu.»"
+        "reasonPl": "Lewiatan nie może wejść do gry po 5. dniu."
       }
     ]
   },
@@ -160,17 +160,17 @@
       {
         "id": "scarletwoman",
         "reasonEn": "If there would be two Demons, one of which was the Scarlet Woman, the Scarlet Woman becomes the Scarlet Woman again.",
-        "reasonPl": "«Jeśli byłyby dwa Demony, z których jednym była Kusicielka, Kusicielka znów staje się Kusicielką.»"
+        "reasonPl": "Jeśli byłyby dwa Demony, z których jednym była Kusicielka, Kusicielka znów staje się Kusicielką."
       },
       {
         "id": "mastermind",
         "reasonEn": "If the Al-Hadikhia dies by execution, and the Mastermind is alive, the Al-Hadikhia chooses 3 good players tonight: if all 3 choose to live, evil wins. Otherwise, good wins.",
-        "reasonPl": "«Jeśli Al-Hadikhia zginie w egzekucji, a Manipulant żyje, Al-Hadikhia tej nocy wybiera 3 dobrych graczy: jeśli wszyscy 3 zdecydują się żyć, zło wygrywa. W przeciwnym razie wygrywa dobro.»"
+        "reasonPl": "Jeśli Al-Hadikhia zginie w egzekucji, a Manipulant żyje, Al-Hadikhia tej nocy wybiera 3 dobrych graczy: jeśli wszyscy 3 zdecydują się żyć, zło wygrywa. W przeciwnym razie wygrywa dobro."
       },
       {
         "id": "princess",
         "reasonEn": "If the Princess nominated & executed a player on their 1st day, no one dies to the Al-Hadikhia tonight.",
-        "reasonPl": "«Jeśli Księżniczka nominowała i straciła gracza pierwszego dnia, tej nocy nikt nie ginie przez Al-Hadikhię.»"
+        "reasonPl": "Jeśli Księżniczka nominowała i poddała egzekucji gracza jej pierwszego dnia, tej nocy nikt nie ginie przez Al-Hadikhię."
       }
     ]
   },
@@ -205,7 +205,7 @@
       {
         "id": "vizier",
         "reasonEn": "If the Vizier is babysitting Lil' Monsta, they die when executed.",
-        "reasonPl": "«Jeśli Wezyr opiekuje się Lil' Monstą, ginie, gdy zostanie stracony.»"
+        "reasonPl": "Jeśli Wezyr opiekuje się Lil' Monstą, ginie, gdy zostanie poddany egzekucji."
       }
     ]
   },
@@ -365,7 +365,7 @@
       {
         "id": "kazali",
         "reasonEn": "If there would be a Marionette in play, they enter play after the Demon & must start as their neighbor.",
-        "reasonPl": "«Jeśli w grze miałaby być Marionetka, wchodzi do gry po Demonie i musi zaczynać jako jego sąsiad.»"
+        "reasonPl": "Jeśli w grze miałaby być Marionetka, wchodzi do gry po Demonie i musi zaczynać jako jego sąsiad."
       },
       {
         "id": "summoner",
@@ -490,7 +490,7 @@
       {
         "id": "wraith",
         "reasonEn": "An Alchemist-Wraith has no Wraith ability & a Wraith is in play. After each execution, a living Alchemist-Wraith may publicly guess a living player as the Wraith. If correct, the Demon must choose the Wraith tonight.",
-        "reasonPl": "«Alchemik-Zjawa nie ma zdolności Zjawy, a Zjawa jest w grze. Po każdej egzekucji żyjący Alchemik-Zjawa może publicznie wskazać żyjącego gracza jako Zjawę. Jeśli trafi, Demon musi tej nocy wybrać Zjawę.»"
+        "reasonPl": "Alchemik-Zjawa nie ma zdolności Zjawy, a Zjawa jest w grze. Po każdej egzekucji żyjący Alchemik-Zjawa może publicznie wskazać żyjącego gracza jako Zjawę. Jeśli trafi, Demon musi tej nocy wybrać Zjawę."
       }
     ]
   },
@@ -540,7 +540,7 @@
       {
         "id": "kazali",
         "reasonEn": "If the Kazali turns the Bounty Hunter into a Minion, an evil Townsfolk is not created.",
-        "reasonPl": "«Jeśli Kazali zamieni Łowcę Nagród w Sługusa, nie powstaje zły Mieszkaniec.»"
+        "reasonPl": "Jeśli Kazali zamieni Łowcę Nagród w Sługusa, nie powstaje zły Mieszkaniec."
       },
       {
         "id": "philosopher",
@@ -585,12 +585,12 @@
       {
         "id": "vizier",
         "reasonEn": "If the Vizier is in play, the Magician has no ability but is immune to the Vizier's ability.",
-        "reasonPl": "«Jeśli Wezyr jest w grze, Iluzjonista nie ma zdolności, ale jest odporny na zdolność Wezyra.»"
+        "reasonPl": "Jeśli Wezyr jest w grze, Iluzjonista nie ma zdolności, ale jest odporny na zdolność Wezyra."
       },
       {
         "id": "wraith",
         "reasonEn": "After each execution, the living Magician may publicly guess a living player as the Wraith. If correct, the Demon must choose the Wraith tonight.",
-        "reasonPl": "«Po każdej egzekucji żyjący Iluzjonista może publicznie wskazać żyjącego gracza jako Zjawę. Jeśli trafi, Demon musi tej nocy wybrać Zjawę.»"
+        "reasonPl": "Po każdej egzekucji żyjący Iluzjonista może publicznie wskazać żyjącego gracza jako Zjawę. Jeśli trafi, Demon musi tej nocy wybrać Zjawę."
       }
     ]
   },
@@ -750,37 +750,37 @@
       {
         "id": "alsaahir",
         "reasonEn": "The Storyteller doesn't declare the Vizier is in play.",
-        "reasonPl": "«Narrator nie ogłasza, że Wezyr jest w grze.»"
+        "reasonPl": "Narrator nie ogłasza, że Wezyr jest w grze."
       },
       {
         "id": "courtier",
         "reasonEn": "If the Vizier loses their ability, they learn this, and cannot die during the day.",
-        "reasonPl": "«Jeśli Wezyr straci zdolność, dowiaduje się o tym i nie może zginąć w ciągu dnia.»"
+        "reasonPl": "Jeśli Wezyr straci zdolność, dowiaduje się o tym i nie może zginąć w ciągu dnia."
       },
       {
         "id": "fearmonger",
         "reasonEn": "The Vizier wakes with the Fearmonger, learns who they choose and cannot choose to immediately execute that player.",
-        "reasonPl": "«Wezyr budzi się razem ze Straszydłem, dowiaduje się, kogo ono wybrało, i nie może zdecydować o natychmiastowej egzekucji tego gracza.»"
+        "reasonPl": "Wezyr budzi się razem ze Straszydłem, dowiaduje się, kogo ono wybrało, i nie może zdecydować o natychmiastowej egzekucji tego gracza."
       },
       {
         "id": "investigator",
         "reasonEn": "The Storyteller doesn't declare the Vizier is in play.",
-        "reasonPl": "«Narrator nie ogłasza, że Wezyr jest w grze.»"
+        "reasonPl": "Narrator nie ogłasza, że Wezyr jest w grze."
       },
       {
         "id": "politician",
         "reasonEn": "The Politician might register as evil to the Vizier.",
-        "reasonPl": "«Polityk może być rozpoznawany przez Wezyra jako zły.»"
+        "reasonPl": "Polityk może być rozpoznawany przez Wezyra jako zły."
       },
       {
         "id": "preacher",
         "reasonEn": "If the Vizier loses their ability, they learn this, and cannot die during the day.",
-        "reasonPl": "«Jeśli Wezyr straci zdolność, dowiaduje się o tym i nie może zginąć w ciągu dnia.»"
+        "reasonPl": "Jeśli Wezyr straci zdolność, dowiaduje się o tym i nie może zginąć w ciągu dnia."
       },
       {
         "id": "zealot",
         "reasonEn": "The Zealot might register as evil to the Vizier.",
-        "reasonPl": "«Nadgorliwiec może być rozpoznawany przez Wezyra jako zły.»"
+        "reasonPl": "Nadgorliwiec może być rozpoznawany przez Wezyra jako zły."
       }
     ]
   },
@@ -800,7 +800,7 @@
       {
         "id": "exorcist",
         "reasonEn": "If the Exorcist chooses the Yaggababble, the Yaggababble does not kill tonight.",
-        "reasonPl": "«Jeśli Egzorcysta wybierze Yaggababble, Yaggababble tej nocy nie zabija.»"
+        "reasonPl": "Jeśli Egzorcysta wybierze Yaggababble, Yaggababble tej nocy nie zabija."
       }
     ]
   }

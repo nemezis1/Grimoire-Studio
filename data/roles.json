@@ -2201,7 +2201,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "If you are executed, all but 3 players die. After a 10 to 1 countdown, the player with the most players pointing at them, dies.",
-    "abilityPl": "«Jeśli zostaniesz stracony, giną wszyscy oprócz 3 graczy. Po odliczaniu od 10 do 1 ginie gracz, na którego wskazuje najwięcej graczy.»"
+    "abilityPl": "Jeśli zostaniesz stracony, giną wszyscy oprócz 3 graczy. Po odliczaniu od 10 do 1 ginie gracz, na którego wskazuje najwięcej graczy."
   },
   {
     "id": "lilmonsta",
@@ -2252,12 +2252,12 @@
     "firstNightReminderPl": "",
     "otherNight": 330,
     "otherNightReminderEn": "The Al-Hadikhia chooses 3 players. Announce the first player, wake them to nod yes to live or shake head no to die, kill or resurrect accordingly, then put to sleep and announce the next player. If all 3 are alive after this, all 3 die.",
-    "otherNightReminderPl": "Al-Hadikhia wybiera 3 graczy. Każdy z nich decyduje, czy żyć czy umrzeć. Jeśli wszyscy przeżyją, wszyscy giną.",
+    "otherNightReminderPl": "Al-Hadikhia wybiera 3 graczy. Ogłoś pierwszego gracza, obudź go, aby skinął głową na „tak”, aby żyć, lub kiwnął głową na „nie”, aby umrzeć, odpowiednio zabij lub wskrześ gracza, a następnie uśpij i ogłoś kolejnego gracza. Jeśli wszyscy trzej żyją, wszyscy trzej giną.",
     "remindersEn": [ "1", "2", "3" ],
     "remindersPl": [ "1", "2", "3" ],
     "setup": false,
     "abilityEn": "Each night*, you may choose 3 players (all players learn who): each silently chooses to live or die, but if all live, all die.",
-    "abilityPl": "«Każdej nocy* możesz wybrać 3 graczy (wszyscy dowiadują się kogo): każdy z nich po cichu decyduje, czy żyć, czy umrzeć, ale jeśli wszyscy przeżyją, wszyscy giną.»"
+    "abilityPl": "Każdej nocy* możesz wybrać 3 graczy (wszyscy dowiadują się kogo): każdy z nich po cichu decyduje, czy żyć, czy umrzeć, ale jeśli wszyscy żyją, wszyscy giną."
   },
   {
     "id": "legion",
@@ -2293,7 +2293,7 @@
     "remindersPl": [ "Dzień 1", "Dzień 2", "Dzień 3", "Dzień 4", "Dzień 5", "Dobry gracz stracony" ],
     "setup": false,
     "abilityEn": "If more than 1 good player is executed, evil wins. All players know you are in play. After day 5, evil wins.",
-    "abilityPl": "«Jeśli stracony zostanie więcej niż 1 dobry gracz, zło wygrywa. Wszyscy gracze wiedzą, że jesteś w grze. Po 5. dniu zło wygrywa.»"
+    "abilityPl": "Jeśli stracony zostanie więcej niż 1 dobry gracz, zło wygrywa. Wszyscy gracze wiedzą, że jesteś w grze. Po 5. dniu zło wygrywa."
   },
   {
     "id": "riot",
@@ -2676,38 +2676,38 @@
   {
     "id": "xaan",
     "nameEn": "Xaan",
-    "namePl": "«Xaan»",
+    "namePl": "Xaan",
     "edition": "",
     "team": "minion",
     "firstNight": 161,
     "firstNightReminderEn": "If X is 1, mark the Xaan with the 'X' reminder token.",
-    "firstNightReminderPl": "«Jeśli X wynosi 1, oznacz Xaan znacznikiem 'X'.»",
+    "firstNightReminderPl": "Jeśli X wynosi 1, oznacz Xaan znacznikiem 'X'.",
     "otherNight": 61,
     "otherNightReminderEn": "Change the Xaan reminder token to the relevant night. If it is night X, mark the Xaan with the 'X' reminder token.",
-    "otherNightReminderPl": "«Zmień znacznik Xaan na odpowiednią noc. Jeśli to noc X, oznacz Xaan znacznikiem 'X'.»",
+    "otherNightReminderPl": "Zmień znacznik Xaan na odpowiednią noc. Jeśli to noc X, oznacz Xaan znacznikiem 'X'.",
     "remindersEn": [ "Night 1", "Night 2", "Night 3", "X" ],
-    "remindersPl": [ "«Noc 1»", "«Noc 2»", "«Noc 3»", "«X»" ],
+    "remindersPl": [ "Noc 1", "Noc 2", "Noc 3", "X" ],
     "setup": true,
     "abilityEn": "On night X, all Townsfolk are poisoned until dusk. [X Outsiders]",
-    "abilityPl": "«Nocy X wszyscy Mieszkańcy są otruci do zmierzchu. [X Przybyszów]»"
+    "abilityPl": "W nocy X wszyscy Mieszkańcy są otruci do zmierzchu. [X Przybyszów]"
   },
   {
     "id": "wraith",
     "nameEn": "Wraith",
-    "namePl": "«Zjawa»",
+    "namePl": "Zjawa",
     "edition": "",
     "team": "minion",
     "firstNight": 11,
     "firstNightReminderEn": "Wake the Wraith whenever other evil players wake.",
-    "firstNightReminderPl": "«Budź Zjawę, gdy budzą się inni źli gracze.»",
+    "firstNightReminderPl": "Budź Zjawę, gdy budzą się inni źli gracze.",
     "otherNight": 11,
     "otherNightReminderEn": "Wake the Wraith whenever other evil players wake.",
-    "otherNightReminderPl": "«Budź Zjawę, gdy budzą się inni źli gracze.»",
+    "otherNightReminderPl": "Budź Zjawę, gdy budzą się inni źli gracze.",
     "remindersEn": [],
     "remindersPl": [],
     "setup": false,
     "abilityEn": "You may choose to open your eyes at night. You wake when other evil players do.",
-    "abilityPl": "«Możesz otwierać oczy w nocy. Budzisz się, gdy budzą się inni źli gracze.»"
+    "abilityPl": "Możesz otwierać oczy w nocy. Budzisz się, gdy budzą się inni źli gracze."
   },
   {
     "id": "summoner",
@@ -2730,12 +2730,12 @@
   {
     "id": "vizier",
     "nameEn": "Vizier",
-    "namePl": "«Wezyr»",
+    "namePl": "Wezyr",
     "edition": "",
     "team": "minion",
     "firstNight": 541,
     "firstNightReminderEn": "Announce which player is the Vizier.",
-    "firstNightReminderPl": "«Ogłoś, który gracz jest Wezyrem.»",
+    "firstNightReminderPl": "Ogłoś, który gracz jest Wezyrem.",
     "otherNight": 0,
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
@@ -2743,7 +2743,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "All players know you are the Vizier. You cannot die during the day. If good voted, you may choose to execute immediately.",
-    "abilityPl": "«Wszyscy gracze wiedzą, że jesteś Wezyrem. Nie możesz zginąć w ciągu dnia. Jeśli dobrzy głosowali, możesz zdecydować o natychmiastowej egzekucji.»"
+    "abilityPl": "Wszyscy gracze wiedzą, że jesteś Wezyrem. Nie możesz zginąć w ciągu dnia. Jeśli dobrzy głosowali, możesz zdecydować o natychmiastowej egzekucji."
   },
   {
     "id": "organgrinder",
@@ -2766,25 +2766,25 @@
   {
     "id": "yaggababble",
     "nameEn": "Yaggababble",
-    "namePl": "«Yaggababble»",
+    "namePl": "Yaggababble",
     "edition": "",
     "team": "demon",
     "firstNight": 41,
     "firstNightReminderEn": "Show the Yaggababble their secret phrase.",
-    "firstNightReminderPl": "«Pokaż Yaggababble jego sekretną frazę.»",
+    "firstNightReminderPl": "Pokaż Yaggababble jego sekretną frazę.",
     "otherNight": 351,
     "otherNightReminderEn": "For each time the Yaggababble said their phrase today, a player might die.",
-    "otherNightReminderPl": "«Za każdym razem, gdy Yaggababble wypowiedział dziś swoją frazę, jeden gracz może zginąć.»",
+    "otherNightReminderPl": "Za każdym razem, gdy Yaggababble wypowiedział dziś swoją frazę, jeden gracz może zginąć.",
     "remindersEn": [ "Dead", "Dead", "Dead" ],
-    "remindersPl": [ "«Martwy»", "«Martwy»", "«Martwy»" ],
+    "remindersPl": [ "Martwy", "Martwy", "Martwy" ],
     "setup": false,
     "abilityEn": "You start knowing a secret phrase. For each time you said it publicly today, a player might die.",
-    "abilityPl": "«Rozpoczynając grę, poznajesz sekretną frazę. Za każdym razem, gdy wypowiedziałeś ją dziś publicznie, jeden gracz może zginąć.»"
+    "abilityPl": "Rozpoczynając grę, poznajesz sekretną frazę. Za każdym razem, gdy wypowiedziałeś ją dziś publicznie, jeden gracz może zginąć."
   },
   {
     "id": "ojo",
     "nameEn": "Ojo",
-    "namePl": "«Ojo»",
+    "namePl": "Ojo",
     "edition": "",
     "team": "demon",
     "firstNight": 0,
@@ -2792,30 +2792,30 @@
     "firstNightReminderPl": "",
     "otherNight": 321,
     "otherNightReminderEn": "The Ojo chooses a character.",
-    "otherNightReminderPl": "«Ojo wybiera postać.»",
+    "otherNightReminderPl": "Ojo wybiera postać.",
     "remindersEn": [ "Dead" ],
-    "remindersPl": [ "«Martwy»" ],
+    "remindersPl": [ "Martwy" ],
     "setup": false,
     "abilityEn": "Each night*, choose a character: they die. If they are not in play, the Storyteller chooses who dies.",
-    "abilityPl": "«Każdej nocy* wybierz postać: ginie. Jeśli nie ma jej w grze, Narrator wybiera, kto ginie.»"
+    "abilityPl": "Każdej nocy* wybierz postać: ginie. Jeśli nie ma jej w grze, Narrator wybiera, kto ginie."
   },
   {
     "id": "kazali",
     "nameEn": "Kazali",
-    "namePl": "«Kazali»",
+    "namePl": "Kazali",
     "edition": "",
     "team": "demon",
     "firstNight": 14,
     "firstNightReminderEn": "The Kazali chooses which players are which Minions. Wake each target. Show the 'You are' and Minion tokens & give a thumbs-down.",
-    "firstNightReminderPl": "«Kazali wybiera, którzy gracze są którymi Sługusami. Obudź każdy cel. Pokaż kartę 'Jesteś' i żeton Sługusa, a potem kciuk w dół.»",
+    "firstNightReminderPl": "Kazali wybiera, którzy gracze są którymi Sługusami. Obudź każdy cel. Pokaż kartę 'Jesteś' i żeton Sługusa, a potem kciuk w dół.",
     "otherNight": 352,
     "otherNightReminderEn": "The Kazali chooses a player.",
-    "otherNightReminderPl": "«Kazali wybiera gracza.»",
+    "otherNightReminderPl": "Kazali wybiera gracza.",
     "remindersEn": [ "Dead" ],
-    "remindersPl": [ "«Martwy»" ],
+    "remindersPl": [ "Martwy" ],
     "setup": true,
     "abilityEn": "Each night*, choose a player: they die. [You choose which players are which Minions. -? to +? Outsiders]",
-    "abilityPl": "«Każdej nocy* wybierz gracza: ginie. [Wybierasz, którzy gracze są którymi Sługusami. -? do +? Przybyszów]»"
+    "abilityPl": "Każdej nocy* wybierz gracza: ginie. [Wybierasz, którzy gracze są którymi Sługusami. -? do +? Przybyszów]"
   },
   {
     "id": "stormcatcher",
