@@ -1673,7 +1673,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each night, if the dead equal or outnumber the living, you learn 1 alive character. The Demon knows you are the King.",
-    "abilityPl": "«Każdej nocy, jeśli martwych jest tyle samo co żywych lub więcej, poznajesz 1 żywą postać. Demon wie, że jesteś Królem.»"
+    "abilityPl": "Każdej nocy, jeśli martwych jest tyle samo lub więcej niż żywych , poznajesz 1 żywą postać. Demon wie, że jesteś Królem."
   },
   {
     "id": "balloonist",
@@ -1688,10 +1688,10 @@
     "otherNightReminderEn": "Choose a character type that does not yet have a Seen reminder next to a character of that type. Point to a player whose character is of that type, if there any. Place the Balloonist's Seen reminder next to that character.",
     "otherNightReminderPl": "Wskaż gracza typu postaci, którego jeszcze nie poznałeś.",
     "remindersEn": [ "Know" ],
-    "remindersPl": [ "«Wie»" ],
+    "remindersPl": [ "Wie" ],
     "setup": true,
     "abilityEn": "Each night, you learn a player of a different character type than last night. [+0 or +1 Outsider]",
-    "abilityPl": "«Każdej nocy poznajesz gracza innego typu postaci niż poprzedniej nocy. [+0 lub +1 Przybysz]»"
+    "abilityPl": "Każdej nocy poznajesz gracza innego typu postaci niż poprzedniej nocy. [+0 lub +1 Przybysz]"
   },
   {
     "id": "cultleader",
@@ -1724,10 +1724,10 @@
     "otherNightReminderEn": "The Lycanthrope points to a living player: if good, they die and no one else can die tonight.",
     "otherNightReminderPl": "Likantrop wskazuje gracza: jeśli jest dobry, ginie i jest to jedyna śmierć tej nocy.",
     "remindersEn": [ "Faux Paw", "Dead" ],
-    "remindersPl": [ "«Fałszywa łapa»", "Martwy" ],
+    "remindersPl": [ "Fałszywa łapa", "Martwy" ],
     "setup": false,
     "abilityEn": "Each night*, choose an alive player. If good, they die & the Demon doesn’t kill tonight. One good player registers as evil.",
-    "abilityPl": "«Każdej nocy* wybierz żyjącego gracza. Jeśli jest dobry, ginie, a Demon tej nocy nie zabija. Jeden dobry gracz jest rozpoznawany jako zły.»"
+    "abilityPl": "Każdej nocy* wybierz żyjącego gracza. Jeśli jest dobry, ginie, a Demon tej nocy nie zabija. Jeden dobry gracz jest rozpoznawany jako zły."
   },
   {
     "id": "amnesiac",
@@ -1837,7 +1837,7 @@
     "remindersGlobalPl": [ "Jest Alchemikiem" ],
     "setup": false,
     "abilityEn": "You have a Minion ability. When using this, the Storyteller may prompt you to choose differently.",
-    "abilityPl": "«Masz zdolność Sługusa. Gdy jej używasz, Narrator może poprosić cię o inny wybór.»"
+    "abilityPl": "Masz zdolność Sługusa. Gdy jej używasz, Narrator może poprosić cię o inny wybór."
   },
   {
     "id": "farmer",
@@ -1963,7 +1963,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each Minion gets 3 bluffs.",
-    "abilityPl": "«Każdy Sługus dostaje 3 blefy.»"
+    "abilityPl": "Każdy Sługus dostaje 3 blefy."
   },
   {
     "id": "acrobat",
@@ -1978,10 +1978,10 @@
     "otherNightReminderEn": "If a good living neighbour is drunk or poisoned, the Acrobat player dies.",
     "otherNightReminderPl": "Jeśli żyjący sąsiad będący dobrym graczem jest pijany lub otruty, Akrobata ginie.",
     "remindersEn": [ "Dead", "Chosen" ],
-    "remindersPl": [ "Martwy", "«Wybrany»" ],
+    "remindersPl": [ "Martwy", "Wybrany" ],
     "setup": false,
     "abilityEn": "Each night*, choose a player: if they are or become drunk or poisoned tonight, you die.",
-    "abilityPl": "«Każdej nocy* wybierz gracza: jeśli jest lub stanie się tej nocy pijany lub otruty, giniesz.»"
+    "abilityPl": "Każdej nocy* wybierz gracza: jeśli jest lub stanie się tej nocy pijany lub otruty, giniesz."
   },
   {
     "id": "puzzlemaster",
@@ -2027,7 +2027,7 @@
     "team": "outsider",
     "firstNight": 310,
     "firstNightReminderEn": "Wake all the Minions, show them the 'This character selected you' card and the Damsel token.",
-    "firstNightReminderPl": "Obudź wszystkich Sługusów i pokaż im żeton Damy.",
+    "firstNightReminderPl": "Obudź wszystkich Sługusów i pokaż im żeton Panienki.",
     "otherNight": 460,
     "otherNightReminderEn": "If selected by the Huntsman, wake the Damsel, show 'You are' card and a not-in-play Townsfolk token.",
     "otherNightReminderPl": "Jeśli wybrana przez Myśliwego, obudź Panienkę i pokaż jej nową postać Mieszkańca.",
@@ -2035,7 +2035,7 @@
     "remindersPl": [ "Zgadywanie użyte" ],
     "setup": false,
     "abilityEn": "All Minions know a Damsel is in play. If a Minion publicly guesses you (once), your team loses.",
-    "abilityPl": "«Wszystkie Sługusy wiedzą, że Panienka jest w grze. Jeśli Sługus publicznie zgadnie, że jesteś Panienką (raz), twoja drużyna przegrywa.»"
+    "abilityPl": "Wszystkie Sługusy wiedzą, że Panienka jest w grze. Jeśli Sługus publicznie zgadnie, że jesteś Panienką (raz), twoja drużyna przegrywa."
   },
   {
     "id": "golem",

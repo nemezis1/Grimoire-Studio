@@ -255,7 +255,7 @@
       {
         "id": "scarletwoman",
         "reasonEn": "If there would be two Demons, one of which was the Scarlet Woman, the Scarlet Woman remains the Scarlet Woman.",
-        "reasonPl": "«Jeśli byłyby dwa Demony, z których jednym była Kusicielka, Kusicielka pozostaje Kusicielką.»"
+        "reasonPl": "Jeśli byłyby dwa Demony, z których jednym była Kusicielka, Kusicielka pozostaje Kusicielką."
       }
     ]
   },
@@ -270,7 +270,7 @@
       {
         "id": "alchemist",
         "reasonEn": "An Alchemist-Spy has no Spy ability & a Spy is in play. After each execution, a living Alchemist-Spy may publicly guess a living player as the Spy. If correct, the Demon must choose the Spy tonight.",
-        "reasonPl": "«Alchemik-Szpieg nie ma zdolności Szpiega, a Szpieg jest w grze. Po każdej egzekucji żyjący Alchemik-Szpieg może publicznie wskazać żyjącego gracza jako Szpiega. Jeśli trafi, Demon musi tej nocy wybrać Szpiega.»"
+        "reasonPl": "Alchemik-Szpieg nie ma zdolności Szpiega, a Szpieg jest w grze. Po każdej egzekucji żyjący Alchemik-Szpieg może publicznie wskazać żyjącego gracza jako Szpiega. Jeśli trafi, Demon musi tej nocy wybrać Szpiega."
       },
       {
         "id": "poppygrower",
@@ -280,7 +280,7 @@
       {
         "id": "damsel",
         "reasonEn": "If the Spy is (or has been) in play, the Damsel is poisoned.",
-        "reasonPl": "«Jeśli Szpieg jest (lub był) w grze, Panienka jest otruta.»"
+        "reasonPl": "Jeśli Szpieg jest (lub był) w grze, Panienka jest otruta."
       },
       {
         "id": "heretic",
@@ -310,12 +310,12 @@
       {
         "id": "alchemist",
         "reasonEn": "An Alchemist-Widow has no Widow ability & a Widow is in play. After each execution, a living Alchemist-Widow may publicly guess a living player as the Widow. If correct, the Demon must choose the Widow tonight.",
-        "reasonPl": "«Alchemik-Wdowa nie ma zdolności Wdowy, a Wdowa jest w grze. Po każdej egzekucji żyjący Alchemik-Wdowa może publicznie wskazać żyjącego gracza jako Wdowę. Jeśli trafi, Demon musi tej nocy wybrać Wdowę.»"
+        "reasonPl": "Alchemik-Wdowa nie ma zdolności Wdowy, a Wdowa jest w grze. Po każdej egzekucji żyjący Alchemik-Wdowa może publicznie wskazać żyjącego gracza jako Wdowę. Jeśli trafi, Demon musi tej nocy wybrać Wdowę."
       },
       {
         "id": "damsel",
         "reasonEn": "If the Widow is (or has been) in play, the Damsel is poisoned.",
-        "reasonPl": "«Jeśli Wdowa jest (lub była) w grze, Panienka jest otruta.»"
+        "reasonPl": "Jeśli Wdowa jest (lub była) w grze, Panienka jest otruta."
       },
       {
         "id": "heretic",
@@ -340,7 +340,7 @@
       {
         "id": "heretic",
         "reasonEn": "Only 1 jinxed character can be in play.",
-        "reasonPl": "«W grze może być tylko 1 z tych postaci.»"
+        "reasonPl": "W grze może być tylko 1 z tych postaci."
       }
     ]
   },
@@ -355,7 +355,7 @@
       {
         "id": "balloonist",
         "reasonEn": "If the Marionette thinks that they are the Balloonist, an Outsider might have been added during setup.",
-        "reasonPl": "«Jeśli Marionetka myśli, że jest Aeronautą, podczas przygotowania gry mógł zostać dodany Przybysz.»"
+        "reasonPl": "Jeśli Marionetka myśli, że jest Aeronautą, podczas przygotowania gry mógł zostać dodany Przybysz."
       },
       {
         "id": "huntsman",
@@ -420,7 +420,7 @@
       {
         "id": "king",
         "reasonEn": "If Riot is in play, and at least 1 player is dead, the King learns an alive character each night.",
-        "reasonPl": "«Jeśli Zamieszki są w grze i nie żyje co najmniej 1 gracz, Król każdej nocy poznaje żywą postać.»"
+        "reasonPl": "Jeśli Zamieszki są w grze i nie żyje co najmniej 1 gracz, Król każdej nocy poznaje żywą postać."
       },
       {
         "id": "exorcist",
@@ -465,17 +465,17 @@
       {
         "id": "boffin",
         "reasonEn": "If the Alchemist has the Boffin ability, the Alchemist does not learn what ability the Demon has.",
-        "reasonPl": "«Jeśli Alchemik ma zdolność Naukowca, Alchemik nie dowiaduje się, jaką zdolność ma Demon.»"
+        "reasonPl": "Jeśli Alchemik ma zdolność Naukowca, Alchemik nie dowiaduje się, jaką zdolność ma Demon."
       },
       {
         "id": "marionette",
         "reasonEn": "An Alchemist-Marionette has no Marionette ability & the Marionette is in play.",
-        "reasonPl": "«Alchemik-Marionetka nie ma zdolności Marionetki, a Marionetka jest w grze.»"
+        "reasonPl": "Alchemik-Marionetka nie ma zdolności Marionetki, a Marionetka jest w grze."
       },
       {
         "id": "mastermind",
         "reasonEn": "An Alchemist-Mastermind has no Mastermind ability & the Mastermind is not-in-play.",
-        "reasonPl": "«Alchemik-Manipulant nie ma zdolności Manipulanta, a Manipulanta nie ma w grze.»"
+        "reasonPl": "Alchemik-Manipulant nie ma zdolności Manipulanta, a Manipulanta nie ma w grze."
       },
       {
         "id": "organgrinder",

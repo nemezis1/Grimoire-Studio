@@ -218,7 +218,7 @@
   {
     "id": "deusexfiasco",
     "nameEn": "Deus ex Fiasco",
-    "namePl": "«Deus ex Fiasco»",
+    "namePl": "Deus ex Fiasco",
     "edition": "",
     "team": "fabled",
     "firstNight": 0,
@@ -228,15 +228,15 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Whoopsie" ],
-    "remindersPl": [ "«Ups»" ],
+    "remindersPl": [ "Ups" ],
     "setup": true,
     "abilityEn": "At least once per game, the Storyteller will make a mistake, correct it, and publicly admit to it.",
-    "abilityPl": "«Przynajmniej raz na grę Narrator popełni błąd, poprawi go i publicznie się do niego przyzna.»"
+    "abilityPl": "Przynajmniej raz na grę Narrator popełni błąd, poprawi go i publicznie się do niego przyzna."
   },
   {
     "id": "ferryman",
     "nameEn": "Ferryman",
-    "namePl": "«Przewoźnik»",
+    "namePl": "Przewoźnik",
     "edition": "",
     "team": "fabled",
     "firstNight": 0,
@@ -249,6 +249,6 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "On the final day, all dead players regain their vote token.",
-    "abilityPl": "«Ostatniego dnia wszyscy martwi gracze odzyskują swój żeton głosu.»"
+    "abilityPl": "Ostatniego dnia wszyscy martwi gracze odzyskują swój żeton głosu."
   }
 ]
