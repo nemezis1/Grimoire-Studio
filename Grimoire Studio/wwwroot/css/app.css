@@ -396,7 +396,9 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
     background: var(--team);
     color: #fff;
     font-size: 0.85rem;
+    text-decoration: none;
 }
+a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 
 /* Role detail */
 /* Panels sit side by side on wide pages so text lines stay readable. */

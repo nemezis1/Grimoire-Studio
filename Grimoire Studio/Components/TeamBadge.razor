@@ -1,4 +1,6 @@
-<span class="team-badge team--@(Team)" style="@Teams.Style(Team)">@Teams.Singular(Team)</span>
+@* The team's name in its colour; leads to the list of roles filtered to that team. *@
+<a class="team-badge team--@(Team)" style="@Teams.Style(Team)" href="roles?team=@Uri.EscapeDataString(Team)"
+   title="Wszystkie role: @Teams.Plural(Team)">@Teams.Singular(Team)</a>
 
 @code {
     [Parameter, EditorRequired]

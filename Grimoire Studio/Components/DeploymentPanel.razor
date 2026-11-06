@@ -25,6 +25,13 @@
     [Parameter]
     public EventCallback<DeploymentStatus> StatusChanged { get; set; }
 
+    /// <summary>
+    /// Commit just sent from this page: its deployment is followed (and "Odśwież" shown) from the moment it is set,
+    /// even when the panel only appears with it.
+    /// </summary>
+    [Parameter]
+    public string? Sent { get; set; }
+
     private DeploymentStatus? _status;
     private string? _error;
     private bool _loading;
@@ -39,6 +46,14 @@
     private bool IsSent(DeploymentRun run) => _sent is not null && run.Sha.StartsWith(_sent, StringComparison.OrdinalIgnoreCase);
 
     protected override Task OnInitializedAsync() => RefreshAsync();
+
+    protected override void OnParametersSet()
+    {
+        if (Sent is not null && Sent != _sent)
+        {
+            Watch(Sent);
+        }
+    }
 
     /// <summary>Checks now, and keeps checking while a deployment runs.</summary>
     public async Task RefreshAsync()
@@ -75,10 +90,11 @@
     /// Follows the deployment of a commit just sent. A push starts its run a few seconds later, so it polls even before
     /// the run shows up.
     /// </summary>
-    public void Watch(string sha)
+    private void Watch(string sha)
     {
         _sent = sha;
         _watching = true;
+        StateHasChanged();
         if (_polling is null)
         {
             _polling = new CancellationTokenSource();

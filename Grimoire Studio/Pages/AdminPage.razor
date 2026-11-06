@@ -184,13 +184,13 @@ else
         }
     </section>
 
-    @if (History.Count > 0)
+    @if (History.Count > 0 || _sentSha is not null)
     {
         <section class="panel admin-section">
             <div class="title-row">
                 <h2>Historia</h2>
                 <div class="script-actions">
-                    <DeploymentPanel @ref="_deployments" StatusChanged="status => _deployStatus = status" />
+                    <DeploymentPanel Sent="@_sentSha" StatusChanged="status => _deployStatus = status" />
                 </div>
             </div>
             <p class="muted small">
@@ -278,7 +278,9 @@ else
     private string? _adminKey;
     private string? _commitMessage;
     private bool _busy;
-    private DeploymentPanel? _deployments;
+
+    /// <summary>Last commit sent from this page; the deployment panel follows it.</summary>
+    private string? _sentSha;
     private DeploymentStatus? _deployStatus;
     private bool _messageIsError;
 
@@ -661,7 +663,7 @@ else
             _keepMine.Clear();
             if (result.Changed)
             {
-                _deployments?.Watch(result.Sha);
+                _sentSha = result.Sha;
             }
 
             Show(result.Changed
