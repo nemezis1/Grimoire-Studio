@@ -500,7 +500,7 @@
     "otherNightReminderEn": "If the Grandmother’s grandchild was killed by the Demon tonight: The Grandmother dies.",
     "otherNightReminderPl": "Jeśli wnuk Babci został tej nocy zabity przez Demona: Babcia ginie.",
     "remindersEn": [ "Grandchild", "Dead" ],
-    "remindersPl": [ "Wnuk", "«Martwy»" ],
+    "remindersPl": [ "Wnuk", "Martwy" ],
     "setup": false,
     "abilityEn": "You start knowing a good player & their character. If the Demon kills them, you die too.",
     "abilityPl": "Zaczynasz grę znając jednego z dobrych graczy i znasz ich role. Jeśli Demon zabije ich, ty również giniesz."
@@ -2838,7 +2838,7 @@
   {
     "id": "bigwig",
     "nameEn": "Big Wig",
-    "namePl": "«Szycha»",
+    "namePl": "Szycha",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2851,12 +2851,12 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each nominee chooses a player: until voting, only they may speak & they are mad the nominee is good or they might die.",
-    "abilityPl": "«Każdy nominowany wybiera gracza: do głosowania tylko on może mówić i jest obłąkany, że nominowany jest dobry, albo może zginąć.»"
+    "abilityPl": "Każdy nominowany wybiera gracza: do głosowania tylko on może mówić i jest obłąkany, że nominowany jest dobry, albo może zginąć."
   },
   {
     "id": "bootlegger",
     "nameEn": "Bootlegger",
-    "namePl": "«Przemytnik»",
+    "namePl": "Przemytnik",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2869,12 +2869,12 @@
     "remindersPl": [ "?", "?" ],
     "setup": true,
     "abilityEn": "This script has homebrew characters or rules.",
-    "abilityPl": "«Ten skrypt zawiera postacie lub zasady domowe.»"
+    "abilityPl": "Ten skrypt zawiera postacie lub zasady domowe."
   },
   {
     "id": "gardener",
     "nameEn": "Gardener",
-    "namePl": "«Ogrodnik»",
+    "namePl": "Ogrodnik",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2887,12 +2887,12 @@
     "remindersPl": [],
     "setup": true,
     "abilityEn": "The Storyteller assigns all players' characters.",
-    "abilityPl": "«Narrator przydziela postacie wszystkim graczom.»"
+    "abilityPl": "Narrator przydziela postacie wszystkim graczom."
   },
   {
     "id": "godofug",
     "nameEn": "God of Ug",
-    "namePl": "«Bóg Ug»",
+    "namePl": "Bóg Ug",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2902,15 +2902,15 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Hat" ],
-    "remindersPl": [ "«Kapelusz»" ],
+    "remindersPl": [ "Kapelusz" ],
     "setup": false,
     "abilityEn": "One Ug hat. When wear Ug hat, must speak one sound at a time but vote twice. If fail, pass Ug hat.",
-    "abilityPl": "«Jeden kapelusz Ug. Kto nosi kapelusz Ug, mówi po jednym dźwięku naraz, ale głosuje dwa razy. Jeśli zawiedzie, oddaje kapelusz Ug.»"
+    "abilityPl": "Jeden kapelusz Ug. Kto nosi kapelusz Ug, mówi po jednym dźwięku naraz, ale głosuje dwa razy. Jeśli zawiedzie, oddaje kapelusz Ug."
   },
   {
     "id": "hindu",
     "nameEn": "Hindu",
-    "namePl": "«Hindus»",
+    "namePl": "Hindus",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2923,12 +2923,12 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "The first 4 players to die are immediately reincarnated as Travellers of the same alignment.",
-    "abilityPl": "«Pierwszych 4 graczy, którzy zginą, natychmiast odradza się jako Wędrowcy o tym samym charakterze.»"
+    "abilityPl": "Pierwszych 4 graczy, którzy zginą, natychmiast odradza się jako Wędrowcy o tym samym charakterze."
   },
   {
     "id": "knaves",
     "nameEn": "Knaves",
-    "namePl": "«Łotry»",
+    "namePl": "Łotry",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2941,12 +2941,12 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "There are 2 Storytellers: one lies & one tells the truth. Once per game, at dusk, they might switch.",
-    "abilityPl": "«Jest 2 Narratorów: jeden kłamie, a drugi mówi prawdę. Raz na grę, o zmierzchu, mogą się zamienić.»"
+    "abilityPl": "Jest 2 Narratorów: jeden kłamie, a drugi mówi prawdę. Raz na grę, o zmierzchu, mogą się zamienić."
   },
   {
     "id": "pope",
     "nameEn": "Pope",
-    "namePl": "«Papież»",
+    "namePl": "Papież",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2959,30 +2959,30 @@
     "remindersPl": [],
     "setup": true,
     "abilityEn": "There are duplicate good characters in play. They might also be bluffs.",
-    "abilityPl": "«W grze są zdublowane dobre postacie. Mogą też być blefami.»"
+    "abilityPl": "W grze są zdublowane dobre postacie. Mogą też być blefami."
   },
   {
     "id": "tor",
     "nameEn": "Tor",
-    "namePl": "«Tor»",
+    "namePl": "Tor",
     "edition": "",
     "team": "loric",
     "firstNight": 51,
     "firstNightReminderEn": "Skip Minion Info and Demon Info.",
-    "firstNightReminderPl": "«Pomiń informacje dla Sługusów i Demona.»",
+    "firstNightReminderPl": "Pomiń informacje dla Sługusów i Demona.",
     "otherNight": 511,
     "otherNightReminderEn": "If a player died tonight, show the 'You are' info token, their character token, & give a thumb signal.",
-    "otherNightReminderPl": "«Jeśli tej nocy zginął gracz, pokaż kartę 'Jesteś', żeton jego postaci i daj znak kciukiem.»",
+    "otherNightReminderPl": "Jeśli tej nocy zginął gracz, pokaż kartę 'Jesteś', żeton jego postaci i daj znak kciukiem.",
     "remindersEn": [],
     "remindersPl": [],
     "setup": true,
     "abilityEn": "Players don't know their character or alignment. They learn them when they die.",
-    "abilityPl": "«Gracze nie znają swojej postaci ani charakteru. Poznają je, gdy zginą.»"
+    "abilityPl": "Gracze nie znają swojej postaci ani charakteru. Poznają je, gdy zginą."
   },
   {
     "id": "ventriloquist",
     "nameEn": "Ventriloquist",
-    "namePl": "«Brzuchomówca»",
+    "namePl": "Brzuchomówca",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -2992,15 +2992,15 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Mad" ],
-    "remindersPl": [ "«Obłąkany»" ],
+    "remindersPl": [ "Obłąkany" ],
     "setup": false,
     "abilityEn": "If a player is mad as a fresh character during their nomination, they might not die if executed today.",
-    "abilityPl": "«Jeśli gracz podczas swojej nominacji jest obłąkany jako nowa postać, może nie zginąć, jeśli zostanie dziś stracony.»"
+    "abilityPl": "Jeśli gracz podczas swojej nominacji jest obłąkany jako nowa postać, może nie zginąć, jeśli zostanie dziś stracony."
   },
   {
     "id": "zenomancer",
     "nameEn": "Zenomancer",
-    "namePl": "«Zenomanta»",
+    "namePl": "Zenomanta",
     "edition": "",
     "team": "loric",
     "firstNight": 0,
@@ -3010,9 +3010,9 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Goal", "Goal", "Goal" ],
-    "remindersPl": [ "«Cel»", "«Cel»", "«Cel»" ],
+    "remindersPl": [ "Cel", "Cel", "Cel" ],
     "setup": false,
     "abilityEn": "One or more players each have a goal. When achieved, that player learns a piece of true info.",
-    "abilityPl": "«Co najmniej jeden gracz ma cel. Gdy go osiągnie, poznaje prawdziwą informację.»"
+    "abilityPl": "Co najmniej jeden gracz ma cel. Gdy go osiągnie, poznaje prawdziwą informację."
   }
 ]
