@@ -30,7 +30,7 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Protected", "Protected", "Something Bad" ],
-    "remindersPl": [ "«Chroniony»", "«Chroniony»", "Coś złego" ],
+    "remindersPl": [ "Chroniony", "Chroniony", "Coś złego" ],
     "setup": false,
     "abilityEn": "Something bad might happen to whoever is most responsible for the death of a new player.",
     "abilityPl": "Coś złego może spotkać osobę najbardziej odpowiedzialną za śmierć nowego gracza."
@@ -84,7 +84,7 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Register Falsely?", "Aligned", "Aligned" ],
-    "remindersPl": [ "«Fałszywie rozpoznany?»", "«Sprzymierzony»", "«Sprzymierzony»" ],
+    "remindersPl": [ "Fałszywie rozpoznany?", "Sprzymierzony", "Sprzymierzony" ],
     "setup": false,
     "abilityEn": "2 neighboring players are known to be the same alignment. Once per game, one of them registers falsely.",
     "abilityPl": "Dwóch sąsiadujących graczy ma ten sam charakter. Raz na grę jeden z nich może zostać wykryty jako ktoś inny."

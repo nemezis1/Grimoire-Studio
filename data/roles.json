@@ -572,7 +572,7 @@
     "otherNightReminderEn": "The previously protected and drunk players lose those markers. The Innkeeper points to two players. Those players are protected. One is drunk.",
     "otherNightReminderPl": "Gracze wcześniej chronieni i pijani tracą te statusy. Oberżysta wskazuje dwóch graczy. Ci gracze są chronieni. Jeden z nich staje się pijany.",
     "remindersEn": [ "Safe", "Safe", "Drunk" ],
-    "remindersPl": [ "«Bezpieczny»", "«Bezpieczny»", "Pijany" ],
+    "remindersPl": [ "Bezpieczny", "Bezpieczny", "Pijany" ],
     "setup": false,
     "abilityEn": "Each night*, choose 2 players: they can't die tonight, but 1 is drunk until dusk.",
     "abilityPl": "Każdej nocy* wybierz 2 graczy, nie mogą umrzeć tej nocy ale jeden z nich jest pijany do zmierzchu."
@@ -1490,7 +1490,7 @@
     "otherNightReminderEn": "Choose a player, wake them and tell them which Barista power is affecting them. Treat them accordingly (sober/healthy/true info or activate their ability twice).",
     "otherNightReminderPl": "Wybierz gracza i zdecyduj: staje się trzeźwy i dostaje prawdziwe info, albo jego zdolność działa dwa razy.",
     "remindersEn": [ "Sober & Healthy", "Acts Twice", "?", "?" ],
-    "remindersPl": [ "Trzeźwy i zdrowy", "«Działa dwa razy»", "?", "?" ],
+    "remindersPl": [ "Trzeźwy i zdrowy", "Działa dwa razy", "?", "?" ],
     "setup": false,
     "abilityEn": "Each night, until dusk, 1) a player becomes sober, healthy and gets true info, or 2) their ability works twice. They learn which.",
     "abilityPl": "Każdej nocy do zmierzchu: 1) wybrany gracz staje się trzeźwy i otrzymuje prawdziwe informacje, lub 2) jego zdolność działa dwa razy. Gracz dowiaduje się, która opcja została wybrana."
@@ -1580,7 +1580,7 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Know", "Know", "Know" ],
-    "remindersPl": [ "«Wie»", "«Wie»", "«Wie»" ],
+    "remindersPl": [ "Wie", "Wie", "Wie" ],
     "setup": false,
     "abilityEn": "You start knowing 3 players, 1 and only 1 of which is evil.",
     "abilityPl": "Zaczynasz grę, znając 3 graczy, z których jeden i tylko jeden jest zły."
@@ -2086,7 +2086,7 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Poisoned", "Know" ],
-    "remindersPl": [ "Otruty", "«Wie»" ],
+    "remindersPl": [ "Otruty", "Wie" ],
     "remindersGlobalEn": [ "Knows" ],
     "remindersGlobalPl": [ "Wie" ],
     "setup": false,
@@ -2239,7 +2239,7 @@
     "remindersPl": [ "Martwy", "Otruty" ],
     "setup": false,
     "abilityEn": "Each night*, choose a player: they die. You start by choosing a player: they are poisoned. You die if & only if they are dead.",
-    "abilityPl": "«Każdej nocy* wybierz gracza: ginie. Na początku wybierz gracza: jest otruty. Giniesz wtedy i tylko wtedy, gdy on nie żyje.»"
+    "abilityPl": "Każdej nocy* wybierz gracza: ginie. Na początku wybierz gracza: jest otruty. Giniesz wtedy i tylko wtedy, gdy on nie żyje."
   },
   {
     "id": "alhadikhia",
@@ -2362,7 +2362,7 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "Każdej nocy wybieraj gracza: dowiadujesz się w jakiej jest drużynie.",
     "remindersEn": [ "Drunk" ],
-    "remindersPl": [ "«Pijany»" ],
+    "remindersPl": [ "Pijany" ],
     "setup": true,
     "abilityEn": "Each night, choose a player: you learn their alignment. [+0 to +2 Village Idiots. 1 of the extras is drunk]",
     "abilityPl": "Każdej nocy wybieraj gracza: dowiadujesz się w jakiej jest drużynie. [+0 do +2 Wioskowych głupków. Jeden zdodatkowych jest pijany]."
@@ -2524,7 +2524,7 @@
     "otherNightReminderEn": "Each night*, choose a player: they die. [Evil characters are in a line. You are in the middle. +1 Minion. -? to +? Outsiders]",
     "otherNightReminderPl": "Każdej nocy* wybierz gracza: ginie. [Złe postacie stoją w szeregu. Jesteś w środku. +1 Sługus. -? do +? Przybyszów]",
     "remindersEn": [ "Dead" ],
-    "remindersPl": [ "«Martwy»" ],
+    "remindersPl": [ "Martwy" ],
     "setup": true,
     "abilityEn": "Each night*, choose a player: they die. [Evil characters are in a line. You are in the middle. +1 Minion. -? to +? Outsiders]",
     "abilityPl": "Każdej nocy* wybierz gracza: ginie. [Złe postacie stoją w szeregu. Jesteś w środku. +1 Sługus. -? do +? Przybyszów]"
