@@ -1017,8 +1017,15 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
     box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.65), 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
-.print-dialog__settings { overflow-y: auto; padding: 1rem; border-right: 1px solid var(--border); }
-.print-dialog__settings h2 { margin-top: 0; }
+.print-dialog:focus { outline: none; }
+
+/* Settings: the title on top and the buttons at the bottom stay put; the options between them scroll. */
+.print-dialog__settings { display: flex; flex-direction: column; min-height: 0; overflow: hidden; border-right: 1px solid var(--border); }
+.print-dialog__settings > h2 { flex: none; margin: 0; padding: 1rem 1rem 0.75rem; }
+.print-dialog__options { flex: 1; min-height: 0; overflow-y: auto; padding: 0 1rem; }
+.print-dialog__footer { flex: none; padding: 0.75rem 1rem; border-top: 1px solid var(--border); background: var(--bg); }
+.print-dialog__footer .field-row { margin-bottom: 0.25rem; }
+.print-dialog__footer p { margin: 0; }
 .print-dialog__settings h3 { margin: 0 0 0.5rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .checks--column { grid-template-columns: minmax(0, 1fr); }
 .print-dialog__preview { overflow: auto; padding: 1.5rem; background: #4a4642; }
