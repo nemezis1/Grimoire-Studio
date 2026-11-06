@@ -40,7 +40,7 @@
       {
         "id": "heretic",
         "reasonEn": "Only 1 jinxed character can be in play.",
-        "reasonPl": "«W grze może być tylko 1 z tych postaci.»"
+        "reasonPl": "W grze może być tylko 1 z tych postaci."
       },
       {
         "id": "damsel",
@@ -50,27 +50,27 @@
       {
         "id": "politician",
         "reasonEn": "If the Pit-Hag turns an evil player into the Politician, they can't turn good due to their own ability.",
-        "reasonPl": "«Jeśli Jędza zamieni złego gracza w Polityka, nie może on stać się dobry dzięki własnej zdolności.»"
+        "reasonPl": "Jeśli Jędza zamieni złego gracza w Polityka, nie może on stać się dobry dzięki własnej zdolności."
       },
       {
         "id": "cultleader",
         "reasonEn": "If the Pit-Hag turns an evil player into the Cult Leader, they can't turn good due to their own ability.",
-        "reasonPl": "«Jeśli Jędza zamieni złego gracza w Lidera Kultu, nie może on stać się dobry dzięki własnej zdolności.»"
+        "reasonPl": "Jeśli Jędza zamieni złego gracza w Lidera Kultu, nie może on stać się dobry dzięki własnej zdolności."
       },
       {
         "id": "goon",
         "reasonEn": "If the Pit-Hag turns an evil player into the Goon, they can't turn good due to their own ability.",
-        "reasonPl": "«Jeśli Jędza zamieni złego gracza w Najemnika, nie może on stać się dobry dzięki własnej zdolności.»"
+        "reasonPl": "Jeśli Jędza zamieni złego gracza w Najemnika, nie może on stać się dobry dzięki własnej zdolności."
       },
       {
         "id": "ogre",
         "reasonEn": "If the Pit-Hag turns an evil player into the Ogre, they can't turn good due to their own ability.",
-        "reasonPl": "«Jeśli Jędza zamieni złego gracza w Ogra, nie może on stać się dobry dzięki własnej zdolności.»"
+        "reasonPl": "Jeśli Jędza zamieni złego gracza w Ogra, nie może on stać się dobry dzięki własnej zdolności."
       },
       {
         "id": "villageidiot",
         "reasonEn": "If there is a spare token, the Pit-Hag can create an extra Village Idiot. If so, the drunk Village Idiot might change.",
-        "reasonPl": "«Jeśli jest wolny żeton, Jędza może stworzyć dodatkowego Wioskowego głupka. Wtedy pijany Wioskowy głupek może się zmienić.»"
+        "reasonPl": "Jeśli jest wolny żeton, Jędza może stworzyć dodatkowego Wioskowego głupka. Wtedy pijany Wioskowy głupek może się zmienić."
       }
     ]
   },
@@ -180,17 +180,17 @@
       {
         "id": "poppygrower",
         "reasonEn": "If Lil' Monsta & the Poppy Grower are alive, Minions wake one by one, until one of them chooses to take the Lil' Monsta token.",
-        "reasonPl": "«Jeśli Lil' Monsta i Hodowca Maku żyją, Sługusy budzą się po kolei, aż któryś z nich zdecyduje się wziąć żeton Lil' Monsty.»"
+        "reasonPl": "Jeśli Lil' Monsta i Hodowca Maku żyją, Sługusy budzą się po kolei, aż któryś z nich zdecyduje się wziąć żeton Lil' Monsty."
       },
       {
         "id": "magician",
         "reasonEn": "If the Magician is alive, the Storyteller chooses which Minion babysits Lil' Monsta.",
-        "reasonPl": "«Jeśli Iluzjonista żyje, Narrator wybiera, który Sługus opiekuje się Lil' Monstą.»"
+        "reasonPl": "Jeśli Iluzjonista żyje, Narrator wybiera, który Sługus opiekuje się Lil' Monstą."
       },
       {
         "id": "scarletwoman",
         "reasonEn": "If Lil' Monsta dies with 5 or more players alive, the Scarlet Woman babysits Lil' Monsta for the rest of the game.",
-        "reasonPl": "«Jeśli Lil' Monsta zginie, gdy żyje 5 lub więcej graczy, Kusicielka opiekuje się Lil' Monstą do końca gry.»"
+        "reasonPl": "Jeśli Lil' Monsta zginie, gdy żyje 5 lub więcej graczy, Kusicielka opiekuje się Lil' Monstą do końca gry."
       },
       {
         "id": "hatter",
@@ -200,7 +200,7 @@
       {
         "id": "psychopath",
         "reasonEn": "If the Psychopath is babysitting Lil' Monsta, they die when executed.",
-        "reasonPl": "«Jeśli Psychopata opiekuje się Lil' Monstą, ginie, gdy zostanie stracony.»"
+        "reasonPl": "Jeśli Psychopata opiekuje się Lil' Monstą, ginie, gdy zostanie poddany egzekucji."
       },
       {
         "id": "vizier",
@@ -215,12 +215,12 @@
       {
         "id": "engineer",
         "reasonEn": "If Legion is created, all evil players become Legion. If Legion is in play, the Engineer starts knowing this but has no ability.",
-        "reasonPl": "«Jeśli powstanie Legion, wszyscy źli gracze stają się Legionem. Jeśli Legion jest w grze, Inżynier wie o tym od początku, ale nie ma zdolności.»"
+        "reasonPl": "Jeśli powstanie Legion, wszyscy źli gracze stają się Legionem. Jeśli Legion jest w grze, Inżynier wie o tym od początku, ale nie ma zdolności."
       },
       {
         "id": "preacher",
         "reasonEn": "If the Preacher chooses Legion, Legion keeps their ability, but the Preacher might learn they are Legion.",
-        "reasonPl": "«Jeśli Kaznodzieja wybierze Legion, Legion zachowuje zdolność, ale Kaznodzieja może się dowiedzieć, że to Legion.»"
+        "reasonPl": "Jeśli Kaznodzieja wybierze Legion, Legion zachowuje zdolność, ale Kaznodzieja może się dowiedzieć, że to Legion."
       },
       {
         "id": "hatter",
@@ -230,12 +230,12 @@
       {
         "id": "minstrel",
         "reasonEn": "If Legion died by execution today, Legion keeps their ability, but the Minstrel might learn they are Legion.",
-        "reasonPl": "«Jeśli Legion zginął dziś w egzekucji, Legion zachowuje zdolność, ale Minstrel może się dowiedzieć, że to Legion.»"
+        "reasonPl": "Jeśli Legion zginął dziś w egzekucji, Legion zachowuje zdolność, ale Minstrel może się dowiedzieć, że to Legion."
       },
       {
         "id": "politician",
         "reasonEn": "The Politician might register as evil to Legion.",
-        "reasonPl": "«Polityk może być rozpoznawany przez Legion jako zły.»"
+        "reasonPl": "Polityk może być rozpoznawany przez Legion jako zły."
       },
       {
         "id": "summoner",
@@ -245,7 +245,7 @@
       {
         "id": "zealot",
         "reasonEn": "The Zealot might register as evil to Legion.",
-        "reasonPl": "«Nadgorliwiec może być rozpoznawany przez Legion jako zły.»"
+        "reasonPl": "Nadgorliwiec może być rozpoznawany przez Legion jako zły."
       }
     ]
   },
@@ -275,7 +275,7 @@
       {
         "id": "poppygrower",
         "reasonEn": "If the Poppy Grower has their ability, the Spy does not see the Grimoire.",
-        "reasonPl": "«Jeśli Hodowca Maku ma swoją zdolność, Szpieg nie widzi Grimoire'u.»"
+        "reasonPl": "Jeśli Hodowca Maku ma swoją zdolność, Szpieg nie widzi Grimoire'u."
       },
       {
         "id": "damsel",
@@ -290,7 +290,7 @@
       {
         "id": "ogre",
         "reasonEn": "The Spy registers as evil to the Ogre.",
-        "reasonPl": "«Szpieg jest rozpoznawany przez Ogra jako zły.»"
+        "reasonPl": "Szpieg jest rozpoznawany przez Ogra jako zły."
       }
     ]
   },
@@ -305,7 +305,7 @@
       {
         "id": "poppygrower",
         "reasonEn": "If the Poppy Grower has their ability, the Widow does not see the Grimoire.",
-        "reasonPl": "«Jeśli Hodowca Maku ma swoją zdolność, Wdowa nie widzi Grimoire'u.»"
+        "reasonPl": "Jeśli Hodowca Maku ma swoją zdolność, Wdowa nie widzi Grimoire'u."
       },
       {
         "id": "alchemist",
@@ -350,7 +350,7 @@
       {
         "id": "lilmonsta",
         "reasonEn": "If there would be a Marionette in play, they enter play after the Demon & must start as their neighbor.",
-        "reasonPl": "«Jeśli w grze miałaby być Marionetka, wchodzi do gry po Demonie i musi zaczynać jako jego sąsiad.»"
+        "reasonPl": "Jeśli w grze miałaby być Marionetka, wchodzi do gry po Demonie i musi zaczynać jako jego sąsiad."
       },
       {
         "id": "balloonist",
@@ -380,42 +380,42 @@
       {
         "id": "mayor",
         "reasonEn": "The Mayor may choose to stop the riot. If they do so when only 1 Riot is alive, good wins. Otherwise, evil wins.",
-        "reasonPl": "«Burmistrz może zdecydować o przerwaniu zamieszek. Jeśli zrobi to, gdy żyją tylko 1 Zamieszki, wygrywa dobro. W przeciwnym razie zło wygrywa.»"
+        "reasonPl": "Burmistrz może zdecydować o przerwaniu zamieszek. Jeśli zrobi to, gdy żyją tylko 1 Zamieszki, wygrywa dobro. W przeciwnym razie zło wygrywa."
       },
       {
         "id": "monk",
         "reasonEn": "If Riot nominates and executes the Monk-protected player, good wins.",
-        "reasonPl": "«Jeśli Zamieszki nominują i stracą gracza chronionego przez Mnicha, wygrywa dobro.»"
+        "reasonPl": "Jeśli Zamieszki nominują i stracą gracza chronionego przez Mnicha, wygrywa dobro."
       },
       {
         "id": "farmer",
         "reasonEn": "Each night*, Riot chooses an alive good player (different to previous nights): a chosen Farmer uses their ability but does not die.",
-        "reasonPl": "«Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Farmer używa swojej zdolności, ale nie ginie.»"
+        "reasonPl": "Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Farmer używa swojej zdolności, ale nie ginie."
       },
       {
         "id": "innkeeper",
         "reasonEn": "If Riot nominates and executes an Innkeeper-protected player, good wins.",
-        "reasonPl": "«Jeśli Zamieszki nominują i stracą gracza chronionego przez Oberżystę, wygrywa dobro.»"
+        "reasonPl": "Jeśli Zamieszki nominują i stracą gracza chronionego przez Oberżystę, wygrywa dobro."
       },
       {
         "id": "sage",
         "reasonEn": "Each night*, Riot chooses an alive good player (different to previous nights): a chosen Sage uses their ability but does not die.",
-        "reasonPl": "«Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Mędrzec używa swojej zdolności, ale nie ginie.»"
+        "reasonPl": "Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Mędrzec używa swojej zdolności, ale nie ginie."
       },
       {
         "id": "ravenkeeper",
         "reasonEn": "Each night*, Riot chooses an alive good player (different to previous nights): a chosen Ravenkeeper uses their ability but does not die.",
-        "reasonPl": "«Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Opiekun Kruków używa swojej zdolności, ale nie ginie.»"
+        "reasonPl": "Każdej nocy* Zamieszki wybierają żyjącego dobrego gracza (innego niż poprzednich nocy): wybrany Opiekun Kruków używa swojej zdolności, ale nie ginie."
       },
       {
         "id": "soldier",
         "reasonEn": "If Riot nominates and executes the Soldier, good wins.",
-        "reasonPl": "«Jeśli Zamieszki nominują i stracą Żołnierza, wygrywa dobro.»"
+        "reasonPl": "Jeśli Zamieszki nominują i stracą Żołnierza, wygrywa dobro."
       },
       {
         "id": "grandmother",
         "reasonEn": "If Riot is in play and the Grandchild dies by execution, evil wins.",
-        "reasonPl": "«Jeśli Zamieszki są w grze, a Wnuk zginie w egzekucji, zło wygrywa.»"
+        "reasonPl": "Jeśli Zamieszki są w grze, a Wnuk zginie w egzekucji, zło wygrywa."
       },
       {
         "id": "king",
@@ -425,12 +425,12 @@
       {
         "id": "exorcist",
         "reasonEn": "If Riot nominates and executes the Exorcist-chosen player, good wins.",
-        "reasonPl": "«Jeśli Zamieszki nominują i stracą gracza wybranego przez Egzorcystę, wygrywa dobro.»"
+        "reasonPl": "Jeśli Zamieszki nominują i stracą gracza wybranego przez Egzorcystę, wygrywa dobro."
       },
       {
         "id": "atheist",
         "reasonEn": "During a riot, if the Storyteller is nominated, players vote. If they are \"about to die\", the game ends. If not, they nominate again.",
-        "reasonPl": "«Jeśli podczas zamieszek zostanie nominowany Narrator, gracze głosują. Jeśli „ma zginąć”, gra się kończy. Jeśli nie, nominują ponownie.»"
+        "reasonPl": "Jeśli podczas zamieszek zostanie nominowany Narrator, gracze głosują. Jeśli „ma zginąć”, gra się kończy. Jeśli nie, nominują ponownie."
       },
       {
         "id": "banshee",
@@ -500,37 +500,37 @@
       {
         "id": "cultleader",
         "reasonEn": "If the Demon has the Cult Leader ability, they can’t turn good due to this ability.",
-        "reasonPl": "«Jeśli Demon ma zdolność Lidera Kultu, nie może stać się dobry dzięki tej zdolności.»"
+        "reasonPl": "Jeśli Demon ma zdolność Lidera Kultu, nie może stać się dobry dzięki tej zdolności."
       },
       {
         "id": "drunk",
         "reasonEn": "The Demon cannot have the Drunk ability.",
-        "reasonPl": "«Demon nie może mieć zdolności Pijaka.»"
+        "reasonPl": "Demon nie może mieć zdolności Pijaka."
       },
       {
         "id": "goon",
         "reasonEn": "If the Demon has the Goon ability, they can’t turn good due to this ability.",
-        "reasonPl": "«Jeśli Demon ma zdolność Najemnika, nie może stać się dobry dzięki tej zdolności.»"
+        "reasonPl": "Jeśli Demon ma zdolność Najemnika, nie może stać się dobry dzięki tej zdolności."
       },
       {
         "id": "heretic",
         "reasonEn": "The Demon cannot have the Heretic ability.",
-        "reasonPl": "«Demon nie może mieć zdolności Heretyka.»"
+        "reasonPl": "Demon nie może mieć zdolności Heretyka."
       },
       {
         "id": "ogre",
         "reasonEn": "The Demon cannot have the Ogre ability.",
-        "reasonPl": "«Demon nie może mieć zdolności Ogra.»"
+        "reasonPl": "Demon nie może mieć zdolności Ogra."
       },
       {
         "id": "politician",
         "reasonEn": "The Demon cannot have the Politician ability.",
-        "reasonPl": "«Demon nie może mieć zdolności Polityka.»"
+        "reasonPl": "Demon nie może mieć zdolności Polityka."
       },
       {
         "id": "villageidiot",
         "reasonEn": "If there is a spare token, the Boffin can give the Demon the Village Idiot ability.",
-        "reasonPl": "«Jeśli jest wolny żeton, Naukowiec może dać Demonowi zdolność Wioskowego głupka.»"
+        "reasonPl": "Jeśli jest wolny żeton, Naukowiec może dać Demonowi zdolność Wioskowego głupka."
       }
     ]
   },
@@ -545,7 +545,7 @@
       {
         "id": "philosopher",
         "reasonEn": "If the Philosopher gains the Bounty Hunter ability, a Townsfolk might turn evil.",
-        "reasonPl": "«Jeśli Filozof zyska zdolność Łowcy Nagród, jeden Mieszkaniec może stać się zły.»"
+        "reasonPl": "Jeśli Filozof zyska zdolność Łowcy Nagród, jeden Mieszkaniec może stać się zły."
       }
     ]
   },
@@ -555,17 +555,17 @@
       {
         "id": "juggler",
         "reasonEn": "If the Juggler guesses on their first day and dies by execution, tonight the living Cannibal learns how many guesses the Juggler got correct.",
-        "reasonPl": "«Jeśli Żongler zgaduje pierwszego dnia i ginie w egzekucji, tej nocy żyjący Kanibal dowiaduje się, ile trafień miał Żongler.»"
+        "reasonPl": "Jeśli Żongler zgaduje pierwszego dnia i ginie w egzekucji, tej nocy żyjący Kanibal dowiaduje się, ile trafień miał Żongler."
       },
       {
         "id": "princess",
         "reasonEn": "If the Cannibal nominated, executed, & killed the Princess today, the Demon doesn’t kill tonight.",
-        "reasonPl": "«Jeśli Kanibal dziś nominował, stracił i zabił Księżniczkę, Demon tej nocy nie zabija.»"
+        "reasonPl": "Jeśli Kanibal dziś nominował, stracił i zabił Księżniczkę, Demon tej nocy nie zabija."
       },
       {
         "id": "zealot",
         "reasonEn": "If the Cannibal gains the Zealot ability, the Cannibal learns this.",
-        "reasonPl": "«Jeśli Kanibal zyska zdolność Nadgorliwca, Kanibal się o tym dowiaduje.»"
+        "reasonPl": "Jeśli Kanibal zyska zdolność Nadgorliwca, Kanibal się o tym dowiaduje."
       }
     ]
   },
@@ -575,12 +575,12 @@
       {
         "id": "legion",
         "reasonEn": "If the Magician is in play, during the Demon info step, Legion wake in separate groups. Each group learns which players are good, but does not learn the Magician.",
-        "reasonPl": "«Jeśli Iluzjonista jest w grze, podczas informacji dla Demona Legion budzi się w osobnych grupach. Każda grupa dowiaduje się, którzy gracze są dobrzy, ale nie poznaje Iluzjonisty.»"
+        "reasonPl": "Jeśli Iluzjonista jest w grze, podczas informacji dla Demona Legion budzi się w osobnych grupach. Każda grupa dowiaduje się, którzy gracze są dobrzy, ale nie poznaje Iluzjonisty."
       },
       {
         "id": "marionette",
         "reasonEn": "If the Magician is alive, the Demon doesn't know which neighbor is the Marionette.",
-        "reasonPl": "«Jeśli Iluzjonista żyje, Demon nie wie, który z sąsiadów jest Marionetką.»"
+        "reasonPl": "Jeśli Iluzjonista żyje, Demon nie wie, który z sąsiadów jest Marionetką."
       },
       {
         "id": "vizier",
@@ -600,7 +600,7 @@
       {
         "id": "vigormortis",
         "reasonEn": "A Mastermind that has their ability keeps it if the Vigormortis dies.",
-        "reasonPl": "«Manipulant, który ma swoją zdolność, zachowuje ją, jeśli Vigormortis zginie.»"
+        "reasonPl": "Manipulant, który ma swoją zdolność, zachowuje ją, jeśli Vigormortis zginie."
       }
     ]
   },
@@ -610,12 +610,12 @@
       {
         "id": "drunk",
         "reasonEn": "The Mathematician learns if the Drunk’s ability yielded false info or failed to work properly.",
-        "reasonPl": "«Matematyk dowiaduje się, czy zdolność Pijaka dała fałszywą informację lub nie zadziałała prawidłowo.»"
+        "reasonPl": "Matematyk dowiaduje się, czy zdolność Pijaka dała fałszywą informację lub nie zadziałała prawidłowo."
       },
       {
         "id": "marionette",
         "reasonEn": "The Mathematician learns if the Marionette’s ability yielded false info or failed to work properly.",
-        "reasonPl": "«Matematyk dowiaduje się, czy zdolność Marionetki dała fałszywą informację lub nie zadziałała prawidłowo.»"
+        "reasonPl": "Matematyk dowiaduje się, czy zdolność Marionetki dała fałszywą informację lub nie zadziałała prawidłowo."
       }
     ]
   },
@@ -675,12 +675,12 @@
       {
         "id": "ogre",
         "reasonEn": "If the Recluse registers as evil to the Ogre, the Ogre learns that they are evil.",
-        "reasonPl": "«Jeśli Odludek jest rozpoznawany przez Ogra jako zły, Ogr dowiaduje się, że jest zły.»"
+        "reasonPl": "Jeśli Odludek jest rozpoznawany przez Ogra jako zły, Ogr dowiaduje się, że jest zły."
       },
       {
         "id": "sage",
         "reasonEn": "The Recluse might register as the Demon to the Sage.",
-        "reasonPl": "«Odludek może być rozpoznawany przez Mędrca jako Demon.»"
+        "reasonPl": "Odludek może być rozpoznawany przez Mędrca jako Demon."
       }
     ]
   },

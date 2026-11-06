@@ -1652,7 +1652,7 @@
     "otherNightReminderEn": "The Preacher chooses a player. If a Minion is chosen, wake the Minion and show the 'This character selected you' card and then the Preacher token.",
     "otherNightReminderPl": "Kaznodzieja wybiera gracza. Jeśli to Sługus, zostaje on poinformowany i traci zdolność.",
     "remindersEn": [ "No Ability", "No Ability", "No Ability" ],
-    "remindersPl": [ "«Brak zdolności»", "«Brak zdolności»", "«Brak zdolności»" ],
+    "remindersPl": [ "Brak zdolności", "Brak zdolności", "Brak zdolności" ],
     "setup": false,
     "abilityEn": "Each night, choose a player: a Minion, if chosen, learns this. All chosen Minions have no ability.",
     "abilityPl": "Każdej nocy wybierz gracza: jeśli wybierzesz Sługusa, dowiaduje się on o tym. Wszyscy wybrani w ten sposób Sługusy tracą swoje zdolności."
@@ -2127,7 +2127,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each day, before nominations, you may publicly choose a player: they die. If executed, you only die if you lose roshambo.",
-    "abilityPl": "Każdego dnia, przed nominacjami, możesz publicznie wybrać gracza: ginie on. Jeśli zostaniesz stracony, giniesz tylko jeśli przegrasz w kamień-papier-nożyce."
+    "abilityPl": "Każdego dnia, przed nominacjami, możesz publicznie wybrać gracza: ginie on. Jeśli zostaniesz poddany egzekucji, giniesz tylko jeśli przegrasz w kamień-papier-nożyce."
   },
   {
     "id": "goblin",
@@ -2221,7 +2221,7 @@
     "remindersGlobalPl": [ "Jest Demonem", "Martwy" ],
     "setup": true,
     "abilityEn": "Each night, Minions choose who babysits Lil' Monsta & \"is the Demon\". Each night*, a player might die. [+1 Minion]",
-    "abilityPl": "«Każdej nocy Sługusy wybierają, kto opiekuje się Lil' Monstą i „jest Demonem”. Każdej nocy* jeden gracz może zginąć. [+1 Sługus]»"
+    "abilityPl": "Każdej nocy Sługusy wybierają, kto opiekuje się Lil' Monstą i „jest Demonem”. Każdej nocy* jeden gracz może zginąć. [+1 Sługus]"
   },
   {
     "id": "lleech",
@@ -2308,10 +2308,10 @@
     "otherNightReminderEn": "",
     "otherNightReminderPl": "",
     "remindersEn": [ "Day 1", "Day 2", "Day 3" ],
-    "remindersPl": [ "«Dzień 1»", "«Dzień 2»", "«Dzień 3»" ],
+    "remindersPl": [ "Dzień 1", "Dzień 2", "Dzień 3" ],
     "setup": false,
     "abilityEn": "On day 3, Minions become Riot & nominees die but nominate an alive player immediately. This must happen.",
-    "abilityPl": "«Dnia 3. Sługusy stają się Zamieszkami, a nominowani giną, ale natychmiast nominują żyjącego gracza. Tak musi się stać.»"
+    "abilityPl": "Dnia 3. Sługusy stają się Zamieszkami, a nominowani giną, ale natychmiast nominują żyjącego gracza. Tak musi się stać."
   },
   {
     "id": "gangster",
