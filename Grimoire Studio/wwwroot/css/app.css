@@ -238,6 +238,13 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 /* Second step of removing a role, script or team. */
 .remove-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 
+/* Team list: removing stands apart from the other actions; on phones it goes to the right edge. */
+.team-actions__remove { display: inline-flex; margin-left: 1rem; }
+@media (max-width: 700px) {
+    .form-list__head .team-actions { flex: 1 1 100%; margin-left: 0; }
+    .team-actions__remove { margin-left: auto; }
+}
+
 .page { padding-block: 1.5rem 3rem; }
 
 .site-footer {
@@ -343,6 +350,7 @@ h2 { font-size: 1.25rem; margin: 1.5rem 0 0.75rem; }
 
 /* Role lists */
 .team-heading { border-left: 4px solid var(--team); padding-left: 0.6rem; }
+.team-heading__en { color: var(--muted); font-weight: normal; font-size: 0.8em; }
 
 .role-grid, .script-grid, .sheet, .jinx-list, .tags, .night-order ol {
     list-style: none;

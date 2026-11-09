@@ -39,30 +39,41 @@ else
                 {
                     <div class="form-list__head">
                         <h2 class="team-heading">
-                            @team.PluralPl <span class="muted">(@count)</span>
+                            @team.PluralPl <span class="team-heading__en">@team.PluralEn</span> <span class="muted">(@count)</span>
                             <ChangeBadge Status="_status" Key="@LocalBackup.TeamKey(team.Id)" Feminine="true" />
                         </h2>
-                        <div class="script-actions">
+                        <div class="script-actions team-actions">
                             <a class="button button--ghost" href="roles?team=@team.Id">Role</a>
                             <button class="button" @onclick="() => StartEdit(team)">Edytuj</button>
-                            @if (isLocal)
+                            @if (isLocal && isBuiltin)
                             {
-                                <button class="button button--ghost" disabled="@(!isBuiltin && count > 0)"
-                                        title="@(!isBuiltin && count > 0 ? "Najpierw przenieś role do innej drużyny." : null)"
-                                        @onclick="() => RemoveAsync(team.Id)">@(isBuiltin ? "Przywróć oryginał" : "Usuń")</button>
+                                <button class="button button--ghost" title="Cofa Twoje zmiany tej drużyny" @onclick="() => RemoveAsync(team.Id)">Przywróć</button>
                             }
-                            @if (isBuiltin)
-                            {
-                                <RemoveItemButton Key="@LocalBackup.TeamKey(team.Id)" Label="Usuń drużynę…"
-                                                  BlockedReason="@(count > 0 ? "Najpierw przenieś role do innej drużyny." : null)"
-                                                  OnRemoved="ReloadAsync" />
-                            }
+                            @* Removing stands apart from the other actions and always asks first. *@
+                            <span class="team-actions__remove">
+                                @if (isBuiltin)
+                                {
+                                    <RemoveItemButton Key="@LocalBackup.TeamKey(team.Id)" Label="Usuń"
+                                                      BlockedReason="@(count > 0 ? "Najpierw przenieś role do innej drużyny." : null)"
+                                                      OnRemoved="ReloadAsync" />
+                                }
+                                else if (_confirmRemove == team.Id)
+                                {
+                                    <span class="remove-confirm">
+                                        <span class="muted small">Usunąć drużynę @team.PluralPl?</span>
+                                        <button class="button" @onclick="() => RemoveAsync(team.Id)">Usuń</button>
+                                        <button class="button button--ghost" @onclick="() => _confirmRemove = null">Anuluj</button>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <button class="button button--ghost" disabled="@(count > 0)"
+                                            title="@(count > 0 ? "Najpierw przenieś role do innej drużyny." : null)"
+                                            @onclick="() => _confirmRemove = team.Id">Usuń</button>
+                                }
+                            </span>
                         </div>
                     </div>
-                    <p class="muted small">
-                        <code>@team.Id</code> · @team.NamePl / @team.NameEn · @team.PluralEn
-                        · @(team.Extra ? "poza liczbą postaci (osobna strona wydruku)" : "w liczbie postaci")
-                    </p>
                 }
             </li>
         }
@@ -130,8 +141,12 @@ else
         await ReloadAsync();
     }
 
+    /// <summary>Local team whose removal waits for the confirming click.</summary>
+    private string? _confirmRemove;
+
     private async Task RemoveAsync(string id)
     {
+        _confirmRemove = null;
         await (await Changes.GetCurrentAsync()).Teams.RemoveAsync(id);
         await ReloadAsync();
     }
