@@ -1,0 +1,294 @@
+@page "/info"
+@inject GameDataClient Client
+
+@*
+    Help and reference: how the site works, useful links, the Polish terms of the game, a short summary of the rules
+    and what the project is. The rules are a brief cheat sheet in our own words that points to the official rules; the
+    full text belongs to The Pandemonium Institute.
+*@
+
+<PageTitle>Informacje – Grimoire Studio</PageTitle>
+
+<h1>Informacje</h1>
+
+<nav class="info-toc" aria-label="Sekcje">
+    <a href="info#pytania">Jak korzystać ze strony</a>
+    <a href="info#linki">Przydatne strony</a>
+    <a href="info#slowniczek">Słowniczek</a>
+    <a href="info#zasady">Zasady w skrócie</a>
+    <a href="info#o-projekcie">O projekcie</a>
+</nav>
+
+<details id="pytania" class="panel info-section" open>
+    <summary><h2>Jak korzystać ze strony</h2></summary>
+
+    <details class="info-faq">
+        <summary>Czym jest Grimoire Studio?</summary>
+        <p>
+            Fanowską wiki ról, skryptów i jinxów Blood on the Clocktower po polsku, z narzędziami dla Narratora:
+            wydrukiem skryptu i kolejności nocy oraz generatorem tokenów. Każdy może proponować poprawki; administratorzy
+            je zatwierdzają.
+        </p>
+    </details>
+
+    <details class="info-faq">
+        <summary>Skąd są dane i tłumaczenia?</summary>
+        <p>
+            Angielskie teksty ról pochodzą z materiałów gry udostępnianych przez The Pandemonium Institute
+            i społeczność. Polskie tłumaczenia przygotowują użytkownicy tej strony: jeśli coś brzmi źle, zaproponuj
+            poprawkę (pytanie niżej).
+        </p>
+    </details>
+
+    <details class="info-faq">
+        <summary>Jak zaproponować poprawkę albo nową rolę?</summary>
+        <p>
+            Otwórz rolę, skrypt lub jinx i kliknij „Edytuj” (nowe dodasz przyciskami „Nowa rola”, „Nowy skrypt”).
+            Zmiana zapisze się w <a href="changes">„Moich zmianach”</a>: widzisz ją od razu, ale tylko Ty. Tam zaznacz
+            zmiany, podpisz się i kliknij „Zgłoś do wiki”. Po akceptacji administratora trafią do wiki dla wszystkich.
+        </p>
+    </details>
+
+    <details class="info-faq">
+        <summary>Czy moje zmiany są gdzieś zapisane?</summary>
+        <p>
+            Tylko w tej przeglądarce, dopóki ich nie zgłosisz. Wyczyszczenie danych przeglądarki je usunie, dlatego
+            w „Moich zmianach” jest „Eksportuj do pliku”: to kopia zapasowa i sposób na przeniesienie zmian na inny
+            komputer (tam „Importuj z pliku…”).
+        </p>
+    </details>
+
+    <details class="info-faq">
+        <summary>Jak wydrukować skrypt?</summary>
+        <p>
+            Na stronie skryptu kliknij „Drukuj / PDF”. Po lewej wybierzesz układ arkusza postaci i kolejności nocy, kolory
+            i wielkość tekstu; podgląd po prawej pokazuje strony A4 dokładnie tak, jak się wydrukują. W oknie drukowania
+            wybierz papier A4 i skalę 100%. Okno zamkniesz klawiszem Esc.
+        </p>
+    </details>
+
+    <details class="info-faq">
+        <summary>Jak przenieść skrypt ze Script Toola i z powrotem?</summary>
+        <p>
+            Na liście <a href="scripts">skryptów</a> „Importuj ze Script Tool…” wczytuje plik JSON z oficjalnego Script
+            Toola (razem z własnymi rolami, jeśli je ma). Na stronie skryptu „Eksport do Script Tool” zapisuje go
+            w tym samym formacie.
+        </p>
+    </details>
+
+    <details class="info-faq">
+        <summary>Jak zrobić tokeny do druku?</summary>
+        <p>
+            W <a href="generator">generatorze tokenów</a> wybierz rolę albo cały skrypt, ustaw wygląd i kliknij „Dodaj do
+            arkusza”. Arkusz układa tokeny w rzeczywistym rozmiarze; wydruk w skali 100% daje tokeny o ustawionych
+            średnicach. Jest też PDF w CMYK dla drukarni.
+        </p>
+    </details>
+
+    <details class="info-faq">
+        <summary>Jak szybko coś znaleźć?</summary>
+        <p>
+            Lupa w nagłówku (albo <kbd>Ctrl</kbd>+<kbd>K</kbd> lub <kbd>/</kbd>) szuka ról, skryptów, jinxów i drużyn po
+            polsku i po angielsku, bez polskich znaków i z jedną literówką. Strzałki wybierają wynik, Enter go otwiera,
+            Esc zamyka.
+        </p>
+    </details>
+</details>
+
+<details id="linki" class="panel info-section" open>
+    <summary><h2>Przydatne strony</h2></summary>
+    <ul class="info-links">
+        <li>
+            <a href="https://bloodontheclocktower.com" target="_blank" rel="noopener noreferrer">bloodontheclocktower.com ↗</a>
+            <span class="muted">oficjalna strona gry: zasady, wydania, sklep</span>
+        </li>
+        <li>
+            <a href="https://wiki.bloodontheclocktower.com" target="_blank" rel="noopener noreferrer">Oficjalna wiki ↗</a>
+            <span class="muted">pełne opisy ról, przykłady i rozstrzygnięcia po angielsku</span>
+        </li>
+        <li>
+            <a href="https://script.bloodontheclocktower.com" target="_blank" rel="noopener noreferrer">Script Tool ↗</a>
+            <span class="muted">oficjalne narzędzie do układania i drukowania skryptów</span>
+        </li>
+        <li>
+            <a href="https://botc.app" target="_blank" rel="noopener noreferrer">botc.app ↗</a>
+            <span class="muted">oficjalna aplikacja do gry online</span>
+        </li>
+        <li>
+            <a href="https://release.botc.app/resources/" target="_blank" rel="noopener noreferrer">Zasoby dla twórców ↗</a>
+            <span class="muted">dane ról, jinxów i kolejności nocy oraz ikony udostępnione społeczności</span>
+        </li>
+        <li>
+            <a href="https://bloodontheclocktower.com/pages/community-created-content-policy" target="_blank" rel="noopener noreferrer">Zasady treści tworzonych przez społeczność ↗</a>
+            <span class="muted">na co The Pandemonium Institute pozwala projektom fanowskim</span>
+        </li>
+    </ul>
+</details>
+
+<details id="slowniczek" class="panel info-section" open>
+    <summary><h2>Słowniczek</h2></summary>
+    <p class="muted small">Polskie określenia używane na tej stronie, z angielskim odpowiednikiem.</p>
+    <dl class="info-glossary">
+        @foreach (var (term, english, meaning) in Glossary)
+        {
+            <div>
+                <dt>@term <span class="muted">@english</span></dt>
+                <dd>@meaning</dd>
+            </div>
+        }
+    </dl>
+
+    <h3>Drużyny</h3>
+    <ul class="info-teams">
+        @foreach (var team in Teams.All)
+        {
+            <li>
+                <a class="team-badge team--@(team.Id)" style="@Teams.Style(team.Id)" href="roles?team=@team.Id">@team.PluralPl</a>
+                <span class="muted">@team.PluralEn</span>
+            </li>
+        }
+    </ul>
+</details>
+
+<details id="zasady" class="panel info-section" open>
+    <summary><h2>Zasady w skrócie</h2></summary>
+    <p class="muted small">
+        Ściąga do pierwszych gier, nie pełne zasady. Wszystko, czego tu brakuje, wyjaśniają oficjalne zasady i
+        <a href="https://wiki.bloodontheclocktower.com" target="_blank" rel="noopener noreferrer">oficjalna wiki</a>.
+    </p>
+
+    <h3>Cel gry</h3>
+    <p>
+        Gracze dzielą się na dobrych (Mieszkańcy i Przybysze) i złych (Sługusy i Demon). Nikt poza złymi nie wie, kto jest
+        kim. Dobrzy wygrywają, gdy zginie Demon. Źli wygrywają, gdy przy życiu zostanie tylko dwóch graczy (Wędrowcy się
+        nie liczą). Niektóre postacie mają własne warunki zwycięstwa lub porażki.
+    </p>
+
+    <h3>Przygotowanie</h3>
+    <p>
+        Narrator wybiera postacie ze skryptu według liczby graczy, uwzględniając postacie zmieniające przygotowanie
+        (np. <em>[+2 Przybyszów]</em>), wkłada ich żetony do woreczka i każdy losuje jeden w tajemnicy. Potem Narrator
+        układa w Grimoire żetony postaci w kolejności miejsc przy stole.
+    </p>
+    <div class="table-scroll">
+        <table class="info-players">
+            <thead>
+                <tr>
+                    <th>Graczy</th>
+                    @foreach (var count in PlayerCount.Table)
+                    {
+                        <th>@count.Players@(count.Players == PlayerCount.MaxPlayers ? "+" : null)</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (team, value) in PlayerRows)
+                {
+                    <tr>
+                        <th><span class="team-heading team--@(team)" style="@Teams.Style(team)">@Teams.Plural(team)</span></th>
+                        @foreach (var count in PlayerCount.Table)
+                        {
+                            <td>@value(count)</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="muted small">Powyżej 15 graczy dodatkowi gracze biorą Wędrowców.</p>
+
+    <h3>Noc</h3>
+    <ul>
+        <li>Wszyscy zamykają oczy. Narrator budzi kolejne postacie według kolejności nocy ze skryptu.</li>
+        <li>
+            Pierwszej nocy (od 7 graczy) Sługusy poznają się nawzajem i Demona, a Demon poznaje Sługusów i dostaje trzy
+            dobre postacie spoza gry, którymi może blefować.
+        </li>
+        <li>
+            Narrator rozmawia gestami: kiwnięcie to „tak”, kręcenie głową „nie”, kciuk w górę „dobry”, w dół „zły”,
+            palce pokazują liczbę, wskazanie pokazuje gracza.
+        </li>
+        <li>O świcie Narrator ogłasza, kto zginął w nocy, ale nie mówi jak ani dlaczego.</li>
+    </ul>
+
+    <h3>Dzień</h3>
+    <ul>
+        <li>Gracze rozmawiają, publicznie i na osobności. Wolno mówić wszystko, także kłamać.</li>
+        <li>
+            Gdy Narrator otworzy nominacje: każdy żywy gracz może nominować raz dziennie i każdy gracz może być nominowany
+            raz dziennie. Nominowany może się bronić, potem jest głosowanie.
+        </li>
+        <li>
+            Głosy liczy się po kolei wokół stołu. Żywi głosują dowolnie wiele razy dziennie, martwi tylko raz do końca gry
+            (oddają żeton głosu).
+        </li>
+        <li>
+            Nominowany zostaje skazany, jeśli dostał co najmniej tyle głosów, ile wynosi połowa żywych graczy, i więcej niż
+            ktokolwiek nominowany wcześniej tego dnia. Przy remisie nie ginie nikt. Skazany zostaje stracony po zamknięciu
+            nominacji: egzekucja jest najwyżej jedna dziennie i nie jest obowiązkowa.
+        </li>
+    </ul>
+
+    <h3>Śmierć</h3>
+    <ul>
+        <li>Martwy gracz traci zdolność, nie może nominować i ma jeden głos na resztę gry, ale dalej rozmawia i gra.</li>
+        <li>Postaci zmarłego nikt nie ujawnia. Martwi wygrywają i przegrywają razem ze swoją drużyną.</li>
+    </ul>
+
+    <h3>Wędrowcy i Legendy</h3>
+    <p>
+        Wędrowcy to postacie dla graczy dołączających w trakcie lub ponad liczbę miejsc; ich przynależność wybiera Narrator
+        i mogą zostać wygnani zamiast straceni. Legendy to postacie Narratora, które zmieniają zasady całej gry. W pierwszych
+        grach lepiej ich nie używać.
+    </p>
+</details>
+
+<details id="o-projekcie" class="panel info-section" open>
+    <summary><h2>O projekcie</h2></summary>
+    <div class="info-about">
+        <img class="info-about__logo" src="Assets/ccc-sleeve.png" alt="Community Created Content" width="214" height="85" />
+        <p>
+            Grimoire Studio to niekomercyjny projekt fanowski, niezwiązany z The Pandemonium Institute i przez nie
+            nieautoryzowany. Blood on the Clocktower i nazwy postaci są znakami towarowymi The Pandemonium Institute.
+            Projekt korzysta z materiałów udostępnionych społeczności zgodnie z ich
+            <a href="https://bloodontheclocktower.com/pages/community-created-content-policy" target="_blank" rel="noopener noreferrer">zasadami treści tworzonych przez społeczność</a>.
+        </p>
+    </div>
+</details>
+
+@code {
+    // Team names and colours (TeamText) come with the game data, so the page loads it even when opened directly.
+    protected override async Task OnInitializedAsync() => await Client.GetAsync();
+
+    /// <summary>Polish term, its English original and what it means in play.</summary>
+    private static readonly (string Term, string English, string Meaning)[] Glossary =
+    [
+        ("Narrator", "Storyteller", "Prowadzi grę: zna wszystkie postacie, budzi graczy w nocy, daje informacje i rozstrzyga wątpliwości."),
+        ("Grimoire", "Grimoire", "Plansza Narratora z żetonami postaci i znacznikami; pokazuje cały stan gry."),
+        ("Dobry / zły", "Good / Evil", "Przynależność gracza. Dobrzy to Mieszkańcy i Przybysze, źli to Sługusy i Demon; przynależność może się w grze zmienić."),
+        ("Zdolność", "Ability", "To, co robi postać; opisana na jej żetonie i w arkuszu postaci."),
+        ("Każdej nocy*", "Each night*", "Gwiazdka oznacza: każdej nocy oprócz pierwszej."),
+        ("Otruty", "Poisoned", "Zdolność nie działa, ale gracz o tym nie wie; Narrator może dawać mu fałszywe informacje."),
+        ("Pijany", "Drunk", "Działa jak otrucie: zdolność nie działa, a gracz o tym nie wie. Pijak jest pijany przez całą grę."),
+        ("Trzeźwy i zdrowy", "Sober & healthy", "Ani pijany, ani otruty: zdolność działa normalnie."),
+        ("Obłąkany", "Mad", "Gracz próbuje przekonać innych, że jest kimś (np. daną postacią); Narrator może go za złamanie tego ukarać."),
+        ("Rejestruje się jako", "Registers as", "Dla zdolności innych postaci wygląda jak inna postać, drużyna lub przynależność, choć nią nie jest."),
+        ("W grze / poza grą", "In play / not in play", "Czy postać ma któryś z graczy. Blefy Demona to postacie poza grą."),
+        ("Blef", "Bluff", "Postać, za którą gracz się podaje; zwykle zły gracz udający dobrą postać."),
+        ("[+1 Przybysz]", "Setup", "Nawias w zdolności zmienia skład gry przy przygotowaniu, np. dodaje lub zabiera Przybyszów."),
+        ("Znacznik przypomnienia", "Reminder token", "Mały żeton w Grimoire, którym Narrator zaznacza skutki zdolności (np. „Otruty”)."),
+        ("Nominacja", "Nomination", "Wskazanie gracza do egzekucji; po niej jest głosowanie."),
+        ("Egzekucja, stracony", "Execution, executed", "Śmierć w wyniku głosowania pod koniec dnia; najwyżej jedna dziennie."),
+        ("Żeton głosu", "Vote token", "Martwy gracz ma jeden głos do końca gry; oddając go, oddaje żeton."),
+        ("Jinx", "Jinx", "Specjalna zasada dla dwóch postaci, które razem w skrypcie działałyby źle; wprowadza ją Dżinn."),
+        ("Świt, zmierzch", "Dawn, dusk", "Koniec nocy (Narrator ogłasza zgony) i jej początek."),
+    ];
+
+    private static readonly (string Team, Func<PlayerCount, int> Value)[] PlayerRows =
+    [
+        (TeamIds.Townsfolk, p => p.Townsfolk),
+        (TeamIds.Outsider, p => p.Outsiders),
+        (TeamIds.Minion, p => p.Minions),
+        (TeamIds.Demon, p => p.Demons),
+    ];
+}

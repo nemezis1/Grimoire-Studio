@@ -1324,6 +1324,8 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 /* Medium windows: the menu fits one line. */
 @media (max-width: 1250px) {
     .site-header__inner { gap: 0.5rem 1rem; }
+    /* The menu keeps one line: the search and theme buttons drop their texts. */
+    .search-open__label, .search-open__key, .theme-toggle__label { display: none; }
     .site-nav a { padding: 0.35rem 0.55rem; }
 }
 
@@ -1574,3 +1576,42 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
     .theme-toggle__label { display: none; }
     .theme-toggle, .search-open { min-width: 40px; justify-content: center; }
 }
+
+
+/* ---------- Information page ---------- */
+
+.info-toc { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0 0 1rem; }
+.info-section > summary { list-style: none; cursor: pointer; }
+.info-section > summary::-webkit-details-marker { display: none; }
+.info-section > summary h2 { display: inline; margin: 0; }
+.info-section > summary::after { content: " ▾"; color: var(--muted); }
+.info-section:not([open]) > summary::after { content: " ▸"; }
+.info-section[open] > summary { margin-bottom: 0.75rem; }
+.info-section h3 { font-size: 1rem; margin: 1.25rem 0 0.4rem; }
+.info-section p, .info-section li { line-height: 1.55; }
+.info-section { scroll-margin-top: 1rem; }
+
+.info-faq { border-top: 1px solid var(--border); padding: 0.5rem 0; }
+.info-faq:first-of-type { border-top: none; }
+.info-faq > summary { cursor: pointer; font-weight: 600; }
+.info-faq > p { margin: 0.5rem 0 0.25rem; }
+
+.info-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.info-links li { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; align-items: baseline; }
+
+.info-glossary { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 0.75rem 1.5rem; margin: 0; }
+.info-glossary dt { font-weight: 600; }
+.info-glossary dt .muted { font-weight: normal; font-size: 0.85em; }
+.info-glossary dd { margin: 0.15rem 0 0; color: var(--text); }
+.info-teams { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; }
+.info-teams li { display: flex; gap: 0.4rem; align-items: baseline; }
+
+.table-scroll { overflow-x: auto; }
+.info-players { border-collapse: collapse; font-size: 0.9rem; }
+.info-players th, .info-players td { padding: 0.3rem 0.5rem; text-align: center; border-bottom: 1px solid var(--border); }
+.info-players tbody th { text-align: left; font-weight: normal; white-space: nowrap; }
+.info-players .team-heading { margin: 0; }
+
+.info-about { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; }
+.info-about p { flex: 1 1 22rem; margin: 0; }
+.info-about__logo { height: auto; max-width: 100%; }
