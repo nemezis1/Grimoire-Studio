@@ -1691,7 +1691,7 @@
     "remindersPl": [ "Wie" ],
     "setup": true,
     "abilityEn": "Each night, you learn a player of a different character type than last night. [+0 or +1 Outsider]",
-    "abilityPl": "Każdej nocy poznajesz gracza innego typu postaci niż poprzedniej nocy. [+0 lub +1 Przybysz]"
+    "abilityPl": "Każdej nocy poznajesz gracza innego typu postaci niż gracz wskazany poprzedniej nocy. [+0 lub +1 Przybysz]"
   },
   {
     "id": "cultleader",
@@ -1817,7 +1817,7 @@
     "remindersPl": [ "Brak zdolności" ],
     "setup": true,
     "abilityEn": "Once per game, at night, choose a living player: the Damsel, if chosen, becomes a not-in-play Townsfolk. [+the Damsel]",
-    "abilityPl": "Raz na grę, w nocy, wybierz żyjącego gracza: jeśli to Panienka, zmienia się ona w nową postać Mieszkańca. [+Panienka]"
+    "abilityPl": "Raz na grę, w nocy, wybierz żyjącego gracza: jeśli to Panienka, zmienia się ona w postać Mieszkańca niebędącego obecnie w grze. [+Panienka]"
   },
   {
     "id": "alchemist",
@@ -1837,7 +1837,7 @@
     "remindersGlobalPl": [ "Jest Alchemikiem" ],
     "setup": false,
     "abilityEn": "You have a Minion ability. When using this, the Storyteller may prompt you to choose differently.",
-    "abilityPl": "Masz zdolność Sługusa. Gdy jej używasz, Narrator może poprosić cię o inny wybór."
+    "abilityPl": "Masz zdolność Sługusa. Gdy jej używasz, Mistrz Gry może poprosić cię o inny wybór."
   },
   {
     "id": "farmer",
@@ -2347,7 +2347,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each night, learn which player the Storyteller believes you should talk to most.",
-    "abilityPl": "Każdej nocy dowiedz się od Mistrza gry, z którym graczem powinieneś porozmawiać najbardziej według niego."
+    "abilityPl": "Każdej nocy dowiadujesz się od Mistrza gry, z którym graczem powinieneś porozmawiać najbardziej według niego."
   },
   {
     "id": "villageidiot",
@@ -2635,7 +2635,7 @@
     "remindersPl": [ "Zdolność Narratora" ],
     "setup": false,
     "abilityEn": "When you die, the Storyteller gains a Minion ability.",
-    "abilityPl": "Gdy zginiesz, Narrator zyskuje zdolność Sługusa."
+    "abilityPl": "Gdy zginiesz, Mistrz Gry zyskuje zdolność Sługusa."
   },
   {
     "id": "hatter",
