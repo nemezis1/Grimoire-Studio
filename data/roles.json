@@ -893,7 +893,7 @@
     "firstNightReminderEn": "The Pukka points to a player. That player is poisoned.",
     "firstNightReminderPl": "Pukka wskazuje gracza. Ten gracz zostaje otruty.",
     "otherNight": 260,
-    "otherNightReminderEn": "The Pukka points to a player. That player is poisoned. The previously poisoned player dies. ",
+    "otherNightReminderEn": "The Pukka points to a player. That player is poisoned. The previously poisoned player dies.",
     "otherNightReminderPl": "Pukka wskazuje gracza. Ten gracz zostaje otruty. Gracz otruty poprzedniej nocy ginie.",
     "remindersEn": [ "Poisoned", "Poisoned", "Dead" ],
     "remindersPl": [ "Otruty", "Otruty", "Martwy" ],
