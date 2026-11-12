@@ -177,7 +177,7 @@
     "remindersPl": [ "Brak zdolności" ],
     "setup": false,
     "abilityEn": "The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.",
-    "abilityPl": "Kiedy zostaniesz nominowany po raz pierwszy, jeśli nominujący jest Mieszkańcem, zostaje on natychmiast stracony."
+    "abilityPl": "Kiedy zostaniesz nominowany po raz pierwszy, jeśli nominujący jest Mieszkańcem, zostaje on natychmiast poddany egzekucji."
   },
   {
     "id": "slayer",
@@ -1637,7 +1637,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each night, you learn which alignment the Storyteller believes is winning: good, evil, or neither.",
-    "abilityPl": "Każdej nocy dowiadujesz się, która strona zdaniem Storytellera obecnie wygrywa: dobro, zło czy żadna."
+    "abilityPl": "Każdej nocy dowiadujesz się, która strona zdaniem Mistrza Gry obecnie wygrywa: dobro, zło czy żadna."
   },
   {
     "id": "preacher",
@@ -1709,7 +1709,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each night, you become the alignment of an alive neighbour. If all good players choose to join your cult, your team wins.",
-    "abilityPl": "Każdej nocy przyjmujesz przynależność jednego z żyjących sąsiadów. Jeśli wszyscy dobrzy gracze dołączą do Twojego kultu, Twoja drużyna wygrywa."
+    "abilityPl": "Każdej nocy stajesz się częścią drużyny jednego z żyjących sąsiadów. Jeśli wszyscy dobrzy gracze dołączą do Twojego kultu, Twoja drużyna wygrywa."
   },
   {
     "id": "lycanthrope",
@@ -2163,7 +2163,7 @@
     "remindersPl": [ "Staje się zły", "Brak zdolności" ],
     "setup": false,
     "abilityEn": "You start knowing a secret word. The 1st good player to say this word becomes evil that night.",
-    "abilityPl": "Na początku gry znasz sekretne słowo. Pierwszy dobry gracz, który je wypowie, staje się zły tej nocy."
+    "abilityPl": "Na początku gry poznajesz sekretne słowo. Pierwszy dobry gracz, który je wypowie, staje się zły tej nocy."
   },
   {
     "id": "marionette",
