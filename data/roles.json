@@ -96,7 +96,7 @@
     "edition": "tb",
     "team": "townsfolk",
     "firstNight": 380,
-    "firstNightReminderEn": "The Fortune Teller points to two players. Give the head signal (nod yes, shake no) for whether one of those players is the Demon. ",
+    "firstNightReminderEn": "The Fortune Teller points to two players. Give the head signal (nod yes, shake no) for whether one of those players is the Demon.",
     "firstNightReminderPl": "Wróżbiarka wskazuje dwóch graczy. Skinieniem głowy (tak/nie) potwierdź, czy jeden z nich jest Demonem.",
     "otherNight": 540,
     "otherNightReminderEn": "The Fortune Teller points to two players. Show the head signal (nod 'yes', shake 'no') for whether one of those players is the Demon.",
