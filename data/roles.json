@@ -539,7 +539,7 @@
     "remindersPl": [],
     "setup": false,
     "abilityEn": "Each night, choose 2 alive players (not yourself): you learn how many woke tonight due to their ability.",
-    "abilityPl": "Każdej nocy wybierz 2 żyjących graczy (nie siebie): dowiadujesz się ilu z nich obudziło się tej nocy w związku z ich zdolnością. "
+    "abilityPl": "Każdej nocy wybierz 2 żyjących graczy (nie siebie): dowiadujesz się ilu z nich obudziło się tej nocy w związku z ich zdolnością."
   },
   {
     "id": "exorcist",
@@ -1595,7 +1595,7 @@
     "firstNightReminderEn": "Point to 1 evil player. Wake the townsfolk who is evil and show them the 'You are' card and the thumbs down evil sign.",
     "firstNightReminderPl": "Wskaż jednego złego gracza. Jeden z Mieszkańców jest zły.",
     "otherNight": 640,
-    "otherNightReminderEn": "If the known evil player has died, point to another evil player. ",
+    "otherNightReminderEn": "If the known evil player has died, point to another evil player.",
     "otherNightReminderPl": "Jeśli znany ci zły gracz zginął, poznajesz kolejnego złego gracza.",
     "remindersEn": [ "Known" ],
     "remindersPl": [ "Klient" ],
@@ -1860,7 +1860,7 @@
   {
     "id": "magician",
     "nameEn": "Magician",
-    "namePl": "Iluzjonista",
+    "namePl": "Magik",
     "edition": "",
     "team": "townsfolk",
     "firstNight": 50,
