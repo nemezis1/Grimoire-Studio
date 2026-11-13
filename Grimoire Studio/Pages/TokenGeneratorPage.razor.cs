@@ -50,6 +50,8 @@ public partial class TokenGeneratorPage
 
     protected override async Task OnInitializedAsync()
     {
+        // Before the sheet is drawn, so its tokens can use them.
+        _customFonts = await Renderer.LoadCustomFontsAsync();
         _presets = await Renderer.LoadPresetsAsync();
         _data = await Client.GetAsync();
         _bulkScript = _data.FindScript(ScriptId ?? string.Empty)?.Id ?? string.Empty;
@@ -98,6 +100,59 @@ public partial class TokenGeneratorPage
     {
         _role = role;
         _settings.ApplyRole(role, Changes.IconUrl(role.Id));
+        ApplyTeamBorderRow();
+    }
+
+    /// <summary>Borders by team for the preset being made (player tokens); off: one border for every team.</summary>
+    private bool _teamBordersOn;
+    private Dictionary<string, TeamBorder> _teamBorders = [];
+
+    /// <summary>A row for every team, filled with the default team colours and the current thickness.</summary>
+    private Dictionary<string, TeamBorder> DefaultTeamBorders() =>
+        (_data?.Teams ?? []).ToDictionary(
+            team => team.Id,
+            team =>
+            {
+                var (color, color2) = TokenSettings.DefaultTeamBorder(_data!, team.Id);
+                return new TeamBorder { Color = color, Color2 = color2, Thickness = _settings.BorderThickness };
+            });
+
+    private void SetTeamBordersOn(bool on)
+    {
+        _teamBordersOn = on;
+        if (on && _teamBorders.Count == 0)
+        {
+            _teamBorders = DefaultTeamBorders();
+        }
+
+        ApplyTeamBorderRow();
+    }
+
+    /// <summary>With borders by team, the token being made takes the row of its role's team.</summary>
+    private void ApplyTeamBorderRow()
+    {
+        if (_teamBordersOn && _settings.IsPlayer && _role is not null && _teamBorders.GetValueOrDefault(_role.Team) is { } border)
+        {
+            border.ApplyTo(_settings);
+        }
+    }
+
+    /// <summary>The row of a team, made from the defaults for a team added after the rows were filled.</summary>
+    private TeamBorder TeamRow(string team)
+    {
+        if (!_teamBorders.TryGetValue(team, out var border))
+        {
+            border = DefaultTeamBorders().GetValueOrDefault(team) ?? new TeamBorder();
+            _teamBorders[team] = border;
+        }
+
+        return border;
+    }
+
+    private void ToggleTeamSecondColor(TeamBorder border, bool on)
+    {
+        border.Color2 = on ? TokenSettings.EvilBorderColor : null;
+        ApplyTeamBorderRow();
     }
 
     private void ToggleSecondColor(ChangeEventArgs e) =>
@@ -142,7 +197,21 @@ public partial class TokenGeneratorPage
     {
         _selectedPreset = name ?? string.Empty;
         _presetMessage = null;
-        _presets.FirstOrDefault(p => p.Name == _selectedPreset)?.ApplyTo(_settings);
+        var preset = _presets.FirstOrDefault(p => p.Name == _selectedPreset);
+        preset?.ApplyTo(_settings);
+
+        // A preset with borders by team brings its rows; one without keeps the token's own border.
+        _teamBordersOn = preset?.TeamBorders is not null;
+        _teamBorders = preset?.TeamBorders?.ToDictionary(b => b.Key, b => b.Value.Clone()) ?? [];
+        if (_teamBordersOn)
+        {
+            foreach (var (id, border) in DefaultTeamBorders().Where(d => !_teamBorders.ContainsKey(d.Key)))
+            {
+                _teamBorders[id] = border;
+            }
+        }
+
+        ApplyTeamBorderRow();
     }
 
     /// <summary>Restores the default look; text, description, pictures and leaf markers stay.</summary>
@@ -163,10 +232,22 @@ public partial class TokenGeneratorPage
         _presetMessage = "Przywrócono ustawienia domyślne.";
     }
 
-    private async Task SavePresetAsync()
+    /// <summary>The token looks different from the selected preset, so there is something to save into it.</summary>
+    private bool PresetChanged =>
+        _presets.FirstOrDefault(p => p.Name == _selectedPreset) is { } saved
+        && JsonSerializer.Serialize(TokenPreset.From(saved.Name, _settings, _teamBordersOn ? _teamBorders : null))
+            != JsonSerializer.Serialize(saved);
+
+    /// <summary>Saves the look under <paramref name="name"/>: the selected preset, or a new one (same name overwrites).</summary>
+    private async Task SavePresetAsync(string name)
     {
-        var name = _presetName.Trim();
-        var preset = TokenPreset.From(name, _settings);
+        name = name.Trim();
+        if (name.Length == 0)
+        {
+            return;
+        }
+
+        var preset = TokenPreset.From(name, _settings, _teamBordersOn ? _teamBorders : null);
         var index = _presets.FindIndex(p => p.Name == name);
         if (index >= 0)
         {
@@ -254,6 +335,10 @@ public partial class TokenGeneratorPage
                 if (_bulkPlayerPreset.Length == 0)
                 {
                     settings.ApplyTeamBorder(_data, role);
+                }
+                else if (_presets.FirstOrDefault(p => p.Name == _bulkPlayerPreset)?.BorderFor(role.Team) is { } border)
+                {
+                    border.ApplyTo(settings);
                 }
 
                 tokens.Add((settings, role.Id));
@@ -384,6 +469,66 @@ public partial class TokenGeneratorPage
         _ when count % 10 is >= 2 and <= 4 && count % 100 is < 12 or > 14 => "tokeny",
         _ => "tokenów",
     };
+
+    /// <summary>Fonts added in this browser, offered under "Własne".</summary>
+    private List<string> _customFonts = [];
+    private string? _fontMessage;
+    private bool _fontError;
+
+    private const long MaxFontBytes = 10 * 1024 * 1024;
+
+    /// <summary>Adds an uploaded font file, named after the file, to the name and description font lists.</summary>
+    private async Task AddFontAsync(InputFileChangeEventArgs e)
+    {
+        var name = Path.GetFileNameWithoutExtension(e.File.Name).Trim();
+        if (name.Length == 0 || TokenFonts.Bundled.Contains(name, StringComparer.OrdinalIgnoreCase)
+            || TokenFonts.Common.Contains(name, StringComparer.OrdinalIgnoreCase))
+        {
+            ShowFont($"Czcionka „{name}” już jest na liście. Zmień nazwę pliku i spróbuj ponownie.", error: true);
+            return;
+        }
+
+        byte[] content;
+        try
+        {
+            using var stream = e.File.OpenReadStream(MaxFontBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            content = memory.ToArray();
+        }
+        catch (IOException)
+        {
+            ShowFont($"Plik jest za duży (maksymalnie {MaxFontBytes / 1024 / 1024} MB).", error: true);
+            return;
+        }
+
+        if (await Renderer.AddCustomFontAsync(name, content) is { } failure)
+        {
+            ShowFont(failure, error: true);
+            return;
+        }
+
+        if (!_customFonts.Contains(name))
+        {
+            _customFonts.Add(name);
+            _customFonts.Sort(StringComparer.CurrentCultureIgnoreCase);
+        }
+
+        ShowFont($"Dodano czcionkę „{name}”. Wybierzesz ją w grupie „Własne” przy nazwie lub opisie.");
+    }
+
+    private async Task RemoveFontAsync(string name)
+    {
+        await Renderer.RemoveCustomFontAsync(name);
+        _customFonts.Remove(name);
+        ShowFont($"Usunięto czcionkę „{name}”. Tokeny, które jej używały, pokażą czcionkę zastępczą.");
+    }
+
+    private void ShowFont(string message, bool error = false)
+    {
+        _fontMessage = message;
+        _fontError = error;
+    }
 
     private async Task RefreshAsync(SheetItem item)
     {

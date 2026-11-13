@@ -80,11 +80,33 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
 
     /// <summary>Commits <paramref name="files"/> (paths relative to the data folder) to the repository.</summary>
     /// <exception cref="PublishException">Not signed in, a conflict, or the service refused the commit.</exception>
-    public async Task<PublishResult> PublishAsync(string message, string baseVersion, IReadOnlyList<DataFile> files)
+    /// <remarks>
+    /// The files are uploaded first, a few per request (<see cref="BlobBatchFiles"/>, <see cref="BlobBatchBytes"/>), and
+    /// the commit then names them; one request with every picture would run out of the service's time and requests.
+    /// <paramref name="progress"/> is told how many of the files are uploaded so far.
+    /// </remarks>
+    public async Task<PublishResult> PublishAsync(string message, string baseVersion, IReadOnlyList<DataFile> files, Action<int, int>? progress = null)
     {
         if (_key is null)
         {
             throw new PublishException("Najpierw zaloguj się kluczem administratora.");
+        }
+
+        var written = files.Where(f => !f.Deleted).ToList();
+        var blobs = new Dictionary<string, string>();
+        foreach (var batch in Batches(written))
+        {
+            using var upload = Request(HttpMethod.Post, "blobs", _key);
+            upload.Content = JsonContent.Create(new
+            {
+                files = batch.Select(f => new { path = $"data/{f.Path}", content = Convert.ToBase64String(f.Content) }),
+            });
+            foreach (var blob in (await SendAsync<BlobsReply>(upload)).Blobs)
+            {
+                blobs[blob.Path] = blob.Sha;
+            }
+
+            progress?.Invoke(blobs.Count, written.Count);
         }
 
         using var request = Request(HttpMethod.Post, "commit", _key);
@@ -92,9 +114,40 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         {
             message,
             baseVersion,
-            files = files.Select(f => new { path = $"data/{f.Path}", content = Convert.ToBase64String(f.Content), delete = f.Deleted }),
+            files = files.Select(f => f.Deleted
+                ? (object)new { path = $"data/{f.Path}", delete = true }
+                : new { path = $"data/{f.Path}", sha = blobs[$"data/{f.Path}"] }),
         });
         return await SendAsync<PublishResult>(request);
+    }
+
+    /// <summary>Most files in one upload request; the service accepts up to 10.</summary>
+    private const int BlobBatchFiles = 8;
+
+    /// <summary>Most bytes (before base64) in one upload request, so each stays quick for the service.</summary>
+    private const int BlobBatchBytes = 1_500_000;
+
+    private static IEnumerable<List<DataFile>> Batches(IEnumerable<DataFile> files)
+    {
+        var batch = new List<DataFile>();
+        var bytes = 0;
+        foreach (var file in files)
+        {
+            if (batch.Count > 0 && (batch.Count == BlobBatchFiles || bytes + file.Content.Length > BlobBatchBytes))
+            {
+                yield return batch;
+                batch = [];
+                bytes = 0;
+            }
+
+            batch.Add(file);
+            bytes += file.Content.Length;
+        }
+
+        if (batch.Count > 0)
+        {
+            yield return batch;
+        }
     }
 
     /// <summary>The latest deployments and the data version this site serves now (not the one this tab loaded).</summary>
@@ -350,6 +403,10 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     private sealed record StatusReply(IReadOnlyList<DeploymentRun> Runs);
 
     private sealed record ErrorReply(string? Error, IReadOnlyList<string>? Conflicts);
+
+    private sealed record BlobsReply(IReadOnlyList<StoredBlob> Blobs);
+
+    private sealed record StoredBlob(string Path, string Sha);
 
     private sealed record PendingReply(IReadOnlyDictionary<string, int> Waiting);
 

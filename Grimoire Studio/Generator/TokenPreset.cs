@@ -32,7 +32,16 @@ public sealed record TokenPreset
     public double ReminderSizeCm { get; init; } = TokenSettings.DefaultReminderSizeCm;
     public int Dpi { get; init; } = 300;
 
-    public static TokenPreset From(string name, TokenSettings s) => new()
+    /// <summary>
+    /// Player tokens only: border by team id, used for each role's token instead of <see cref="BorderColor"/>…;
+    /// null when the preset has one border for every team.
+    /// </summary>
+    public Dictionary<string, TeamBorder>? TeamBorders { get; init; }
+
+    /// <summary>The border this preset gives a token of <paramref name="team"/>, or null to keep the preset's own.</summary>
+    public TeamBorder? BorderFor(string team) => TeamBorders?.GetValueOrDefault(team);
+
+    public static TokenPreset From(string name, TokenSettings s, IReadOnlyDictionary<string, TeamBorder>? teamBorders = null) => new()
     {
         Name = name,
         TokenType = s.TokenType,
@@ -54,6 +63,9 @@ public sealed record TokenPreset
         PlayerSizeCm = s.PlayerSizeCm,
         ReminderSizeCm = s.ReminderSizeCm,
         Dpi = s.Dpi,
+        TeamBorders = s.IsPlayer && teamBorders is not null
+            ? teamBorders.ToDictionary(b => b.Key, b => b.Value.Clone())
+            : null,
     };
 
     public void ApplyTo(TokenSettings s)

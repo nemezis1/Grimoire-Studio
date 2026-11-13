@@ -145,7 +145,23 @@ else
         {
             <p class="notice notice--warning">@wikiOutdated</p>
         }
-        <ChangeSetView Changes="_wikiChanges" Base="_original" Data="_data" OnRemove="RemoveWikiAsync" ShowJinxText="true" Origins="Origins">
+        @if (_wikiChanges.Count > 0)
+        {
+            @* Ticked items go back where they came from: a proposal's back to waiting, a direct wiki edit away. *@
+            <div class="field-row wiki-undo">
+                <button class="button button--ghost" disabled="@(_wikiSelection.Count == _wikiChanges.Count)"
+                        @onclick="() => { _wikiSelection = _wikiChanges.Keys().ToHashSet(); _confirmUndo = false; }">Zaznacz wszystkie</button>
+                <button class="button button--ghost" disabled="@(_wikiSelection.Count == 0)"
+                        @onclick="() => { _wikiSelection.Clear(); _confirmUndo = false; }">Odznacz wszystkie</button>
+                <button class="button" disabled="@(_wikiSelection.Count == 0 || _busy)"
+                        title="Zmiany ze zgłoszeń wracają do „Czekają na akceptację”; zmiany wprowadzone bezpośrednio w wiki są usuwane"
+                        @onclick="UndoSelectedAsync">
+                    @(_confirmUndo ? $"Na pewno cofnąć: {ProposalText.Changes(_wikiSelection.Count)}?" : $"Cofnij zaznaczone ({_wikiSelection.Count})")
+                </button>
+            </div>
+        }
+        <ChangeSetView Changes="_wikiChanges" Base="_original" BaseIsDataFolder="true" Data="_data" OnRemove="RemoveWikiAsync" ShowJinxText="true" Origins="Origins"
+                       Selected="_wikiSelection" SelectedChanged="() => _confirmUndo = false">
             <p class="muted">Nic nie czeka na wysłanie.</p>
         </ChangeSetView>
         @if (Publisher.AdminName is not null && _wikiChanges.Count > 0)
@@ -155,7 +171,7 @@ else
                     <span>Opis zmian do historii repozytorium</span>
                     <input type="text" @bind="_commitMessage" @bind:event="oninput" placeholder="np. Poprawione tłumaczenia jinxów" />
                 </label>
-                <button class="button" disabled="@(_busy || _conflicts is { Count: > 0 })" @onclick="PublishAsync">@(_busy ? "Wysyłanie…" : "Wyślij do repozytorium")</button>
+                <button class="button" disabled="@(_busy || _conflicts is { Count: > 0 })" @onclick="PublishAsync">@(_busy ? _publishProgress ?? "Wysyłanie…" : "Wyślij do repozytorium")</button>
             </div>
         }
         @if (_conflicts is { Count: > 0 } conflicts)
@@ -278,6 +294,9 @@ else
     private string? _adminKey;
     private string? _commitMessage;
     private bool _busy;
+
+    /// <summary>How far the upload of a big send got, shown on its button.</summary>
+    private string? _publishProgress;
 
     /// <summary>Last commit sent from this page; the deployment panel follows it.</summary>
     private string? _sentSha;
@@ -515,21 +534,75 @@ else
     /// <summary>
     /// Takes an item out of the wiki changes; one that came from a proposal goes back to waiting for a decision.
     /// </summary>
-    private async Task RemoveWikiAsync(string key)
+    private Task RemoveWikiAsync(string key) => UndoWikiAsync([key]);
+
+    /// <summary>Ticked items of "Zatwierdzone, do wysłania"; none at first.</summary>
+    private HashSet<string> _wikiSelection = [];
+
+    /// <summary>The first click on "Cofnij zaznaczone" asks to confirm.</summary>
+    private bool _confirmUndo;
+
+    private async Task UndoSelectedAsync()
     {
-        await ChangeSets.Wiki.RemoveAsync(key);
-        foreach (var proposal in Unsent.Where(p => p.ApprovedKeys.Contains(key)))
+        if (!_confirmUndo)
         {
+            _confirmUndo = true;
+            return;
+        }
+
+        _confirmUndo = false;
+        _busy = true;
+        try
+        {
+            await UndoWikiAsync(_wikiSelection.ToList());
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>
+    /// Takes items out of the wiki changes, back to where they came from: one approved from a proposal waits for a
+    /// decision again, a direct wiki edit is gone.
+    /// </summary>
+    private async Task UndoWikiAsync(IReadOnlyCollection<string> keys)
+    {
+        foreach (var key in keys)
+        {
+            await ChangeSets.Wiki.RemoveAsync(key);
+        }
+
+        var reopened = 0;
+        var failed = new List<string>();
+        foreach (var proposal in Unsent.Where(p => p.ApprovedKeys.Any(keys.Contains)))
+        {
+            var back = keys.Where(proposal.ApprovedKeys.Contains).ToList();
             try
             {
-                await Proposals.UpdateAsync(proposal.Reopen(key));
+                await Proposals.UpdateAsync(back.Aggregate(proposal, (p, key) => p.Reopen(key)));
                 _selection.Remove(proposal.Id);
-                Show($"Wycofano z wiki; zmiana od: {proposal.Author} wraca do „Czekają na akceptację”.");
+                reopened += back.Count;
             }
             catch (PublishException ex)
             {
-                Show($"Wycofano z wiki, ale nie udało się przywrócić zgłoszenia na serwerze: {ex.Message}", error: true);
+                failed.Add($"{proposal.Author}: {ex.Message}");
             }
+        }
+
+        _wikiSelection.ExceptWith(keys);
+        var removed = keys.Count - reopened - failed.Count;
+        if (failed.Count > 0)
+        {
+            Show($"Wycofano z wiki, ale nie udało się przywrócić zgłoszeń na serwerze ({string.Join("; ", failed)}).", error: true);
+        }
+        else
+        {
+            Show(string.Join(" ", new[]
+            {
+                reopened > 0 ? $"Wraca do „Czekają na akceptację”: {ProposalText.Changes(reopened)}." : null,
+                removed > 0 ? $"Usunięto zmiany wprowadzone bezpośrednio w wiki: {ProposalText.Changes(removed)}." : null,
+            }.OfType<string>()));
         }
 
         await ReloadAsync();
@@ -644,7 +717,11 @@ else
                 message += $"\n\nZgłoszenia: {string.Join(", ", authors)}";
             }
 
-            var result = await Publisher.PublishAsync(message, target.Version, files);
+            var result = await Publisher.PublishAsync(message, target.Version, files, (done, total) =>
+            {
+                _publishProgress = $"Wysyłanie plików {done}/{total}…";
+                StateHasChanged();
+            });
             foreach (var proposal in sent)
             {
                 try
@@ -679,6 +756,7 @@ else
         finally
         {
             _busy = false;
+            _publishProgress = null;
         }
     }
 

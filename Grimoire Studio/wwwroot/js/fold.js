@@ -10,7 +10,8 @@ function rowsUnfolded(element) {
     // The controls themselves (a group of chips wraps inside); items of one row differ in height, so tops within
     // 20 px are one row.
     const tops = [...element.querySelectorAll('input, select, button, summary, .filters__count')]
-        .filter(item => item.offsetParent !== null)
+        // Checkboxes in a dropdown list are not part of the row, open or closed.
+        .filter(item => item.offsetParent !== null && !item.closest('.multi-select__menu'))
         .map(item => item.getBoundingClientRect().top)
         .sort((a, b) => a - b);
     let rows = 0;
@@ -62,3 +63,17 @@ function watch(element) {
 
 new MutationObserver(() => document.querySelectorAll('[data-fold-rows]').forEach(watch))
     .observe(document.body, { childList: true, subtree: true });
+
+// Dropdowns (details.multi-select with checkboxes, the menu's "Więcej") close on a click outside them or on Escape,
+// like a select; the menu also closes when one of its links is followed.
+const dropdowns = 'details.multi-select[open], details.nav-more[open]';
+document.addEventListener('click', event => {
+    for (const open of document.querySelectorAll(dropdowns)) {
+        const link = event.target instanceof Element && event.target.closest('a');
+        if (!open.contains(event.target) || (link && open.contains(link))) open.open = false;
+    }
+});
+document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') return;
+    for (const open of document.querySelectorAll(dropdowns)) open.open = false;
+});

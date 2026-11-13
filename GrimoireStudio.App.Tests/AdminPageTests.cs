@@ -135,11 +135,36 @@ public class AdminPageTests : AppTestContext
             .First(li => li.TextContent.Contains(Name("chef"), StringComparison.Ordinal))
             .QuerySelectorAll("button").Single(b => b.TextContent == "Przywróć").Click();
 
-        page.WaitForAssertion(() => Assert.Contains("wraca do „Czekają na akceptację”", page.Find(".notice").TextContent));
+        page.WaitForAssertion(() => Assert.Contains("Wraca do „Czekają na akceptację”: 1 zmiana.", page.Find(".notice").TextContent));
         Assert.Equal([LocalBackup.RoleKey("empath")], (await Service<ChangeSets>().Wiki.GetAllAsync()).Keys());
         var proposal = (await Service<Proposals>().GetAllAsync()).Single();
         Assert.Equal(ProposalStatus.Pending, proposal.Status);
         Assert.Equal([LocalBackup.RoleKey("chef")], proposal.UndecidedKeys());
+    }
+
+    [Fact]
+    public async Task UndoSelected_Should_ReturnEachItemToItsSource_When_Confirmed()
+    {
+        await SubmitProposalAsync();
+        await Service<ChangeSets>().Wiki.Roles.SaveAsync(new LocalRole(Changed("imp"), null));
+        var page = RenderAsAdmin();
+        page.WaitForElements(".change-list > li");
+        page.FindAll("button").Single(b => b.TextContent.StartsWith("Zatwierdź wszystko", StringComparison.Ordinal)).Click();
+        page.WaitForAssertion(() => Assert.Contains("Zatwierdzone, do wysłania (3)", page.Markup));
+
+        page.FindAll(".wiki-undo button").Single(b => b.TextContent == "Zaznacz wszystkie").Click();
+        var undo = () => page.FindAll(".wiki-undo button").Single(b => b.TextContent.Contains("cofnąć") || b.TextContent.Contains("Cofnij"));
+        Assert.Contains("Cofnij zaznaczone (3)", undo().TextContent);
+        undo().Click();
+        Assert.Contains("Na pewno cofnąć: 3 zmiany?", undo().TextContent);
+        undo().Click();
+
+        page.WaitForAssertion(() => Assert.Contains("Wraca do „Czekają na akceptację”: 2 zmiany.", page.Find(".notice").TextContent));
+        Assert.Contains("Usunięto zmiany wprowadzone bezpośrednio w wiki: 1 zmiana.", page.Find(".notice").TextContent);
+        Assert.Empty((await Service<ChangeSets>().Wiki.GetAllAsync()).Keys());
+        var proposal = (await Service<Proposals>().GetAllAsync()).Single();
+        Assert.Equal(ProposalStatus.Pending, proposal.Status);
+        Assert.Equal(2, proposal.UndecidedKeys().Count);
     }
 
     [Fact]

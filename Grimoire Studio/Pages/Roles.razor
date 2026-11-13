@@ -15,13 +15,18 @@
 <div class="pinned fill-viewport">
 <DataView Context="data">
     @{
-        var scope = Script is null ? null : data.FindScript(Script);
-        var team = Teams.Parse(Team);
+        // Several scripts show the roles of any of them; several teams likewise.
+        var scripts = Split(Script).Select(data.FindScript).OfType<Script>().ToList();
+        var teams = Split(Team).Select(Teams.Parse).OfType<TeamInfo>().Select(t => t.Id).ToHashSet();
         var roles = data.AllRoles
-            .Where(r => scope is null || scope.Roles.Contains(r.Id))
-            .Where(r => team is null || r.Team == team.Id)
+            .Where(r => scripts.Count == 0 || scripts.Any(s => s.Roles.Contains(r.Id)))
+            .Where(r => teams.Count == 0 || teams.Contains(r.Team))
             .Where(r => SearchText.Matches(Q ?? string.Empty, r.NamePl, r.NameEn, r.AbilityPl, r.AbilityEn, r.Id))
             .ToList();
+        var descending = Sort is DescendingSort or FlatDescendingSort;
+
+        // A–Z / Z–A without teams: one list across all teams.
+        var flat = Sort is FlatSort or FlatDescendingSort;
 
         // Sorted by a night: only roles that wake that night, in waking order.
         Func<Role, int>? nightOrder = Sort switch
@@ -41,36 +46,61 @@
             <input class="filters__search" type="search" placeholder="Szukaj po nazwie lub zdolności…"
                    value="@Q" @oninput="e => SetParameter(QueryName, e.Value?.ToString())" />
 
-            @* Narrow screens: script, sorting and teams fold behind this button. *@
+            @* Narrow screens: scripts, teams and sorting fold behind this button. *@
             <button class="button button--ghost filters__toggle" aria-expanded="@_filtersOpen" @onclick="() => _filtersOpen = !_filtersOpen">
-                Filtry@((scope is null ? 0 : 1) + (nightOrder is null ? 0 : 1) + (team is null ? 0 : 1) is var active and > 0 ? $" ({active})" : null)
+                Filtry@((scripts.Count > 0 ? 1 : 0) + (Sort is null ? 0 : 1) + (teams.Count > 0 ? 1 : 0) is var active and > 0 ? $" ({active})" : null)
             </button>
 
             <div class="filters__more @(_filtersOpen ? "filters__more--open" : null)">
-            <select class="filters__select" value="@(scope?.Id ?? string.Empty)"
-                    @onchange="e => SetParameter(ScriptName, e.Value?.ToString())">
-                <option value="">Wszystkie skrypty</option>
-                @foreach (var script in data.Scripts.Scripts)
-                {
-                    <option value="@script.Id">@script.Name</option>
-                }
-            </select>
+            @* Scripts: tick any number; with none ticked every role is listed. *@
+            <details class="multi-select multi-select--left">
+                <summary>@ScriptsLabel(scripts)</summary>
+                <div class="multi-select__menu">
+                    @foreach (var script in data.Scripts.Scripts)
+                    {
+                        var ticked = scripts.Contains(script);
+                        <label class="field field--inline">
+                            <input type="checkbox" checked="@ticked" @onchange="() => Toggle(ScriptName, Script, script.Id)" />
+                            <span>@script.Name</span>
+                        </label>
+                    }
+                    <div class="field-row multi-select__actions">
+                        <button class="button button--ghost" disabled="@(scripts.Count == data.Scripts.Scripts.Count)"
+                                @onclick="() => SetParameter(ScriptName, string.Join(',', data.Scripts.Scripts.Select(s => s.Id)))">Zaznacz wszystkie</button>
+                        <button class="button button--ghost" disabled="@(scripts.Count == 0)" @onclick="() => SetParameter(ScriptName, null)">Odznacz wszystkie</button>
+                    </div>
+                </div>
+            </details>
 
-            <select class="filters__select" value="@(nightOrder is null ? string.Empty : Sort)"
+            @* Teams: like the scripts, any number; with none ticked every team is listed. *@
+            <details class="multi-select multi-select--left">
+                <summary>@TeamsLabel(teams)</summary>
+                <div class="multi-select__menu">
+                    @foreach (var t in Teams.All)
+                    {
+                        <label class="field field--inline" style="@Teams.Style(t.Id)">
+                            <input type="checkbox" checked="@teams.Contains(t.Id)" @onchange="() => Toggle(TeamName, Team, t.Id)" />
+                            <span class="multi-select__swatch" aria-hidden="true"></span>
+                            <span>@t.PluralPl</span>
+                        </label>
+                    }
+                    <div class="field-row multi-select__actions">
+                        <button class="button button--ghost" disabled="@(teams.Count == Teams.All.Count)"
+                                @onclick="() => SetParameter(TeamName, string.Join(',', Teams.All.Select(t => t.Id)))">Zaznacz wszystkie</button>
+                        <button class="button button--ghost" disabled="@(teams.Count == 0)" @onclick="() => SetParameter(TeamName, null)">Odznacz wszystkie</button>
+                    </div>
+                </div>
+            </details>
+
+            <select class="filters__select" value="@(Sort ?? string.Empty)"
                     @onchange="e => SetParameter(SortName, e.Value?.ToString())" aria-label="Sortowanie">
-                <option value="">Alfabetycznie, według drużyn</option>
+                <option value="">A–Z, według drużyn</option>
+                <option value="@DescendingSort">Z–A, według drużyn</option>
+                <option value="@FlatSort">A–Z</option>
+                <option value="@FlatDescendingSort">Z–A</option>
                 <option value="@FirstNightSort">Kolejność pierwszej nocy</option>
                 <option value="@OtherNightsSort">Kolejność pozostałych nocy</option>
             </select>
-
-            <div class="chips" role="group" aria-label="Drużyna">
-                <button class="chip @(team is null ? "chip--active" : null)" @onclick="() => SetParameter(TeamName, null)">Wszystkie</button>
-                @foreach (var t in Teams.All)
-                {
-                    <button class="chip team--@(t.Id) @(team?.Id == t.Id ? "chip--active" : null)" style="@Teams.Style(t.Id)"
-                            @onclick="() => SetParameter(TeamName, t.Id)">@t.PluralPl</button>
-                }
-            </div>
             </div>
 
             <span class="filters__count muted">
@@ -94,6 +124,15 @@
                 }
             </ul>
         }
+        else if (flat)
+        {
+            <ul class="role-grid">
+                @foreach (var role in descending ? roles.OrderByDescending(r => r.NamePl, PolishOrder) : roles.OrderBy(r => r.NamePl, PolishOrder))
+                {
+                    <RoleCard Role="role" />
+                }
+            </ul>
+        }
         else
         {
             @foreach (var group in roles.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
@@ -101,7 +140,7 @@
                 <section class="role-group">
                     <h2 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
                     <ul class="role-grid">
-                        @foreach (var role in group.OrderBy(r => r.NamePl, PolishOrder))
+                        @foreach (var role in descending ? group.OrderByDescending(r => r.NamePl, PolishOrder) : group.OrderBy(r => r.NamePl, PolishOrder))
                         {
                             <RoleCard Role="role" />
                         }
@@ -121,6 +160,9 @@
     private const string SortName = "sort";
     private const string FirstNightSort = "first";
     private const string OtherNightsSort = "other";
+    private const string DescendingSort = "za";
+    private const string FlatSort = "az-all";
+    private const string FlatDescendingSort = "za-all";
 
     private bool _filtersOpen;
     private ChangeStatus _status = ChangeStatus.Empty;
@@ -144,4 +186,34 @@
     // Filters live in the query string so a filtered list can be shared as a link.
     private void SetParameter(string name, string? value) =>
         Nav.NavigateTo(Nav.GetUriWithQueryParameter(name, string.IsNullOrWhiteSpace(value) ? null : value), replace: true);
+
+    /// <summary>Ids of a multi-value parameter, written comma-separated (e.g. script=tb,snv).</summary>
+    private static List<string> Split(string? value) =>
+        (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    /// <summary>Adds <paramref name="id"/> to a multi-value parameter, or takes it out when it is there.</summary>
+    private void Toggle(string name, string? current, string id)
+    {
+        var ids = Split(current);
+        if (!ids.Remove(id))
+        {
+            ids.Add(id);
+        }
+
+        SetParameter(name, string.Join(',', ids));
+    }
+
+    private string TeamsLabel(IReadOnlySet<string> teams) => teams.Count switch
+    {
+        0 => "Wszystkie drużyny",
+        1 => Teams.Plural(teams.First()),
+        _ => $"Drużyny: {teams.Count}",
+    };
+
+    private static string ScriptsLabel(IReadOnlyList<Script> scripts) => scripts.Count switch
+    {
+        0 => "Wszystkie skrypty",
+        1 => scripts[0].Name,
+        _ => $"Skrypty: {scripts.Count}",
+    };
 }

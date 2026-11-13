@@ -44,7 +44,9 @@
                                     <span class="change-list__fields">@string.Join(", ", rows.Select(r => r.Label))</span>
                                 }
                             </span>
-                            <ItemDiffTable Rows="rows" Icon="@(item.IconChanged ? ItemDiffTable.IconAt(Commit.Url, Commit.Sha, item.Id) : null)" Open="true" />
+                            <ItemDiffTable Rows="rows" Icon="@(item.IconChanged ? ItemDiffTable.IconAt(Commit.Url, Commit.Sha, item.Id) : null)"
+                                           BeforeIcon="@(item.IconChanged && !(item.Before is null && item.After is not null) && _changes.Parent is { } parent ? ItemDiffTable.IconAt(Commit.Url, parent, item.Id) : null)"
+                                           Open="true" />
                         </li>
                     }
                 </ul>

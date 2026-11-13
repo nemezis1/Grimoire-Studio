@@ -753,3 +753,70 @@ export function savePresets(json) {
         return false;
     }
 }
+
+// --- Custom fonts (per browser, kept with the sheet in IndexedDB) ------------------------------------------------
+
+const FONTS_KEY = 'custom-fonts';
+const customFaces = new Map();
+
+async function loadFontList() {
+    try {
+        return (await sheetRequest('readonly', store => store.get(FONTS_KEY))) ?? [];
+    } catch {
+        return [];
+    }
+}
+
+async function registerFont(name, data) {
+    const face = new FontFace(name, data);
+    await face.load();
+    customFaces.get(name) && document.fonts.delete(customFaces.get(name));
+    document.fonts.add(face);
+    customFaces.set(name, face);
+}
+
+/** Registers the fonts saved in this browser; returns their names. */
+export async function loadCustomFonts() {
+    const names = [];
+    for (const font of await loadFontList()) {
+        try {
+            await registerFont(font.name, font.data);
+            names.push(font.name);
+        } catch {
+            // A damaged file: skip it, the others still work.
+        }
+    }
+    return names;
+}
+
+/** Checks, registers and saves a font file under the name; returns an error message, or null when it worked. */
+export async function addCustomFont(name, bytes) {
+    const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    try {
+        await registerFont(name, data);
+    } catch {
+        return 'Ten plik nie jest czcionką, którą przeglądarka umie odczytać (TTF, OTF, WOFF, WOFF2).';
+    }
+    try {
+        const fonts = (await loadFontList()).filter(f => f.name !== name);
+        fonts.push({ name, data });
+        await sheetRequest('readwrite', store => store.put(fonts, FONTS_KEY));
+        return null;
+    } catch {
+        return 'Przeglądarka nie pozwoliła zapisać czcionki (tryb prywatny lub brak miejsca).';
+    }
+}
+
+export async function removeCustomFont(name) {
+    const face = customFaces.get(name);
+    if (face) {
+        document.fonts.delete(face);
+        customFaces.delete(name);
+    }
+    try {
+        const fonts = (await loadFontList()).filter(f => f.name !== name);
+        await sheetRequest('readwrite', store => store.put(fonts, FONTS_KEY));
+    } catch {
+        // Nothing saved to remove.
+    }
+}

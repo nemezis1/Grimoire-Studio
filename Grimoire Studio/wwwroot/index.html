@@ -9,7 +9,7 @@
     <link rel="preload" id="webassembly" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="icon-192.png" />
-    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="css/app#[.{fingerprint}].css" />
     <script>
         // The theme picked with the header switch, set before the page draws so it does not flash the other one.
         window.grimoireTheme = {
@@ -48,7 +48,8 @@
         <span class="dismiss" title="Zamknij">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
-    <script type="module" src="js/fold.js"></script>
+    <!-- Imported through the import map, so each version of the file gets its own address and no stale copy is used. -->
+    <script type="module">import "./js/fold.js";</script>
 </body>
 
 </html>

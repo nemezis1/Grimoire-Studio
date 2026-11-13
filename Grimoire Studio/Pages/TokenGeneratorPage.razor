@@ -15,7 +15,8 @@
         <section class="panel">
             <h2>Preset</h2>
             <p class="muted small">Zapisuje wygląd tokena (czcionki, rozmiary, kolory, położenie, rozmiar wydruku) w tej przeglądarce. Treść i obrazki nie są zapisywane.</p>
-            <div class="field-row">
+            @* Each control on its own line with its buttons under it, the same way for both. *@
+            <div class="preset-block">
                 <label class="field">
                     <span>Zapisane presety</span>
                     <select value="@_selectedPreset" @onchange="e => ApplyPreset(e.Value?.ToString())">
@@ -26,15 +27,67 @@
                         }
                     </select>
                 </label>
-                <button class="button button--ghost" disabled="@(_selectedPreset.Length == 0)" @onclick="DeletePresetAsync">Usuń</button>
+                <div class="preset-block__actions">
+                    @* Only once the look differs from the saved preset. *@
+                    @if (PresetChanged)
+                    {
+                        <button class="button" title="Nadpisuje wybrany preset obecnym wyglądem tokena"
+                                @onclick="() => SavePresetAsync(_selectedPreset)">Zapisz zmiany</button>
+                    }
+                    <button class="button button--ghost" disabled="@(_selectedPreset.Length == 0)" @onclick="DeletePresetAsync">Usuń</button>
+                </div>
             </div>
-            <div class="field-row">
+            <div class="preset-block">
                 <label class="field">
                     <span>Nazwa nowego presetu</span>
                     <input type="text" @bind="_presetName" @bind:event="oninput" placeholder="np. Mieszkańcy 5 cm" />
                 </label>
-                <button class="button" disabled="@string.IsNullOrWhiteSpace(_presetName)" @onclick="SavePresetAsync">Zapisz</button>
+                <div class="preset-block__actions">
+                    <button class="button" disabled="@string.IsNullOrWhiteSpace(_presetName)" @onclick="() => SavePresetAsync(_presetName)">Zapisz nowy</button>
+                </div>
             </div>
+            @if (_settings.IsPlayer && _data is not null)
+            {
+                @* Saved with the preset: each role's token then gets its team's border. *@
+                <details class="team-borders" open="@_teamBordersOn">
+                    <summary>Obwódka według drużyn</summary>
+                    <label class="field field--inline">
+                        <input type="checkbox" checked="@_teamBordersOn" @onchange="e => SetTeamBordersOn(e.Value is true)" />
+                        <span>Osobna obwódka dla każdej drużyny (zapisywana w presecie)</span>
+                    </label>
+                    @if (_teamBordersOn)
+                    {
+                        <table class="team-borders__table">
+                            <thead>
+                                <tr><th>Drużyna</th><th>Kolor</th><th>Prawa połowa</th><th>Grubość</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var team in _data.Teams)
+                                {
+                                    var border = TeamRow(team.Id);
+                                    <tr class="@(_role?.Team == team.Id ? "team-borders__current" : null)">
+                                        <th><span class="team-heading team--@(team.Id)" style="@Teams.Style(team.Id)">@team.PluralPl</span></th>
+                                        <td><input type="color" value="@border.Color" aria-label="Kolor: @team.PluralPl"
+                                                   @oninput="e => { border.Color = e.Value?.ToString() ?? border.Color; ApplyTeamBorderRow(); }" /></td>
+                                        <td>
+                                            <input type="checkbox" checked="@(border.Color2 is not null)" aria-label="Druga połowa w innym kolorze: @team.PluralPl"
+                                                   @onchange="e => ToggleTeamSecondColor(border, e.Value is true)" />
+                                            @if (border.Color2 is not null)
+                                            {
+                                                <input type="color" value="@border.Color2" aria-label="Prawa połowa: @team.PluralPl"
+                                                       @oninput="e => { border.Color2 = e.Value?.ToString(); ApplyTeamBorderRow(); }" />
+                                            }
+                                        </td>
+                                        <td><input type="number" min="0" max="60" value="@border.Thickness" aria-label="Grubość: @team.PluralPl"
+                                                   @oninput="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { border.Thickness = Math.Clamp(v, 0, 60); ApplyTeamBorderRow(); } }" /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <p class="muted small">Token wybranej roli od razu dostaje obwódkę swojej drużyny. Zapisz preset, żeby zachować te ustawienia; „Cały skrypt” z tym presetem użyje ich dla każdej roli.</p>
+                    }
+                </details>
+            }
             <button class="button button--ghost" @onclick="ResetStyle">Przywróć ustawienia domyślne</button>
             @if (_presetMessage is not null)
             {
@@ -153,7 +206,7 @@
                 </label>
                 <label class="field">
                     <span>Czcionka</span>
-                    <FontSelect @bind-Value="_settings.Font" />
+                    <FontSelect @bind-Value="_settings.Font" Custom="_customFonts" />
                 </label>
             </div>
             <label class="field">
@@ -175,7 +228,7 @@
                 </label>
                 <label class="field">
                     <span>Czcionka</span>
-                    <FontSelect @bind-Value="_settings.DescriptionFont" />
+                    <FontSelect @bind-Value="_settings.DescriptionFont" Custom="_customFonts" />
                 </label>
                 <Slider Label="Rozmiar" Min="8" Max="48" Step="1" @bind-Value="_settings.DescriptionFontSize" />
                 <Slider Label="Przesunięcie pionowe" Min="-0.3" Max="0.6" Step="0.01" @bind-Value="_settings.DescriptionVertical" Format="0.00" />
@@ -208,6 +261,10 @@
         {
             <section class="panel">
                 <h2>Obwódka</h2>
+                @if (_teamBordersOn && _role is not null)
+                {
+                    <p class="muted small">Ustawiona według drużyny w sekcji „Preset”; tu zmienisz ją tylko dla tego tokena.</p>
+                }
                 <div class="field-row">
                     <label class="field field--inline">
                         <input type="color" @bind="_settings.BorderColor" @bind:event="oninput" />
@@ -243,6 +300,35 @@
                 <Slider Label="Rozmiar liści" Min="0.5" Max="1.5" Step="0.05" @bind-Value="_settings.LeafScale" Format="0%" />
             </section>
         }
+
+        @* Rarely needed, so it comes last and starts folded. *@
+        <details class="panel custom-fonts" open="@(_fontMessage is not null)">
+            <summary><h2>Własne czcionki@(_customFonts.Count > 0 ? $" ({_customFonts.Count})" : null)</h2></summary>
+            <p class="muted small">
+                Plik TTF, OTF, WOFF lub WOFF2. Pojawi się w grupie „Własne” na listach czcionek nazwy i opisu. Zostaje
+                tylko w tej przeglądarce: presety i arkusz z tą czcionką w innej przeglądarce pokażą czcionkę zastępczą.
+            </p>
+            <label class="button button--ghost button--file">
+                Dodaj czcionkę…
+                <InputFile accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" OnChange="AddFontAsync" />
+            </label>
+            @if (_fontMessage is not null)
+            {
+                <p class="notice @(_fontError ? "notice--error" : null) small">@_fontMessage</p>
+            }
+            @if (_customFonts.Count > 0)
+            {
+                <ul class="custom-fonts__list">
+                    @foreach (var font in _customFonts)
+                    {
+                        <li>
+                            <span style="font-family: '@font'">@font</span>
+                            <button class="button button--ghost" title="Usuń czcionkę z tej przeglądarki" @onclick="() => RemoveFontAsync(font)">Usuń</button>
+                        </li>
+                    }
+                </ul>
+            }
+        </details>
     </div>
 
     <aside class="generator__preview">

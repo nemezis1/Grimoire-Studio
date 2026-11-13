@@ -16,8 +16,13 @@
 //   ALLOWED_ORIGINS  other origins allowed to call the API (e.g. local development); the site itself is same-origin
 //   ASSETS           binding to the site's files (wrangler.toml [assets])
 
-const MAX_FILES = 60;
+// A commit names its files by blob (uploaded beforehand with /api/blobs, a few per request) or carries a few small ones
+// inline. Each request stays well under the Workers limits on CPU time and on subrequests (one per blob).
+const MAX_FILES = 400;
+const MAX_INLINE_FILES = 10;
+const MAX_BLOB_BATCH = 10;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
+const BLOB_SHA = /^[0-9a-f]{40}$/;
 const MAX_MESSAGE_LENGTH = 2000;
 
 // Only files of the data folder can be written: the JSON files, role icons and script pictures.
@@ -62,6 +67,11 @@ async function route(request, env) {
     const { pathname } = new URL(request.url);
     if (request.method === 'GET' && pathname === `${API}me`) {
         return json(await authenticate(request, env));
+    }
+
+    if (request.method === 'POST' && pathname === `${API}blobs`) {
+        await authenticate(request, env);
+        return json(await createBlobs(await readBody(request), env));
     }
 
     if (request.method === 'POST' && pathname === `${API}commit`) {
@@ -677,7 +687,26 @@ async function readBody(request) {
 }
 
 /**
- * Commits <files> (path + base64 content, or delete: true) on top of the branch. <baseVersion> is the commit (or its prefix) the
+ * Stores files (path + base64 content) as blobs in the repository, a few per request, so a commit with many pictures
+ * can name them by sha. Returns [{path, sha}].
+ */
+export async function createBlobs(body, env) {
+    const files = validateFiles(body?.files, MAX_BLOB_BATCH);
+    if (files.some(f => f.delete || f.sha)) {
+        throw new HttpError(400, 'Podaj treść każdego pliku.');
+    }
+
+    const github = new GitHub(env);
+    const blobs = [];
+    for (const file of files) {
+        blobs.push({ path: file.path, sha: (await github.post('git/blobs', { content: file.content, encoding: 'base64' })).sha });
+    }
+
+    return { blobs };
+}
+
+/**
+ * Commits <files> (path + base64 content, path + sha of a blob from /api/blobs, or delete: true) on top of the branch. <baseVersion> is the commit (or its prefix) the
  * changes were made on: when the same files changed since then, nothing is committed and 409 lists them.
  */
 export async function commit(body, admin, env) {
@@ -698,7 +727,7 @@ export async function commit(body, admin, env) {
             mode: '100644',
             type: 'blob',
             // A null sha removes the file.
-            sha: file.delete ? null : (await github.post('git/blobs', { content: file.content, encoding: 'base64' })).sha,
+            sha: file.delete ? null : file.sha ?? (await github.post('git/blobs', { content: file.content, encoding: 'base64' })).sha,
         }))),
     });
 
@@ -726,13 +755,17 @@ export async function commit(body, admin, env) {
     return { changed: true, sha: created.sha, url: created.html_url, files: files.map(f => f.path) };
 }
 
-function validateFiles(files) {
+function validateFiles(files, limit = MAX_FILES) {
     if (!Array.isArray(files) || files.length === 0) {
         throw new HttpError(400, 'Brak plików do zapisania.');
     }
 
-    if (files.length > MAX_FILES) {
-        throw new HttpError(400, `Za dużo plików naraz (limit ${MAX_FILES}).`);
+    if (files.length > limit) {
+        throw new HttpError(400, `Za dużo plików naraz (limit ${limit}).`);
+    }
+
+    if (files.filter(f => typeof f?.content === 'string' && f.content.length > 0).length > MAX_INLINE_FILES && limit === MAX_FILES) {
+        throw new HttpError(400, `Za dużo plików z treścią w jednym zapisie (limit ${MAX_INLINE_FILES}); wyślij je najpierw przez /api/blobs.`);
     }
 
     const seen = new Set();
@@ -740,6 +773,7 @@ function validateFiles(files) {
         const path = String(file?.path ?? '');
         const content = String(file?.content ?? '');
         const remove = file?.delete === true;
+        const sha = file?.sha === undefined || file?.sha === null ? null : String(file.sha);
         if (!ALLOWED_PATH.test(path)) {
             throw new HttpError(400, `Nie można zapisać pliku ${path}: dozwolone są tylko pliki folderu data/.`);
         }
@@ -749,6 +783,14 @@ function validateFiles(files) {
         }
 
         seen.add(path);
+        if (sha !== null) {
+            if (!BLOB_SHA.test(sha) || content || remove) {
+                throw new HttpError(400, `Plik ${path}: niepoprawny identyfikator zapisanej treści.`);
+            }
+
+            return { path, sha, delete: false };
+        }
+
         if (!/^[A-Za-z0-9+/]*={0,2}$/.test(content) || (content.length * 3) / 4 > MAX_FILE_BYTES) {
             throw new HttpError(400, `Plik ${path}: niepoprawna treść albo za duży.`);
         }

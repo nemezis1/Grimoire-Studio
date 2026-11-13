@@ -114,6 +114,26 @@ public sealed class TokenRenderer(IJSRuntime js) : IAsyncDisposable
         return await module.InvokeAsync<bool>("savePresets", JsonSerializer.Serialize(presets, PresetJson));
     }
 
+    /// <summary>Registers the fonts added in this browser so the canvas can draw with them; returns their names.</summary>
+    public async Task<List<string>> LoadCustomFontsAsync()
+    {
+        var module = await Module;
+        return await module.InvokeAsync<List<string>>("loadCustomFonts");
+    }
+
+    /// <summary>Adds a font file (TTF, OTF, WOFF, WOFF2) under <paramref name="name"/>; returns an error message, or null.</summary>
+    public async Task<string?> AddCustomFontAsync(string name, byte[] content)
+    {
+        var module = await Module;
+        return await module.InvokeAsync<string?>("addCustomFont", name, content);
+    }
+
+    public async Task RemoveCustomFontAsync(string name)
+    {
+        var module = await Module;
+        await module.InvokeVoidAsync("removeCustomFont", name);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_module is { IsCompletedSuccessfully: true })

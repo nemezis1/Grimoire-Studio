@@ -151,6 +151,30 @@ test('commit writes the files on top of the branch with the admin as author', as
     assert.deepEqual(update.body, { sha: 'bbbbbbb2222', force: false });
 });
 
+test('blobs are stored a few at a time and a commit can name them by sha', async () => {
+    const blobs = await call('POST', '/api/blobs', { body: { files: [file('data/icons/chef.png'), file('data/icons/imp.png')] } });
+    assert.equal(blobs.status, 200);
+    const stored = (await blobs.json()).blobs;
+    assert.deepEqual(stored.map(b => b.path), ['data/icons/chef.png', 'data/icons/imp.png']);
+    assert.equal(github.calls.filter(c => c.path === 'git/blobs').length, 2);
+
+    const sha = 'a'.repeat(40);
+    const response = await call('POST', '/api/commit', { body: { files: [{ path: 'data/icons/chef.png', sha }, file('data/roles.json')] } });
+    assert.equal(response.status, 200);
+    const tree = github.calls.find(c => c.path === 'git/trees').body.tree;
+    assert.equal(tree.find(e => e.path === 'data/icons/chef.png').sha, sha);
+    // Only the inline file needed a new blob.
+    assert.equal(github.calls.filter(c => c.path === 'git/blobs').length, 3);
+});
+
+test('blob batches are limited and a sha must be a blob id', async () => {
+    const many = Array.from({ length: 11 }, (_, i) => file(`data/icons/r${i}.png`));
+    assert.equal((await call('POST', '/api/blobs', { body: { files: many } })).status, 400);
+    assert.equal((await call('POST', '/api/blobs', { key: null, body: { files: [file('data/icons/chef.png')] } })).status, 401);
+    const bad = await call('POST', '/api/commit', { body: { files: [{ path: 'data/icons/chef.png', sha: 'nope' }] } });
+    assert.equal(bad.status, 400);
+});
+
 test('files outside the data folder are refused', async () => {
     for (const path of ['README.md', '.github/workflows/build.yml', 'data/../README.md', 'data/icons/x.svg']) {
         const response = await call('POST', '/api/commit', { body: { files: [file(path)] } });

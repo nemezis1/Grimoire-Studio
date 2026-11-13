@@ -13,7 +13,13 @@
                 {
                     <tr>
                         <th>Ikona</th>
-                        <td class="change-details__before"></td>
+                        <td class="change-details__before">
+                            @if (BeforeIcon is not null)
+                            {
+                                @* A role that had no icon of its own before gets a missing file: show nothing. *@
+                                <img src="@BeforeIcon" alt="" onerror="this.remove()" />
+                            }
+                        </td>
                         <td class="change-details__after"><img src="@Icon" alt="" /></td>
                     </tr>
                 }
@@ -37,6 +43,10 @@
     /// <summary>Address of the new icon, when it changed.</summary>
     [Parameter]
     public string? Icon { get; set; }
+
+    /// <summary>Address of the icon before the change, when there was one.</summary>
+    [Parameter]
+    public string? BeforeIcon { get; set; }
 
     [Parameter]
     public bool Open { get; set; }

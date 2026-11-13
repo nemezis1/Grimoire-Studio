@@ -118,17 +118,21 @@ public sealed class TokenSettings
     /// colour, evil roles the demon colour, travellers half and half; every other team (fabled, local teams) its own
     /// colour.
     /// </summary>
-    public void ApplyTeamBorder(GameData data, Role role)
+    public void ApplyTeamBorder(GameData data, Role role) =>
+        (BorderColor, BorderColor2) = DefaultTeamBorder(data, role.Team);
+
+    /// <summary>The colours <see cref="ApplyTeamBorder"/> gives a token of <paramref name="team"/>.</summary>
+    public static (string Color, string? Color2) DefaultTeamBorder(GameData data, string team)
     {
         var good = data.FindTeam(TeamIds.Townsfolk)?.Color ?? "#1E90FF";
         var evil = data.FindTeam(TeamIds.Demon)?.Color ?? EvilBorderColor;
 
-        (BorderColor, BorderColor2) = role.Team switch
+        return team switch
         {
-            TeamIds.Townsfolk or TeamIds.Outsider => (good, (string?)null),
+            TeamIds.Townsfolk or TeamIds.Outsider => (good, null),
             TeamIds.Minion or TeamIds.Demon => (evil, null),
             TeamIds.Traveler => (good, evil),
-            _ => (data.TeamOf(role).Color, null),
+            _ => (data.FindTeam(team)?.Color ?? "#888888", null),
         };
     }
 

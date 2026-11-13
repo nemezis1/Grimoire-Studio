@@ -5,7 +5,7 @@
 
 <header class="site-header">
     <div class="site-header__inner">
-        <a class="site-title" href="">Grimoire Studio</a>
+        <a class="site-title logo" href=""><span class="logo__main">Grimoire</span><span class="logo__studio">Studio</span></a>
         <GlobalSearch />
         <ThemeToggle />
         @* Narrow screens: the links fold behind this button, so the header stays one line. *@
@@ -16,10 +16,15 @@
             <NavLink href="roles">Role</NavLink>
             <NavLink href="scripts">Skrypty</NavLink>
             <NavLink href="jinxes">Jinxy</NavLink>
-            <NavLink href="teams">Drużyny</NavLink>
             <NavLink href="generator">Generator</NavLink>
-            <NavLink href="changes">Moje zmiany</NavLink>
-            <NavLink href="info">Informacje</NavLink>
+            @* Less used pages: under "Więcej" on wide screens; the phone menu lists them with the others. *@
+            <details class="nav-more">
+                <summary>Więcej</summary>
+                <div class="nav-more__menu">
+                    @MorePages
+                </div>
+            </details>
+            <span class="nav-more__flat">@MorePages</span>
             @if (ChangeSets.IsAdmin)
             {
                 <AdminLink />
@@ -52,6 +57,12 @@
 
 @code {
     private bool _menuOpen;
+
+    private static readonly RenderFragment MorePages = @<text>
+        <NavLink href="teams">Drużyny</NavLink>
+        <NavLink href="changes">Moje zmiany</NavLink>
+        <NavLink href="info">Informacje</NavLink>
+    </text>;
 
     private bool IsHome => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Length == 0;
 
