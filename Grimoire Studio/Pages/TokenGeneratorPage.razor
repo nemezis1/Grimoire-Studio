@@ -46,48 +46,6 @@
                     <button class="button" disabled="@string.IsNullOrWhiteSpace(_presetName)" @onclick="() => SavePresetAsync(_presetName)">Zapisz nowy</button>
                 </div>
             </div>
-            @if (_settings.IsPlayer && _data is not null)
-            {
-                @* Saved with the preset: each role's token then gets its team's border. *@
-                <details class="team-borders" open="@_teamBordersOn">
-                    <summary>Obwódka według drużyn</summary>
-                    <label class="field field--inline">
-                        <input type="checkbox" checked="@_teamBordersOn" @onchange="e => SetTeamBordersOn(e.Value is true)" />
-                        <span>Osobna obwódka dla każdej drużyny (zapisywana w presecie)</span>
-                    </label>
-                    @if (_teamBordersOn)
-                    {
-                        <table class="team-borders__table">
-                            <thead>
-                                <tr><th>Drużyna</th><th>Kolor</th><th>Prawa połowa</th><th>Grubość</th></tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var team in _data.Teams)
-                                {
-                                    var border = TeamRow(team.Id);
-                                    <tr class="@(_role?.Team == team.Id ? "team-borders__current" : null)">
-                                        <th><span class="team-heading team--@(team.Id)" style="@Teams.Style(team.Id)">@team.PluralPl</span></th>
-                                        <td><input type="color" value="@border.Color" aria-label="Kolor: @team.PluralPl"
-                                                   @oninput="e => { border.Color = e.Value?.ToString() ?? border.Color; ApplyTeamBorderRow(); }" /></td>
-                                        <td>
-                                            <input type="checkbox" checked="@(border.Color2 is not null)" aria-label="Druga połowa w innym kolorze: @team.PluralPl"
-                                                   @onchange="e => ToggleTeamSecondColor(border, e.Value is true)" />
-                                            @if (border.Color2 is not null)
-                                            {
-                                                <input type="color" value="@border.Color2" aria-label="Prawa połowa: @team.PluralPl"
-                                                       @oninput="e => { border.Color2 = e.Value?.ToString(); ApplyTeamBorderRow(); }" />
-                                            }
-                                        </td>
-                                        <td><input type="number" min="0" max="60" value="@border.Thickness" aria-label="Grubość: @team.PluralPl"
-                                                   @oninput="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { border.Thickness = Math.Clamp(v, 0, 60); ApplyTeamBorderRow(); } }" /></td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                        <p class="muted small">Token wybranej roli od razu dostaje obwódkę swojej drużyny. Zapisz preset, żeby zachować te ustawienia; „Cały skrypt” z tym presetem użyje ich dla każdej roli.</p>
-                    }
-                </details>
-            }
             <button class="button button--ghost" @onclick="ResetStyle">Przywróć ustawienia domyślne</button>
             @if (_presetMessage is not null)
             {
@@ -261,10 +219,6 @@
         {
             <section class="panel">
                 <h2>Obwódka</h2>
-                @if (_teamBordersOn && _role is not null)
-                {
-                    <p class="muted small">Ustawiona według drużyny w sekcji „Preset”; tu zmienisz ją tylko dla tego tokena.</p>
-                }
                 <div class="field-row">
                     <label class="field field--inline">
                         <input type="color" @bind="_settings.BorderColor" @bind:event="oninput" />
@@ -283,6 +237,48 @@
                     }
                 </div>
                 <Slider Label="Grubość" Min="0" Max="60" Step="1" @bind-Value="_settings.BorderThickness" />
+                @if (_data is not null)
+                {
+                    @* Per team, saved with the preset: each role's token then gets its team's border. *@
+                    <details class="team-borders" open="@_teamBordersOn">
+                        <summary>Obwódka według drużyn</summary>
+                        <label class="field field--inline">
+                            <input type="checkbox" checked="@_teamBordersOn" @onchange="e => SetTeamBordersOn(e.Value is true)" />
+                            <span>Osobna obwódka dla każdej drużyny (zapisywana w presecie)</span>
+                        </label>
+                        @if (_teamBordersOn)
+                        {
+                            <table class="team-borders__table">
+                                <thead>
+                                    <tr><th>Drużyna</th><th>Kolor</th><th>Prawa połowa</th><th>Grubość</th></tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var team in _data.Teams)
+                                    {
+                                        var border = TeamRow(team.Id);
+                                        <tr class="@(_role?.Team == team.Id ? "team-borders__current" : null)">
+                                            <th><span class="team-heading team--@(team.Id)" style="@Teams.Style(team.Id)">@team.PluralPl</span></th>
+                                            <td><input type="color" value="@border.Color" aria-label="Kolor: @team.PluralPl"
+                                                       @oninput="e => { border.Color = e.Value?.ToString() ?? border.Color; ApplyTeamBorderRow(); }" /></td>
+                                            <td>
+                                                <input type="checkbox" checked="@(border.Color2 is not null)" aria-label="Druga połowa w innym kolorze: @team.PluralPl"
+                                                       @onchange="e => ToggleTeamSecondColor(border, e.Value is true)" />
+                                                @if (border.Color2 is not null)
+                                                {
+                                                    <input type="color" value="@border.Color2" aria-label="Prawa połowa: @team.PluralPl"
+                                                           @oninput="e => { border.Color2 = e.Value?.ToString(); ApplyTeamBorderRow(); }" />
+                                                }
+                                            </td>
+                                            <td><input type="number" min="0" max="60" value="@border.Thickness" aria-label="Grubość: @team.PluralPl"
+                                                       @oninput="e => { if (int.TryParse(e.Value?.ToString(), out var v)) { border.Thickness = Math.Clamp(v, 0, 60); ApplyTeamBorderRow(); } }" /></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            <p class="muted small">Token wybranej roli od razu dostaje obwódkę swojej drużyny. Zapisz preset, żeby zachować te ustawienia; „Cały skrypt” z tym presetem użyje ich dla każdej roli.</p>
+                        }
+                    </details>
+                }
             </section>
 
             <section class="panel">

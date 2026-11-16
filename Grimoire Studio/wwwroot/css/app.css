@@ -1716,3 +1716,10 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 
 /* Admin panel: undoing ticked approved changes. */
 .wiki-undo { margin: 0.5rem 0; }
+
+/* Admin sign-in: the form keeps the row layout; "Zaloguj" looks inactive only while the key field is empty
+   (a key filled in by the browser counts, even before the page can read it). */
+.admin-login { display: contents; }
+.admin-login:has(input:placeholder-shown) .button { opacity: 0.5; }
+.admin-login:has(input:-webkit-autofill) .button { opacity: 1; }
+.admin-login:has(input:autofill) .button { opacity: 1; }

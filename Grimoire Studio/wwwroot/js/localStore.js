@@ -219,3 +219,8 @@ export function sessionSet(key, value) {
         // Without sessionStorage the value lasts until the page is reloaded.
     }
 }
+
+/** The current value of an input element (also one filled in by the browser's autofill). */
+export function valueOf(element) {
+    return element?.value ?? '';
+}

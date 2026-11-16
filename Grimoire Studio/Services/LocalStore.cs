@@ -44,6 +44,10 @@ public sealed class LocalStore(IJSRuntime js)
 
     public async Task RemoveSettingAsync(string key) => await (await Module).InvokeVoidAsync("removeItem", key);
 
+    /// <summary>The current text of an input, also when the browser filled it in without an input event.</summary>
+    public async Task<string> ReadValueAsync(Microsoft.AspNetCore.Components.ElementReference input) =>
+        await (await Module).InvokeAsync<string>("valueOf", input);
+
     public async Task<string> ResizeImageAsync(string dataUrl, int maxSize) =>
         await (await Module).InvokeAsync<string>("resizeImage", dataUrl, maxSize);
 

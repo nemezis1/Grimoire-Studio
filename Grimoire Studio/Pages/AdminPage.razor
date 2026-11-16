@@ -38,11 +38,15 @@ else
         }
         else
         {
-            <label class="field">
-                <span>Klucz administratora</span>
-                <input type="password" autocomplete="off" @bind="_adminKey" @bind:event="oninput" />
-            </label>
-            <button class="button" disabled="@(string.IsNullOrWhiteSpace(_adminKey) || _busy)" @onclick="SignInAsync">Zaloguj</button>
+            @* A form, so Enter signs in; the button looks active once a key is typed or filled in by the browser. *@
+            <form class="admin-login" @onsubmit="SignInAsync" @onsubmit:preventDefault="true">
+                <label class="field">
+                    <span>Klucz administratora</span>
+                    <input @ref="_keyInput" type="password" name="admin-key" autocomplete="current-password" placeholder=" "
+                           @bind="_adminKey" @bind:event="oninput" />
+                </label>
+                <button type="submit" class="button" disabled="@_busy">Zaloguj</button>
+            </form>
             <span class="muted small">Klucz dostajesz od właściciela strony. Zostaje tylko w tej karcie przeglądarki.</span>
         }
         <button class="button button--ghost admin-session__leave" @onclick="LeaveAdminAsync">Wyjdź z trybu administratora</button>
@@ -73,6 +77,10 @@ else
             @if (_pending.Count > 0)
             {
                 <span class="muted small">zgłoszenia: @_pending.Count</span>
+            }
+            @if (_savingDecisions > 0)
+            {
+                <span class="muted small">· zapisywanie decyzji na serwerze…</span>
             }
         </h3>
         @if (_pending.Count == 0)
@@ -465,9 +473,21 @@ else
     /// Approves (into the wiki) or rejects the given items of a proposal, by default the ticked ones; the others keep
     /// waiting, and the proposal is decided once none is left.
     /// </summary>
+    /// <remarks>
+    /// The page shows the decision at once; the proposal is saved on the server in the background (<see cref="SaveLater"/>),
+    /// so every admin sees it, without waiting for the server before the next click.
+    /// </remarks>
     private async Task DecideAsync(Proposal proposal, bool approve, IEnumerable<string>? only = null)
     {
-        var keys = (only ?? _selection[proposal.Id]).ToHashSet();
+        // The latest version: an earlier decision on the same proposal may not have been drawn yet.
+        proposal = _pending.FirstOrDefault(p => p.Id == proposal.Id) ?? proposal;
+        var waiting = proposal.UndecidedKeys();
+        var keys = (only ?? _selection.GetValueOrDefault(proposal.Id) ?? []).Where(waiting.Contains).ToHashSet();
+        if (keys.Count == 0)
+        {
+            return;
+        }
+
         var items = proposal.Changes.Only(keys);
 
         // The items as the wiki has them before the decision, for the history.
@@ -475,17 +495,6 @@ else
         if (approve && !await ChangeSets.Wiki.MergeAsync(items))
         {
             Show("Przeglądarka nie pozwoliła zapisać wiki (tryb prywatny lub brak miejsca).", error: true);
-            return;
-        }
-
-        try
-        {
-            await Proposals.UpdateAsync(decided);
-        }
-        catch (PublishException ex)
-        {
-            // The proposal stays as it was; approving the same items again merges the same changes.
-            Show($"Nie udało się zapisać decyzji na serwerze: {ex.Message}", error: true);
             return;
         }
 
@@ -499,10 +508,72 @@ else
         else
         {
             // A single item's decision keeps the ticks of the others.
-            _selection[proposal.Id].ExceptWith(keys);
+            _selection.GetValueOrDefault(proposal.Id)?.ExceptWith(keys);
         }
 
-        await ReloadAsync();
+        Replace(decided);
+        await RefreshWikiAsync();
+        SaveLater(decided, proposal.Author);
+    }
+
+    /// <summary>Decisions being saved on the server; the header says so while any are.</summary>
+    private int _savingDecisions;
+
+    /// <summary>Saves one at a time, in the order made: each save carries every earlier decision on its proposal.</summary>
+    private readonly SemaphoreSlim _saveQueue = new(1, 1);
+
+    /// <summary>Puts a changed proposal in its list (waiting or decided) in place of its earlier version.</summary>
+    private void Replace(Proposal proposal)
+    {
+        _pending.RemoveAll(p => p.Id == proposal.Id);
+        _decided.RemoveAll(p => p.Id == proposal.Id);
+        if (proposal.Status == ProposalStatus.Pending)
+        {
+            _pending.Add(proposal);
+            _pending.Sort((a, b) => a.CreatedAt.CompareTo(b.CreatedAt));
+            if (!_selection.ContainsKey(proposal.Id))
+            {
+                _selection[proposal.Id] = proposal.UndecidedKeys().ToHashSet();
+            }
+        }
+        else
+        {
+            _decided.Insert(0, proposal);
+            _selection.Remove(proposal.Id);
+        }
+    }
+
+    /// <summary>The wiki changes and the data with them, from this browser (quick, no server).</summary>
+    private async Task RefreshWikiAsync()
+    {
+        _wiki = await Client.GetWikiAsync();
+        _data = await Client.GetAsync();
+        _wikiChanges = await ChangeSets.Wiki.GetAllAsync();
+    }
+
+    /// <summary>Saves a proposal on the server in the background; a failure is reported on the page.</summary>
+    private void SaveLater(Proposal proposal, string author) => _ = SaveAsync(proposal, author);
+
+    private async Task SaveAsync(Proposal proposal, string author)
+    {
+        _savingDecisions++;
+        await _saveQueue.WaitAsync();
+        try
+        {
+            await Proposals.UpdateAsync(proposal);
+        }
+        catch (PublishException ex)
+        {
+            await InvokeAsync(() => Show(
+                $"Nie udało się zapisać decyzji na serwerze ({author}): {ex.Message} Odśwież stronę i zdecyduj ponownie.",
+                error: true));
+        }
+        finally
+        {
+            _saveQueue.Release();
+            _savingDecisions--;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     /// <summary>A "my changes" export from someone else becomes a pending proposal signed with the file name.</summary>
@@ -573,39 +644,27 @@ else
             await ChangeSets.Wiki.RemoveAsync(key);
         }
 
+        // Proposals go back to waiting here at once; the server copy follows in the background, as with decisions.
         var reopened = 0;
-        var failed = new List<string>();
-        foreach (var proposal in Unsent.Where(p => p.ApprovedKeys.Any(keys.Contains)))
+        foreach (var proposal in Unsent.Where(p => p.ApprovedKeys.Any(keys.Contains)).ToList())
         {
             var back = keys.Where(proposal.ApprovedKeys.Contains).ToList();
-            try
-            {
-                await Proposals.UpdateAsync(back.Aggregate(proposal, (p, key) => p.Reopen(key)));
-                _selection.Remove(proposal.Id);
-                reopened += back.Count;
-            }
-            catch (PublishException ex)
-            {
-                failed.Add($"{proposal.Author}: {ex.Message}");
-            }
+            var open = back.Aggregate(proposal, (p, key) => p.Reopen(key));
+            _selection.Remove(proposal.Id);
+            Replace(open);
+            SaveLater(open, proposal.Author);
+            reopened += back.Count;
         }
 
         _wikiSelection.ExceptWith(keys);
-        var removed = keys.Count - reopened - failed.Count;
-        if (failed.Count > 0)
+        var removed = keys.Count - reopened;
+        Show(string.Join(" ", new[]
         {
-            Show($"Wycofano z wiki, ale nie udało się przywrócić zgłoszeń na serwerze ({string.Join("; ", failed)}).", error: true);
-        }
-        else
-        {
-            Show(string.Join(" ", new[]
-            {
-                reopened > 0 ? $"Wraca do „Czekają na akceptację”: {ProposalText.Changes(reopened)}." : null,
-                removed > 0 ? $"Usunięto zmiany wprowadzone bezpośrednio w wiki: {ProposalText.Changes(removed)}." : null,
-            }.OfType<string>()));
-        }
+            reopened > 0 ? $"Wraca do „Czekają na akceptację”: {ProposalText.Changes(reopened)}." : null,
+            removed > 0 ? $"Usunięto zmiany wprowadzone bezpośrednio w wiki: {ProposalText.Changes(removed)}." : null,
+        }.OfType<string>()));
 
-        await ReloadAsync();
+        await RefreshWikiAsync();
     }
 
     /// <summary>The data folder files the wiki changes, zipped under data/ so they unpack over the repository.</summary>
@@ -642,12 +701,26 @@ else
         Show($"Pobrano pliki danych: {string.Join(", ", files.Select(f => f.Path))}.");
     }
 
+    private ElementReference _keyInput;
+
     private async Task SignInAsync()
     {
+        // A key filled in by the browser may not have raised an input event yet: read the field itself.
+        if (string.IsNullOrWhiteSpace(_adminKey))
+        {
+            _adminKey = await Store.ReadValueAsync(_keyInput);
+        }
+
+        if (string.IsNullOrWhiteSpace(_adminKey))
+        {
+            Show("Wpisz klucz administratora.", error: true);
+            return;
+        }
+
         _busy = true;
         try
         {
-            await Publisher.SignInAsync(_adminKey ?? string.Empty);
+            await Publisher.SignInAsync(_adminKey);
             _adminKey = null;
             Show($"Zalogowano jako {Publisher.AdminName}.");
             await ReloadAsync();
