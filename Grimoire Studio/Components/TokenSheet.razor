@@ -23,9 +23,16 @@
                         <img src="@item.ImageUrl" alt="@item.Settings.Text" />
                     }
                     <div class="sheet-token__actions">
-                        <button title="Edytuj" @onclick="() => OnEdit.InvokeAsync(item)">✎</button>
-                        <button title="Duplikuj" @onclick="() => OnDuplicate.InvokeAsync(item)">⧉</button>
-                        <button title="Usuń" @onclick="() => OnRemove.InvokeAsync(item)">✕</button>
+                        @* Drawn icons: text symbols sit at different heights in different fonts. *@
+                        <button title="Edytuj" aria-label="Edytuj" @onclick="() => OnEdit.InvokeAsync(item)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z M14 6l4 4" /></svg>
+                        </button>
+                        <button title="Duplikuj" aria-label="Duplikuj" @onclick="() => OnDuplicate.InvokeAsync(item)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" /></svg>
+                        </button>
+                        <button title="Usuń" aria-label="Usuń" @onclick="() => OnRemove.InvokeAsync(item)">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                        </button>
                     </div>
                 </div>
             }

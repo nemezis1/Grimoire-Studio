@@ -686,22 +686,25 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 .generator textarea { resize: vertical; }
 .generator input[type="color"] { width: 3rem; height: 2rem; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: none; }
 
+/*
+ * Label, track and value in one line; in a narrow panel the track (with the value) moves to its own line instead of
+ * shrinking to nothing.
+ */
 .slider {
-    display: grid;
-    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 3.5rem;
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.25rem 0.75rem;
     margin-bottom: 0.5rem;
 }
+.slider__label { flex: 1 0 11rem; max-width: 11rem; }
+.slider input { flex: 1 1 8rem; min-width: 8rem; }
+.slider__value { flex: none; width: 3.5rem; }
 
 .slider__label { font-size: 0.9rem; }
 .slider__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
 .slider input { width: 100%; accent-color: var(--accent); }
 
-@media (max-width: 520px) {
-    .slider { grid-template-columns: minmax(0, 1fr) 3.5rem; }
-    .slider__label { grid-column: 1 / -1; }
-}
 
 .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 0.4rem 1rem; margin-bottom: 0.75rem; }
 .checks label { display: flex; align-items: center; gap: 0.5rem; }
@@ -758,13 +761,18 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 .sheet-token img { display: block; width: 100%; height: 100%; }
 .sheet-token--editing { outline: 6px solid var(--accent); outline-offset: 4px; }
 
+/* Under the token, overlapping its lower edge a little; as wide as the buttons, so small tokens do not squeeze them. */
 .sheet-token__actions {
     position: absolute;
-    inset: auto 0 -0.5rem 0;
+    top: calc(100% - 1.2rem);
+    left: 50%;
+    z-index: 2;
+    width: max-content;
+    transform: translateX(-50%);
     display: none;
-    justify-content: center;
     gap: 0.4rem;
 }
+.sheet-token:hover, .sheet-token:focus-within, .sheet-token--editing { z-index: 3; }
 
 .sheet-token:hover .sheet-token__actions,
 .sheet-token:focus-within .sheet-token__actions,
@@ -775,14 +783,28 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 }
 
 .sheet-token__actions button {
-    font-size: 1.6rem;
+    flex: none;
+    display: grid;
+    place-items: center;
     width: 3.2rem;
     height: 3.2rem;
+    padding: 0;
     border-radius: 50%;
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
     cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.sheet-token__actions button:hover { background: var(--bg); }
+.sheet-token__actions svg {
+    width: 1.6rem;
+    height: 1.6rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 @media print {

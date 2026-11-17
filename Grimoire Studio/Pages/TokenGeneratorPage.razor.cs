@@ -197,6 +197,7 @@ public partial class TokenGeneratorPage
     {
         _selectedPreset = name ?? string.Empty;
         _presetMessage = null;
+        _confirmDeletePreset = false;
         var preset = _presets.FirstOrDefault(p => p.Name == _selectedPreset);
         preset?.ApplyTo(_settings);
 
@@ -266,8 +267,19 @@ public partial class TokenGeneratorPage
         _presetName = string.Empty;
     }
 
+    /// <summary>The first click on "Usuń" (preset) and on "Wyczyść arkusz" asks to confirm.</summary>
+    private bool _confirmDeletePreset;
+    private bool _confirmClear;
+
     private async Task DeletePresetAsync()
     {
+        if (!_confirmDeletePreset)
+        {
+            _confirmDeletePreset = true;
+            return;
+        }
+
+        _confirmDeletePreset = false;
         _presets.RemoveAll(p => p.Name == _selectedPreset);
         _presetMessage = await Renderer.SavePresetsAsync(_presets)
             ? $"Usunięto preset „{_selectedPreset}”."
@@ -425,6 +437,18 @@ public partial class TokenGeneratorPage
         _sheet.Remove(item);
         await Renderer.ReleaseUrlAsync(item.ImageUrl);
         await SaveSheetAsync();
+    }
+
+    private async Task ConfirmClearSheetAsync()
+    {
+        if (!_confirmClear)
+        {
+            _confirmClear = true;
+            return;
+        }
+
+        _confirmClear = false;
+        await ClearSheetAsync();
     }
 
     private async Task ClearSheetAsync()

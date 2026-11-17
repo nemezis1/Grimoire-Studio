@@ -34,7 +34,7 @@
                         <button class="button" title="Nadpisuje wybrany preset obecnym wyglądem tokena"
                                 @onclick="() => SavePresetAsync(_selectedPreset)">Zapisz zmiany</button>
                     }
-                    <button class="button button--ghost" disabled="@(_selectedPreset.Length == 0)" @onclick="DeletePresetAsync">Usuń</button>
+                    <button class="button button--ghost" disabled="@(_selectedPreset.Length == 0)" @onclick="DeletePresetAsync">@(_confirmDeletePreset ? $"Na pewno usunąć „{_selectedPreset}”?" : "Usuń")</button>
                 </div>
             </div>
             <div class="preset-block">
@@ -376,7 +376,7 @@
                 <button class="button" disabled="@(_sheet.Count == 0 || _exportingPdf)" @onclick="PrintAsync">
                     @(Cmyk ? _exportingPdf ? "Tworzenie PDF…" : "Pobierz PDF (CMYK)" : "Drukuj / zapisz PDF")
                 </button>
-                <button class="button button--ghost" disabled="@(_sheet.Count == 0)" @onclick="ClearSheetAsync">Wyczyść arkusz</button>
+                <button class="button button--ghost" disabled="@(_sheet.Count == 0)" @onclick="ConfirmClearSheetAsync">@(_confirmClear ? $"Na pewno usunąć {_sheet.Count} {TokenWord(_sheet.Count)}?" : "Wyczyść arkusz")</button>
             </div>
         </div>
         @if (_sheetSaveFailed)
