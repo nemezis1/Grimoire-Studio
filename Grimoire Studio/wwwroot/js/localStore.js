@@ -224,3 +224,14 @@ export function sessionSet(key, value) {
 export function valueOf(element) {
     return element?.value ?? '';
 }
+
+/** What a bug report may carry about this browser: its name and version, the window size and the theme. */
+export function technicalInfo() {
+    const theme = document.documentElement.dataset.theme
+        ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark (system)' : 'light (system)');
+    return [
+        `Browser: ${navigator.userAgent}`,
+        `Window: ${innerWidth}×${innerHeight} (${devicePixelRatio}x)`,
+        `Theme: ${theme}`,
+    ].join('\n');
+}

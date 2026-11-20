@@ -231,6 +231,71 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
 
     private string RequireKey() => _key ?? throw new PublishException("Najpierw zaloguj się kluczem administratora.");
 
+    /// <summary>Sends a bug report or an idea (anyone may); returns it as stored, with the id it is read back by.</summary>
+    /// <param name="website">The form's hidden field: filled only by bots, which then store nothing.</param>
+    /// <exception cref="PublishException">The service refused it (too many, too long) or is unreachable.</exception>
+    public async Task<Report> SubmitReportAsync(Report report, string? website = null)
+    {
+        using var request = Request(HttpMethod.Post, "reports", null);
+        request.Content = JsonContent.Create(new
+        {
+            report.Kind,
+            report.Title,
+            report.Description,
+            report.Author,
+            report.Page,
+            report.Technical,
+            website,
+        }, options: JsonSerializerOptions.Web);
+        return await SendAsync<Report>(request);
+    }
+
+    /// <summary>A report as the admins left it; null when it is gone (removed, or expired after it was closed).</summary>
+    /// <exception cref="PublishException">The service is unreachable.</exception>
+    public async Task<Report?> GetReportAsync(string id)
+    {
+        using var request = Request(HttpMethod.Get, $"reports/{Uri.EscapeDataString(id)}", null);
+        try
+        {
+            return await SendAsync<Report>(request);
+        }
+        catch (PublishException ex) when (ex.Status == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<IReadOnlyList<Report>> GetReportsAsync()
+    {
+        using var request = Request(HttpMethod.Get, "reports", RequireKey());
+        return (await SendAsync<ReportsReply>(request)).Reports;
+    }
+
+    /// <summary>Number of reports no admin has looked at yet.</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<int> GetOpenReportsAsync()
+    {
+        using var request = Request(HttpMethod.Get, "reports?open", RequireKey());
+        return (await SendAsync<OpenReportsReply>(request)).Open;
+    }
+
+    /// <summary>An admin's status and reply for a report; returns the report as stored.</summary>
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task<Report> AnswerReportAsync(string id, string status, string reply)
+    {
+        using var request = Request(HttpMethod.Put, $"reports/{Uri.EscapeDataString(id)}", RequireKey());
+        request.Content = JsonContent.Create(new { status, reply }, options: JsonSerializerOptions.Web);
+        return await SendAsync<Report>(request);
+    }
+
+    /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
+    public async Task DeleteReportAsync(string id)
+    {
+        using var request = Request(HttpMethod.Delete, $"reports/{Uri.EscapeDataString(id)}", RequireKey());
+        await SendAsync<JsonElement>(request);
+    }
+
     /// <summary>Sends a proposal for the admins (anyone may); returns it as stored, with the id it is read back by.</summary>
     /// <exception cref="PublishException">The service refused it (too many proposals, too big) or is unreachable.</exception>
     public async Task<Proposal> SubmitProposalAsync(Proposal proposal)
@@ -411,6 +476,10 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
     private sealed record PendingReply(IReadOnlyDictionary<string, int> Waiting);
 
     private sealed record ProposalsReply(IReadOnlyList<JsonElement> Proposals);
+
+    private sealed record ReportsReply(IReadOnlyList<Report> Reports);
+
+    private sealed record OpenReportsReply(int Open);
 
     private sealed record DataReply(string Sha, IReadOnlyDictionary<string, string?> Files);
 }

@@ -22,9 +22,10 @@
                 <summary>Więcej</summary>
                 <div class="nav-more__menu">
                     @MorePages
+                    <NavLink href="@ReportHref">Zgłoś błąd lub pomysł</NavLink>
                 </div>
             </details>
-            <span class="nav-more__flat">@MorePages</span>
+            <span class="nav-more__flat">@MorePages<NavLink href="@ReportHref">Zgłoś błąd lub pomysł</NavLink></span>
             @if (ChangeSets.IsAdmin)
             {
                 <AdminLink />
@@ -63,6 +64,18 @@
         <NavLink href="changes">Moje zmiany</NavLink>
         <NavLink href="info">Informacje</NavLink>
     </text>;
+
+    /// <summary>The report page, told which page it was opened from (except from itself).</summary>
+    private string ReportHref
+    {
+        get
+        {
+            var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0];
+            return path.Length == 0 || path.StartsWith("report", StringComparison.OrdinalIgnoreCase)
+                ? "report"
+                : $"report?from={Uri.EscapeDataString(path)}";
+        }
+    }
 
     private bool IsHome => Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Length == 0;
 

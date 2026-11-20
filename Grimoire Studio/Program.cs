@@ -12,6 +12,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddScoped<LocalStore>();
 builder.Services.AddScoped<ChangeSets>();
 builder.Services.AddScoped<Proposals>();
+builder.Services.AddScoped<Reports>();
 builder.Services.AddScoped<TeamText>();
 builder.Services.AddScoped<GameDataClient>();
 builder.Services.AddScoped<TokenRenderer>();

@@ -136,6 +136,35 @@ async function route(request, env) {
         }
     }
 
+    // Bug reports and ideas: anyone sends one and reads it back by its id; admins list, answer and remove them.
+    if (pathname === `${API}reports`) {
+        if (request.method === 'POST') {
+            return json(await submitReport(request, env), 201);
+        }
+
+        if (request.method === 'GET') {
+            await authenticate(request, env);
+            return json(new URL(request.url).searchParams.has('open') ? await openReports(env) : await listReports(env));
+        }
+    }
+
+    if (pathname.startsWith(`${API}reports/`)) {
+        const id = decodeURIComponent(pathname.slice(`${API}reports/`.length));
+        if (request.method === 'GET') {
+            return json(await getReport(id, env));
+        }
+
+        if (request.method === 'PUT') {
+            const admin = await authenticate(request, env);
+            return json(await answerReport(id, await readBody(request), admin.name, env));
+        }
+
+        if (request.method === 'DELETE') {
+            await authenticate(request, env);
+            return json(await deleteReport(id, env));
+        }
+    }
+
     if (pathname === `${API}admins` || pathname.startsWith(`${API}admins/`)) {
         const owner = await authenticate(request, env);
         if (!owner.owner) {
@@ -408,6 +437,162 @@ async function saveProposal(id, body, env) {
 async function deleteProposal(id, env) {
     requireStore(env);
     await env.ADMINS.delete(PROPOSAL_PREFIX + proposalId(id));
+    return { removed: id };
+}
+
+// --- Bug reports and ideas ----------------------------------------------------------------------------------------
+
+const REPORT_PREFIX = 'report:';
+const REPORT_KINDS = ['bug', 'idea'];
+const REPORT_STATUSES = ['new', 'progress', 'done', 'rejected'];
+const MAX_REPORT_TITLE = 120;
+const MAX_REPORT_TEXT = 4000;
+const MAX_REPORT_PAGE = 300;
+const MAX_REPORT_TECHNICAL = 1000;
+const MAX_OPEN_REPORTS = 200;
+const MAX_REPORTS_PER_HOUR = 10;
+const MAX_LISTED_REPORTS = 300;
+const CLOSED_REPORT_SECONDS = 180 * 24 * 60 * 60;
+
+const clip = (value, max) => String(value ?? '').trim().slice(0, max);
+
+/**
+ * A bug report or an idea from anyone. The Worker gives it its id, time and status and keeps only the fields a
+ * visitor may set; a filled hidden field (<website>) marks a bot, which gets a receipt but nothing is stored.
+ */
+async function submitReport(request, env) {
+    requireStore(env);
+    const body = await readBody(request);
+    const kind = String(body?.kind ?? '');
+    if (!REPORT_KINDS.includes(kind)) {
+        throw new HttpError(400, 'Wybierz, czy to błąd, czy pomysł.');
+    }
+
+    const title = clip(body?.title, MAX_REPORT_TITLE + 1);
+    const description = clip(body?.description, MAX_REPORT_TEXT + 1);
+    if (!title || title.length > MAX_REPORT_TITLE) {
+        throw new HttpError(400, `Podaj tytuł (do ${MAX_REPORT_TITLE} znaków).`);
+    }
+
+    if (!description || description.length > MAX_REPORT_TEXT) {
+        throw new HttpError(400, `Opisz zgłoszenie (do ${MAX_REPORT_TEXT} znaków).`);
+    }
+
+    const author = clip(body?.author, MAX_NAME_LENGTH + 1);
+    if (author.length > MAX_NAME_LENGTH) {
+        throw new HttpError(400, `Podpis może mieć do ${MAX_NAME_LENGTH} znaków.`);
+    }
+
+    const report = {
+        id: base64Url(crypto.getRandomValues(new Uint8Array(18))),
+        kind,
+        title,
+        description,
+        author,
+        page: clip(body?.page, MAX_REPORT_PAGE),
+        technical: clip(body?.technical, MAX_REPORT_TECHNICAL),
+        createdAt: new Date().toISOString(),
+        status: 'new',
+        reply: '',
+    };
+
+    if (String(body?.website ?? '').trim()) {
+        return report;
+    }
+
+    if ((await reportKeys(env)).filter(key => key.metadata?.status === 'new').length >= MAX_OPEN_REPORTS) {
+        throw new HttpError(429, 'Za dużo zgłoszeń czeka na przejrzenie. Spróbuj za jakiś czas.');
+    }
+
+    await limitReports(request, env);
+    await putReport(report, env);
+    return report;
+}
+
+/** At most MAX_REPORTS_PER_HOUR from one address (kept as a hash, for an hour). */
+async function limitReports(request, env) {
+    const address = request.headers.get('CF-Connecting-IP') ?? 'unknown';
+    const key = `report-rate:${(await sha256Hex(address)).slice(0, 32)}`;
+    const count = Number(await env.ADMINS.get(key) ?? 0);
+    if (count >= MAX_REPORTS_PER_HOUR) {
+        throw new HttpError(429, 'Za dużo zgłoszeń w krótkim czasie. Spróbuj za godzinę.');
+    }
+
+    await env.ADMINS.put(key, String(count + 1), { expirationTtl: 60 * 60 });
+}
+
+/** Done and rejected reports are kept for half a year; new and in-progress ones until an admin closes them. */
+function putReport(report, env) {
+    const metadata = { status: report.status, kind: report.kind };
+    const closed = report.status === 'done' || report.status === 'rejected';
+    return env.ADMINS.put(REPORT_PREFIX + report.id, JSON.stringify(report),
+        closed ? { metadata, expirationTtl: CLOSED_REPORT_SECONDS } : { metadata });
+}
+
+async function reportKeys(env) {
+    const keys = [];
+    let cursor;
+    do {
+        const page = await env.ADMINS.list({ prefix: REPORT_PREFIX, cursor });
+        keys.push(...page.keys);
+        cursor = page.list_complete ? undefined : page.cursor;
+    } while (cursor && keys.length < MAX_LISTED_REPORTS);
+    return keys;
+}
+
+/** How many reports no admin has looked at yet, from the listing (no report is read). */
+async function openReports(env) {
+    requireStore(env);
+    return { open: (await reportKeys(env)).filter(key => key.metadata?.status === 'new').length };
+}
+
+async function listReports(env) {
+    requireStore(env);
+    const keys = (await reportKeys(env)).slice(0, MAX_LISTED_REPORTS);
+    const values = await Promise.all(keys.map(key => env.ADMINS.get(key.name)));
+    return { reports: values.filter(Boolean).map(value => JSON.parse(value)) };
+}
+
+function reportId(id) {
+    if (!PROPOSAL_ID.test(id)) {
+        throw new HttpError(400, 'Nieznane zgłoszenie.');
+    }
+
+    return id;
+}
+
+async function getReport(id, env) {
+    requireStore(env);
+    const value = await env.ADMINS.get(REPORT_PREFIX + reportId(id));
+    if (!value) {
+        throw new HttpError(404, 'Nie ma takiego zgłoszenia (mogło zostać usunięte).');
+    }
+
+    return JSON.parse(value);
+}
+
+/** An admin's answer: a new status and a reply for the visitor; what the visitor wrote stays as it was. */
+async function answerReport(id, body, admin, env) {
+    const report = await getReport(id, env);
+    const status = String(body?.status ?? '');
+    if (!REPORT_STATUSES.includes(status)) {
+        throw new HttpError(400, 'Nieznany stan zgłoszenia.');
+    }
+
+    const answered = {
+        ...report,
+        status,
+        reply: clip(body?.reply, MAX_REPORT_TEXT),
+        updatedAt: new Date().toISOString(),
+        updatedBy: admin,
+    };
+    await putReport(answered, env);
+    return answered;
+}
+
+async function deleteReport(id, env) {
+    requireStore(env);
+    await env.ADMINS.delete(REPORT_PREFIX + reportId(id));
     return { removed: id };
 }
 

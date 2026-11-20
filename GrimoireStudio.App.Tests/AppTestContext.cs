@@ -22,6 +22,7 @@ public abstract class AppTestContext : BunitContext
         Services.AddScoped<LocalStore>();
         Services.AddScoped<ChangeSets>();
         Services.AddScoped<Proposals>();
+        Services.AddScoped<Reports>();
         Services.AddScoped<TeamText>();
         Services.AddScoped<GameDataClient>();
         Services.AddScoped<TokenRenderer>();

@@ -481,3 +481,62 @@ test('admins get the number of changes waiting for a decision without reading th
     assert.deepEqual(await (await call('GET', '/api/proposals?pending')).json(), { pending: 2, waiting: { [other.id]: 2 } });
     assert.equal((await call('GET', '/api/proposals?pending', { key: null })).status, 401);
 });
+
+const report = { kind: 'bug', title: 'Nie działa druk', description: 'Po kliknięciu „Drukuj” nic się nie dzieje.', author: 'Ola', page: '/scripts/tb' };
+
+test('anyone reports a bug or an idea and reads it back by its id, with only the fields a visitor may set', async () => {
+    const response = await call('POST', '/api/reports', { key: null, body: { ...report, status: 'done', reply: 'x', id: 'x' } });
+    assert.equal(response.status, 201);
+    const sent = await response.json();
+    assert.equal(sent.status, 'new');
+    assert.equal(sent.reply, '');
+    assert.match(sent.id, /^[A-Za-z0-9_-]{24}$/);
+
+    const read = await (await call('GET', `/api/reports/${sent.id}`, { key: null })).json();
+    assert.deepEqual([read.kind, read.title, read.author, read.page], ['bug', 'Nie działa druk', 'Ola', '/scripts/tb']);
+});
+
+test('a report needs a kind, a title and a description; the signature is optional', async () => {
+    const send = body => call('POST', '/api/reports', { key: null, body });
+    assert.equal((await send({ ...report, kind: 'translation' })).status, 400);
+    assert.equal((await send({ ...report, title: ' ' })).status, 400);
+    assert.equal((await send({ ...report, description: '' })).status, 400);
+    assert.equal((await send({ ...report, title: 'x'.repeat(121) })).status, 400);
+    assert.equal((await send({ ...report, kind: 'idea', author: '' })).status, 201);
+});
+
+test('a filled hidden field gets a receipt but stores nothing', async () => {
+    const response = await call('POST', '/api/reports', { key: null, body: { ...report, website: 'https://spam.example' } });
+    assert.equal(response.status, 201);
+    const { id } = await response.json();
+    assert.equal((await call('GET', `/api/reports/${id}`, { key: null })).status, 404);
+    assert.deepEqual(await (await call('GET', '/api/reports?open')).json(), { open: 0 });
+});
+
+test('one address sends at most ten reports an hour', async () => {
+    for (let i = 0; i < 10; i++) {
+        assert.equal((await call('POST', '/api/reports', { key: null, body: report })).status, 201);
+    }
+    assert.equal((await call('POST', '/api/reports', { key: null, body: report })).status, 429);
+});
+
+test('admins list, answer and remove reports; visitors cannot', async () => {
+    const sent = await (await call('POST', '/api/reports', { key: null, body: report })).json();
+    assert.equal((await call('GET', '/api/reports', { key: null })).status, 401);
+    assert.equal((await call('PUT', `/api/reports/${sent.id}`, { key: null, body: { status: 'done' } })).status, 401);
+    assert.deepEqual(await (await call('GET', '/api/reports?open')).json(), { open: 1 });
+
+    const listed = await (await call('GET', '/api/reports')).json();
+    assert.deepEqual(listed.reports.map(r => r.id), [sent.id]);
+
+    assert.equal((await call('PUT', `/api/reports/${sent.id}`, { body: { status: 'closed' } })).status, 400);
+    const answered = await (await call('PUT', `/api/reports/${sent.id}`, {
+        body: { status: 'done', reply: 'Poprawione, dzięki!', title: 'zmieniony', description: 'zmieniony' },
+    })).json();
+    assert.deepEqual([answered.status, answered.reply, answered.updatedBy, answered.title], ['done', 'Poprawione, dzięki!', 'Kasia', 'Nie działa druk']);
+    assert.deepEqual(await (await call('GET', '/api/reports?open')).json(), { open: 0 });
+
+    assert.equal((await call('DELETE', `/api/reports/${sent.id}`, { key: null })).status, 401);
+    assert.equal((await call('DELETE', `/api/reports/${sent.id}`)).status, 200);
+    assert.equal((await call('GET', `/api/reports/${sent.id}`, { key: null })).status, 404);
+});

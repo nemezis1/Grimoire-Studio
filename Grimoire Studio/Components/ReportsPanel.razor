@@ -1,0 +1,200 @@
+@*
+    Admin panel: bug reports and ideas from visitors. An admin sets each one's status and may reply; the sender sees
+    both on the report page. Saved on the server when signed in, otherwise in this browser.
+*@
+@inject Reports Reports
+@inject RepositoryPublisher Publisher
+@implements IDisposable
+
+<div class="title-row">
+    <h2>Błędy i pomysły @if (_reports is not null) {<span class="muted small">nowe: @_reports.Count(r => r.Status == Report.New)</span>}</h2>
+    <div class="chips" role="group" aria-label="Pokaż">
+        <button class="chip @(_showClosed ? null : "chip--active")" @onclick="() => _showClosed = false">Otwarte</button>
+        <button class="chip @(_showClosed ? "chip--active" : null)" @onclick="() => _showClosed = true">Wszystkie</button>
+    </div>
+</div>
+
+@if (Reports.OnServer && Publisher.AdminName is null)
+{
+    <p class="notice notice--warning">Zgłoszenia przysłane przez innych zobaczysz po zalogowaniu kluczem administratora.</p>
+}
+
+@if (_error is not null)
+{
+    <p class="notice notice--error">@_error</p>
+}
+
+@if (_reports is null)
+{
+    <p class="notice">Wczytywanie…</p>
+}
+else if (Shown.Count == 0)
+{
+    <p class="muted">@(_showClosed ? "Brak zgłoszeń." : "Brak otwartych zgłoszeń.")</p>
+}
+else
+{
+    <ul class="report-list">
+        @foreach (var report in Shown)
+        {
+            var form = Form(report);
+            <li>
+                <div class="report-list__head">
+                    <span class="local-badge">@Report.KindLabel(report.Kind)</span>
+                    <strong>@report.Title</strong>
+                    <span class="local-badge report-status report-status--@report.Status">@Report.StatusLabel(report.Status)</span>
+                </div>
+                <span class="muted small">
+                    @report.CreatedAt.ToLocalTime().ToString("g") · @(report.Author.Length > 0 ? report.Author : "bez podpisu")
+                    @if (report.Page.Length > 0)
+                    {
+                        <span> · <a href="@report.Page.TrimStart('/')">@report.Page</a></span>
+                    }
+                    @if (report.UpdatedBy is not null)
+                    {
+                        <span> · odpowiedział(a): @report.UpdatedBy</span>
+                    }
+                </span>
+                <p class="report-list__text">@report.Description</p>
+                @if (report.Technical.Length > 0)
+                {
+                    <details class="report-form__technical">
+                        <summary>Dane techniczne</summary>
+                        <pre>@report.Technical</pre>
+                    </details>
+                }
+                <div class="report-answer">
+                    <label class="field">
+                        <span>Stan</span>
+                        <select value="@form.Status" @onchange="e => form.Status = e.Value?.ToString() ?? form.Status">
+                            @foreach (var status in Report.Statuses)
+                            {
+                                <option value="@status">@Report.StatusLabel(status)</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field report-answer__reply">
+                        <span>Odpowiedź dla zgłaszającego</span>
+                        <input type="text" maxlength="4000" value="@form.Reply" @oninput="e => form.Reply = e.Value?.ToString() ?? string.Empty"
+                               placeholder="np. Poprawione, dzięki!" />
+                    </label>
+                    <button class="button" disabled="@(_busy.Contains(report.Id) || (form.Status == report.Status && form.Reply.Trim() == report.Reply))"
+                            @onclick="() => AnswerAsync(report, form)">Zapisz</button>
+                    <button class="button button--ghost" disabled="@_busy.Contains(report.Id)" @onclick="() => DeleteAsync(report)">
+                        @(_confirmDelete == report.Id ? "Na pewno usunąć?" : "Usuń")
+                    </button>
+                </div>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private List<Report>? _reports;
+    private bool _showClosed;
+    private string? _error;
+    private string? _confirmDelete;
+    private readonly HashSet<string> _busy = [];
+    private readonly Dictionary<string, AnswerForm> _forms = [];
+
+    /// <summary>An admin's unsaved status and reply for one report.</summary>
+    private sealed class AnswerForm
+    {
+        public string Status { get; set; } = Report.New;
+        public string Reply { get; set; } = string.Empty;
+    }
+
+    /// <summary>Open reports first (new ones before those in progress), newest first within each.</summary>
+    private List<Report> Shown =>
+        (_reports ?? [])
+            .Where(r => _showClosed || !r.IsClosed)
+            .OrderBy(r => Report.Statuses.ToList().IndexOf(r.Status))
+            .ThenByDescending(r => r.CreatedAt)
+            .ToList();
+
+    private AnswerForm Form(Report report)
+    {
+        if (!_forms.TryGetValue(report.Id, out var form))
+        {
+            form = new AnswerForm { Status = report.Status, Reply = report.Reply };
+            _forms[report.Id] = form;
+        }
+
+        return form;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Publisher.SignedInChanged += OnSignedInChanged;
+        await LoadAsync();
+    }
+
+    private void OnSignedInChanged() => _ = InvokeAsync(async () =>
+    {
+        await LoadAsync();
+        StateHasChanged();
+    });
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _reports = (await Reports.GetForAdminAsync()).ToList();
+            _forms.Clear();
+            _error = null;
+        }
+        catch (PublishException ex)
+        {
+            _reports ??= [];
+            _error = $"Nie udało się wczytać zgłoszeń: {ex.Message}";
+        }
+    }
+
+    private async Task AnswerAsync(Report report, AnswerForm form)
+    {
+        _busy.Add(report.Id);
+        try
+        {
+            var answered = await Reports.AnswerAsync(report, form.Status, form.Reply);
+            _reports![_reports.IndexOf(report)] = answered;
+            _forms[answered.Id] = new AnswerForm { Status = answered.Status, Reply = answered.Reply };
+            _error = null;
+        }
+        catch (PublishException ex)
+        {
+            _error = $"Nie udało się zapisać odpowiedzi: {ex.Message}";
+        }
+        finally
+        {
+            _busy.Remove(report.Id);
+        }
+    }
+
+    private async Task DeleteAsync(Report report)
+    {
+        if (_confirmDelete != report.Id)
+        {
+            _confirmDelete = report.Id;
+            return;
+        }
+
+        _confirmDelete = null;
+        _busy.Add(report.Id);
+        try
+        {
+            await Reports.DeleteAsync(report.Id);
+            _reports!.Remove(report);
+            _error = null;
+        }
+        catch (PublishException ex)
+        {
+            _error = $"Nie udało się usunąć zgłoszenia: {ex.Message}";
+        }
+        finally
+        {
+            _busy.Remove(report.Id);
+        }
+    }
+
+    public void Dispose() => Publisher.SignedInChanged -= OnSignedInChanged;
+}

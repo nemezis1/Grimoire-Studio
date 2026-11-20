@@ -1,0 +1,200 @@
+@page "/report"
+@inject Reports Reports
+@inject LocalStore Store
+@inject GameDataClient Client
+@inject NavigationManager Nav
+
+@*
+    A bug report or an idea for the site. Changes to roles, scripts or translations go through the editors instead
+    ("Moje zmiany"). The visitor's own reports are listed below with their status and the admins' reply.
+*@
+
+<PageTitle>Zgłoś błąd lub pomysł – Grimoire Studio</PageTitle>
+
+<h1>Zgłoś błąd lub pomysł</h1>
+<p class="muted">
+    Coś nie działa albo masz pomysł, jak usprawnić stronę? Napisz. Poprawki ról, skryptów i tłumaczeń zgłaszasz
+    edytorem, przez <a href="changes">„Moje zmiany”</a>.
+</p>
+
+<form class="panel report-form" @onsubmit="SubmitAsync" @onsubmit:preventDefault="true">
+    <div class="checks report-form__kind" role="radiogroup" aria-label="Rodzaj">
+        <label><input type="radio" name="kind" checked="@(_kind == Report.Bug)" @onchange="() => SetKind(Report.Bug)" /> Błąd</label>
+        <label><input type="radio" name="kind" checked="@(_kind == Report.Idea)" @onchange="() => SetKind(Report.Idea)" /> Pomysł na usprawnienie</label>
+    </div>
+
+    <label class="field">
+        <span>Tytuł</span>
+        <input type="text" maxlength="120" @bind="_title" @bind:event="oninput"
+               placeholder="@(_kind == Report.Bug ? "np. Wydruk skryptu ucina ostatnią rolę" : "np. Filtr ról według edycji")" />
+    </label>
+
+    <label class="field">
+        <span>@(_kind == Report.Bug ? "Co się stało i jak to powtórzyć?" : "Opis pomysłu")</span>
+        <textarea rows="6" maxlength="4000" @bind="_description" @bind:event="oninput"></textarea>
+    </label>
+
+    <label class="field">
+        <span>Podpis (nieobowiązkowy)</span>
+        <input type="text" maxlength="40" @bind="_author" @bind:event="oninput" placeholder="np. nick z Discorda" />
+    </label>
+
+    @if (_page.Length > 0)
+    {
+        <p class="muted small">
+            Strona: <code>@_page</code>
+            <button type="button" class="button button--ghost report-form__remove" @onclick="() => _page = string.Empty">Nie dołączaj</button>
+        </p>
+    }
+
+    @if (_kind == Report.Bug)
+    {
+        <label class="field field--inline">
+            <input type="checkbox" checked="@_withTechnical" @onchange="e => _withTechnical = e.Value is true" />
+            <span>Dołącz dane techniczne (przeglądarka, rozmiar okna, motyw, wersja danych)</span>
+        </label>
+        @if (_withTechnical && _technical.Length > 0)
+        {
+            <details class="report-form__technical">
+                <summary>Pokaż, co zostanie wysłane</summary>
+                <pre>@_technical</pre>
+            </details>
+        }
+    }
+
+    @* Hidden from people; a bot that fills it in gets a receipt, but nothing is stored. *@
+    <input class="report-form__trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" @bind="_website" />
+
+    @if (_message is not null)
+    {
+        <p class="notice @(_messageIsError ? "notice--error" : null)">@_message</p>
+    }
+
+    <div class="field-row">
+        <button type="submit" class="button" disabled="@(_busy || string.IsNullOrWhiteSpace(_title) || string.IsNullOrWhiteSpace(_description))">
+            @(_busy ? "Wysyłanie…" : "Wyślij")
+        </button>
+    </div>
+    @if (!Reports.OnServer)
+    {
+        <p class="muted small">Usługa zapisu nie jest skonfigurowana: zgłoszenie zostanie tylko w tej przeglądarce.</p>
+    }
+</form>
+
+@if (_mine.Count > 0)
+{
+    <section class="panel">
+        <h2>Moje zgłoszenia</h2>
+        <ul class="report-list">
+            @foreach (var report in _mine)
+            {
+                <li>
+                    <div class="report-list__head">
+                        <span class="local-badge">@Report.KindLabel(report.Kind)</span>
+                        <strong>@report.Title</strong>
+                        <span class="local-badge report-status report-status--@report.Status">@Report.StatusLabel(report.Status)</span>
+                    </div>
+                    <span class="muted small">@report.CreatedAt.ToLocalTime().ToString("g")</span>
+                    @if (report.Reply.Length > 0)
+                    {
+                        <p class="report-list__reply"><span class="muted small">Odpowiedź:</span> @report.Reply</p>
+                    }
+                </li>
+            }
+        </ul>
+    </section>
+}
+
+@code {
+    /// <summary>The page the visitor came from, e.g. /report?from=scripts/tb (the menu link passes it).</summary>
+    [SupplyParameterFromQuery(Name = "from")]
+    public string? From { get; set; }
+
+    private string _kind = Report.Bug;
+    private string _title = string.Empty;
+    private string _description = string.Empty;
+    private string _author = string.Empty;
+    private string _page = string.Empty;
+    private string _website = string.Empty;
+    private bool _withTechnical = true;
+    private string _technical = string.Empty;
+    private bool _busy;
+    private string? _message;
+    private bool _messageIsError;
+    private List<Report> _mine = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _page = From is { Length: > 0 } from && !from.StartsWith("report", StringComparison.OrdinalIgnoreCase) ? "/" + from.TrimStart('/') : string.Empty;
+        await LoadMineAsync();
+        await Reports.RefreshMineAsync();
+        await LoadMineAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ReadTechnicalAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReadTechnicalAsync()
+    {
+        var version = (await Client.GetOriginalAsync()).Version;
+        _technical = await Store.TechnicalInfoAsync() + (version.Length > 0 ? $"\nData: {version}" : string.Empty);
+    }
+
+    private async Task LoadMineAsync() =>
+        _mine = (await Reports.GetAllAsync()).OrderByDescending(r => r.CreatedAt).ToList();
+
+    private void SetKind(string kind) => _kind = kind;
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title) || string.IsNullOrWhiteSpace(_description) || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            // Read again now: the window may have been resized (or hidden) since the page opened.
+            if (_kind == Report.Bug && _withTechnical)
+            {
+                await ReadTechnicalAsync();
+            }
+
+            await Reports.SubmitAsync(new Report
+            {
+                Id = string.Empty,
+                Kind = _kind,
+                Title = _title.Trim(),
+                Description = _description.Trim(),
+                Author = _author.Trim(),
+                Page = _page,
+                Technical = _kind == Report.Bug && _withTechnical ? _technical : string.Empty,
+            }, _website);
+            _title = string.Empty;
+            _description = string.Empty;
+            Show("Dziękujemy! Zgłoszenie wysłane; jego stan i odpowiedź zobaczysz niżej, w „Moich zgłoszeniach”.");
+            await LoadMineAsync();
+        }
+        catch (Exception ex) when (ex is PublishException or IOException)
+        {
+            Show(ex.Message, error: true);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Show(string message, bool error = false)
+    {
+        _message = message;
+        _messageIsError = error;
+    }
+}

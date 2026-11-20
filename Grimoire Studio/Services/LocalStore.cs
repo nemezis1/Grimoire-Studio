@@ -48,6 +48,9 @@ public sealed class LocalStore(IJSRuntime js)
     public async Task<string> ReadValueAsync(Microsoft.AspNetCore.Components.ElementReference input) =>
         await (await Module).InvokeAsync<string>("valueOf", input);
 
+    /// <summary>Browser, window size and theme, for a bug report (sent only when the visitor agrees).</summary>
+    public async Task<string> TechnicalInfoAsync() => await (await Module).InvokeAsync<string>("technicalInfo");
+
     public async Task<string> ResizeImageAsync(string dataUrl, int maxSize) =>
         await (await Module).InvokeAsync<string>("resizeImage", dataUrl, maxSize);
 

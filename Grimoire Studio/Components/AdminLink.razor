@@ -4,6 +4,7 @@
 *@
 @inject RepositoryPublisher Publisher
 @inject Proposals Proposals
+@inject Reports Reports
 @inject NavigationManager Nav
 @implements IDisposable
 
@@ -11,7 +12,7 @@
     Admin
     @if (_pending > 0)
     {
-        <span class="nav-count" title="Zmiany ze zgłoszeń czekające na akceptację">@_pending</span>
+        <span class="nav-count" title="Zmiany ze zgłoszeń czekające na akceptację i nowe zgłoszenia błędów lub pomysłów">@_pending</span>
     }
 </NavLink>
 
@@ -25,6 +26,7 @@
     {
         Publisher.SignedInChanged += OnChanged;
         Proposals.Changed += OnChanged;
+        Reports.Changed += OnChanged;
         Nav.LocationChanged += OnLocationChanged;
         await Publisher.LoadAsync();
         await RefreshAsync();
@@ -50,7 +52,7 @@
 
         try
         {
-            _pending = Proposals.WaitingChanges(await Publisher.GetPendingAsync());
+            _pending = Proposals.WaitingChanges(await Publisher.GetPendingAsync()) + await Reports.OpenCountAsync();
         }
         catch (PublishException)
         {
@@ -82,6 +84,7 @@
     {
         Publisher.SignedInChanged -= OnChanged;
         Proposals.Changed -= OnChanged;
+        Reports.Changed -= OnChanged;
         Nav.LocationChanged -= OnLocationChanged;
         _polling?.Cancel();
     }
