@@ -339,6 +339,12 @@ else
         }
 
         var id = EffectiveId;
+        if (id.Length == 0)
+        {
+            // With no name yet the empty id is expected; saving asks for the name first.
+            return string.IsNullOrWhiteSpace(_namePl) && string.IsNullOrWhiteSpace(_nameEn) ? null : "Podaj identyfikator roli.";
+        }
+
         if (!DataValidator.IsValidId(id))
         {
             return "Identyfikator może zawierać tylko małe litery (bez polskich znaków) i cyfry.";
@@ -347,10 +353,18 @@ else
         return _data?.FindRole(id) is { } other ? $"Rola o identyfikatorze „{id}” już istnieje ({other.NamePl})." : null;
     }
 
-    /// <summary>Id for a new role: the English (or Polish) name in lowercase letters and digits, numbered when taken.</summary>
+    /// <summary>
+    /// Id for a new role: the English (or Polish) name in lowercase letters and digits, numbered when taken; empty while
+    /// there is no name.
+    /// </summary>
     private string NewId()
     {
         var name = string.IsNullOrWhiteSpace(_nameEn) ? _namePl : _nameEn;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return string.Empty;
+        }
+
         var baseId = new string(SearchText.Fold(name).Where(char.IsAsciiLetterOrDigit).ToArray());
         if (baseId.Length == 0)
         {
