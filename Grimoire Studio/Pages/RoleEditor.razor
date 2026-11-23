@@ -143,42 +143,12 @@ else
             <section class="panel">
                 <h2>Znaczniki przypomnień</h2>
                 <p class="muted small">
-                    Po jednym znaczniku w linii.@(_showEnglish ? " Wersja angielska w tej samej kolejności i z tą samą liczbą linii; puste pole oznacza „jak po polsku”." : null)
+                    Nazwy żetonów przypomnień tej roli.@(_showEnglish ? " Puste pole angielskie oznacza „jak po polsku”." : null)
                 </p>
-                <div class="field-row">
-                    <label class="field">
-                        <span>Znaczniki (PL)</span>
-                        <textarea rows="4" @bind="_remindersPl" @bind:event="oninput"></textarea>
-                    </label>
-                    @if (_showEnglish)
-                    {
-                        <label class="field">
-                            <span>Znaczniki (EN)</span>
-                            <textarea rows="4" @bind="_remindersEn" @bind:event="oninput"></textarea>
-                        </label>
-                    }
-                </div>
-                @if (_showEnglish && Mismatch(_remindersPl, _remindersEn) is { } reminderWarning)
-                {
-                    <p class="notice notice--error">@reminderWarning</p>
-                }
-                <div class="field-row">
-                    <label class="field">
-                        <span>Znaczniki globalne (PL)</span>
-                        <textarea rows="3" @bind="_globalRemindersPl" @bind:event="oninput"></textarea>
-                    </label>
-                    @if (_showEnglish)
-                    {
-                        <label class="field">
-                            <span>Znaczniki globalne (EN)</span>
-                            <textarea rows="3" @bind="_globalRemindersEn" @bind:event="oninput"></textarea>
-                        </label>
-                    }
-                </div>
-                @if (_showEnglish && Mismatch(_globalRemindersPl, _globalRemindersEn) is { } globalWarning)
-                {
-                    <p class="notice notice--error">@globalWarning</p>
-                }
+                <ReminderTiles Items="_reminders" ShowEnglish="_showEnglish" Label="Znacznik" />
+                <h3 class="reminder-tiles__heading">Znaczniki globalne</h3>
+                <p class="muted small">Działają niezależnie od tego, czy rola jest w grze (np. „Jest Pijakiem”).</p>
+                <ReminderTiles Items="_globalReminders" ShowEnglish="_showEnglish" Label="Znacznik globalny" />
             </section>
         </div>
 
@@ -235,10 +205,8 @@ else
     private string _otherReminderPl = string.Empty;
     private string _firstReminderEn = string.Empty;
     private string _otherReminderEn = string.Empty;
-    private string _remindersPl = string.Empty;
-    private string _globalRemindersPl = string.Empty;
-    private string _remindersEn = string.Empty;
-    private string _globalRemindersEn = string.Empty;
+    private List<ReminderText> _reminders = [];
+    private List<ReminderText> _globalReminders = [];
     private string? _iconUrl;
     private string? _error;
 
@@ -285,10 +253,8 @@ else
         _otherReminderPl = role.OtherNightReminderPl;
         _firstReminderEn = role.FirstNightReminderEn;
         _otherReminderEn = role.OtherNightReminderEn;
-        _remindersPl = string.Join('\n', role.RemindersPl);
-        _globalRemindersPl = string.Join('\n', role.RemindersGlobalPl);
-        _remindersEn = string.Join('\n', role.RemindersEn);
-        _globalRemindersEn = string.Join('\n', role.RemindersGlobalEn);
+        _reminders = ReminderText.From(role.RemindersPl, role.RemindersEn);
+        _globalReminders = ReminderText.From(role.RemindersGlobalPl, role.RemindersGlobalEn);
         _iconUrl = (await (await Changes.GetCurrentAsync()).Roles.FindAsync(role.Id))?.IconUrl;
     }
 
@@ -394,20 +360,6 @@ else
         return id;
     }
 
-    private static List<string> Lines(string text) =>
-        text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-
-    // An empty English list means "same as Polish"; otherwise both lists must have the same number of lines.
-    private static List<string> English(List<string> english, List<string> polish) =>
-        english.Count == 0 ? polish : english;
-
-    private static string? Mismatch(string polish, string english)
-    {
-        var (pl, en) = (Lines(polish).Count, Lines(english).Count);
-        return en > 0 && en != pl
-            ? $"Liczba linii się nie zgadza: {pl} po polsku, {en} po angielsku. Każdy znacznik potrzebuje odpowiednika w tej samej linii."
-            : null;
-    }
 
     private async Task SaveAsync()
     {
@@ -423,15 +375,6 @@ else
             return;
         }
 
-        if (Mismatch(_remindersPl, _remindersEn) is not null || Mismatch(_globalRemindersPl, _globalRemindersEn) is not null)
-        {
-            _error = "Popraw znaczniki: liczba linii po polsku i po angielsku musi być taka sama.";
-            _showEnglish = true;
-            return;
-        }
-
-        var remindersPl = Lines(_remindersPl);
-        var globalPl = Lines(_globalRemindersPl);
         var baseRole = _existing ?? new Role
         {
             Id = EffectiveId,
@@ -458,10 +401,10 @@ else
             OtherNightReminderPl = _otherReminderPl.Trim(),
             FirstNightReminderEn = _firstReminderEn.Trim(),
             OtherNightReminderEn = _otherReminderEn.Trim(),
-            RemindersPl = remindersPl,
-            RemindersEn = English(Lines(_remindersEn), remindersPl),
-            RemindersGlobalPl = globalPl,
-            RemindersGlobalEn = English(Lines(_globalRemindersEn), globalPl),
+            RemindersPl = ReminderText.Polish(_reminders),
+            RemindersEn = ReminderText.English(_reminders),
+            RemindersGlobalPl = ReminderText.Polish(_globalReminders),
+            RemindersGlobalEn = ReminderText.English(_globalReminders),
         };
 
         if (!await (await Changes.GetCurrentAsync()).Roles.SaveAsync(new LocalRole(role, _iconUrl)))

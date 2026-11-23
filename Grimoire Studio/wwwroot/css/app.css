@@ -1778,3 +1778,45 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 
 /* Role editor: the switch for the English texts, above the form. */
 .role-editor__english { margin: -0.25rem 0 0.75rem; }
+
+
+/* Role editor: reminder tokens as tiles, each with its name (and English name), plus a field to add one. */
+.reminder-tiles { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 1rem; }
+.reminder-tile {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.3rem 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+}
+/* The fields blend into the rounded tile (more specific than the editor's own input style); the tile shows focus. */
+.reminder-tile input[type="text"] {
+    width: 9rem;
+    padding: 0.25rem 0.4rem;
+    border: none;
+    border-radius: 0;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+}
+.reminder-tile:focus-within { border-color: var(--accent); }
+.reminder-tile input[type="text"].reminder-tile__en { color: var(--muted); border-left: 1px solid var(--border); padding-left: 0.6rem; }
+.reminder-tile__remove {
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+}
+.reminder-tile__remove:hover { background: var(--surface); color: var(--text); }
+.reminder-tile--new { border-style: dashed; background: none; }
+.reminder-tile--new .button { padding: 0.2rem 0.7rem; border-radius: 999px; }
+.reminder-tiles__heading { font-size: 1rem; margin: 0.5rem 0 0.25rem; }

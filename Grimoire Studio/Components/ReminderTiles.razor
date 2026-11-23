@@ -1,0 +1,67 @@
+@*
+    Reminder tokens of a role as tiles: each one names a reminder (and its English text when shown); ✕ removes it,
+    the fields at the end add one, with its English name when shown (Enter or "Dodaj").
+*@
+
+<div class="reminder-tiles" role="group" aria-label="@Label">
+    @foreach (var (item, index) in Items.Select((item, index) => (item, index)))
+    {
+        <div class="reminder-tile" @key="item">
+            <input type="text" value="@item.Pl" aria-label="@($"{Label} {index + 1}")" placeholder="nazwa"
+                   @oninput="e => item.Pl = e.Value?.ToString() ?? string.Empty" />
+            @if (ShowEnglish)
+            {
+                <input type="text" class="reminder-tile__en" value="@item.En" aria-label="@($"{Label} {index + 1} (EN)")"
+                       placeholder="@(item.Pl.Length > 0 ? item.Pl : "EN")"
+                       @oninput="e => item.En = e.Value?.ToString() ?? string.Empty" />
+            }
+            <button type="button" class="reminder-tile__remove" title="Usuń znacznik" aria-label="Usuń znacznik @item.Pl"
+                    @onclick="() => Items.Remove(item)">✕</button>
+        </div>
+    }
+    <div class="reminder-tile reminder-tile--new">
+        <input type="text" value="@_newName" placeholder="Nowy znacznik…" aria-label="Nowy znacznik: @Label"
+               @oninput="e => _newName = e.Value?.ToString() ?? string.Empty" @onkeydown="OnKeyDown" />
+        @if (ShowEnglish)
+        {
+            <input type="text" class="reminder-tile__en" value="@_newEn" placeholder="@(_newName.Length > 0 ? _newName : "New token…")"
+                   aria-label="Nowy znacznik (EN): @Label" @oninput="e => _newEn = e.Value?.ToString() ?? string.Empty" @onkeydown="OnKeyDown" />
+        }
+        <button type="button" class="button button--ghost" disabled="@string.IsNullOrWhiteSpace(_newName)" @onclick="Add">Dodaj</button>
+    </div>
+</div>
+
+@code {
+    /// <summary>The reminders, edited in place.</summary>
+    [Parameter, EditorRequired]
+    public List<ReminderText> Items { get; set; } = [];
+
+    [Parameter]
+    public bool ShowEnglish { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = "Znacznik";
+
+    private string _newName = string.Empty;
+    private string _newEn = string.Empty;
+
+    private void Add()
+    {
+        if (string.IsNullOrWhiteSpace(_newName))
+        {
+            return;
+        }
+
+        Items.Add(new ReminderText { Pl = _newName.Trim(), En = _newEn.Trim() });
+        _newName = string.Empty;
+        _newEn = string.Empty;
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            Add();
+        }
+    }
+}
