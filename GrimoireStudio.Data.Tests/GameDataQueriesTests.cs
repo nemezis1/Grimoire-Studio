@@ -167,4 +167,18 @@ public class GameDataQueriesTests
         Assert.Equal(2, merged.JinxesFor("imp").Count);
         Assert.DoesNotContain(merged.Jinxes, o => o.Id == "spy");
     }
+
+    [Fact]
+    public void WithRoles_Should_KeepTheOfficialFlag_When_AnOlderChangeHasNone()
+    {
+        var official = Data with { Roles = Data.Roles.Select(r => r with { IsOfficial = true }).ToList() };
+
+        var changed = official.WithRoles([CreateRole("chef") with { AbilityPl = "nowa", IsOfficial = null }]);
+        var made = official.WithRoles([CreateRole("homebrew") with { IsOfficial = null }]);
+        var unmarked = official.WithRoles([CreateRole("chef") with { IsOfficial = false }]);
+
+        Assert.True(changed.FindRole("chef")!.IsOfficial);
+        Assert.False(made.FindRole("homebrew")!.IsOfficial);
+        Assert.False(unmarked.FindRole("chef")!.IsOfficial);
+    }
 }

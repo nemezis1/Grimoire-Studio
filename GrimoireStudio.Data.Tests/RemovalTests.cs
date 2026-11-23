@@ -50,11 +50,12 @@ public class RemovalTests
     }
 
     [Fact]
-    public void ExperimentalFlag_Should_BeWrittenOnlyWhenSet()
+    public void OfficialFlag_Should_BeWrittenOnlyWhenSet()
     {
         var role = Data.Roles[0];
 
-        Assert.DoesNotContain("isExperimental", DataFiles.ToJson(role with { IsExperimental = false }));
-        Assert.Contains("\"isExperimental\": true", DataFiles.ToJson(role with { IsExperimental = true }));
+        Assert.DoesNotContain("isOfficial", DataFiles.ToJson(role with { IsOfficial = false }));
+        Assert.DoesNotContain("isOfficial", DataFiles.ToJson(role with { IsOfficial = null }));
+        Assert.Contains("\"isOfficial\": true", DataFiles.ToJson(role with { IsOfficial = true }));
     }
 }

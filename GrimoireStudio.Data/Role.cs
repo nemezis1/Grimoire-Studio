@@ -16,8 +16,12 @@ public sealed record Role
     /// <summary>Home script id (tb, bmr, snv) or empty for experimental / other roles.</summary>
     public string Edition { get; init; } = string.Empty;
 
-    /// <summary>Marked experimental by The Pandemonium Institute (not in a printed edition yet, may still change).</summary>
-    public bool IsExperimental { get; init; }
+    /// <summary>
+    /// A role released by The Pandemonium Institute; false for homebrew roles made here or imported from a script.
+    /// Null only in changes saved before the flag existed: a changed role then keeps the flag of the role it replaces
+    /// (see <see cref="GameDataQueries.WithRoles"/>), a new one is not official.
+    /// </summary>
+    public bool? IsOfficial { get; init; }
 
     /// <summary>Team id: one of <see cref="TeamIds"/> or a team added locally.</summary>
     public string Team { get; init; } = TeamIds.Townsfolk;

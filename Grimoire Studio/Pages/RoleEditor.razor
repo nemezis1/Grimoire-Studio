@@ -3,11 +3,17 @@
 @inject GameDataClient Client
 @inject ChangeSets Changes
 @inject NavigationManager Nav
+@inject LocalStore Store
 
 <PageTitle>@(IsNew ? "Nowa rola" : $"Edycja: {_namePl}") – Grimoire Studio</PageTitle>
 
 <h1>@(IsNew ? "Nowa rola" : "Edycja roli")</h1>
 <p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Rola z danych strony zostaje nietknięta i można do niej wrócić.</p>
+@* English texts are rarely edited here, so they are hidden until asked for; the choice is kept in this browser. *@
+<label class="field field--inline role-editor__english">
+    <input type="checkbox" checked="@_showEnglish" @onchange="e => SetShowEnglishAsync(e.Value is true)" />
+    <span>Pokaż wersję angielską</span>
+</label>
 
 @if (_data is null)
 {
@@ -28,10 +34,13 @@ else
                         <span>Nazwa (PL)</span>
                         <input type="text" @bind="_namePl" @bind:event="oninput" />
                     </label>
-                    <label class="field">
-                        <span>Nazwa (EN)</span>
-                        <input type="text" @bind="_nameEn" @bind:event="oninput" />
-                    </label>
+                    @if (_showEnglish)
+                    {
+                        <label class="field">
+                            <span>Nazwa (EN)</span>
+                            <input type="text" @bind="_nameEn" @bind:event="oninput" />
+                        </label>
+                    }
                 </div>
                 @if (IsNew)
                 {
@@ -66,8 +75,8 @@ else
                     </label>
                 </div>
                 <label class="field field--inline">
-                    <input type="checkbox" @bind="_experimental" />
-                    <span>Eksperymentalna</span>
+                    <input type="checkbox" @bind="_official" />
+                    <span>Oficjalna (wydana przez The Pandemonium Institute)</span>
                 </label>
                 <label class="field field--inline">
                     <input type="checkbox" @bind="_setup" />
@@ -81,10 +90,13 @@ else
                     <span>Po polsku</span>
                     <textarea rows="3" @bind="_abilityPl" @bind:event="oninput"></textarea>
                 </label>
-                <label class="field">
-                    <span>Po angielsku (opcjonalnie)</span>
-                    <textarea rows="3" @bind="_abilityEn" @bind:event="oninput"></textarea>
-                </label>
+                @if (_showEnglish)
+                {
+                    <label class="field">
+                        <span>Po angielsku (opcjonalnie)</span>
+                        <textarea rows="3" @bind="_abilityEn" @bind:event="oninput"></textarea>
+                    </label>
+                }
             </section>
 
             @foreach (var night in new[] { true, false })
@@ -116,29 +128,37 @@ else
                             <textarea rows="3" value="@(first ? _firstReminderPl : _otherReminderPl)"
                                       @oninput="e => { if (first) _firstReminderPl = e.Value?.ToString() ?? string.Empty; else _otherReminderPl = e.Value?.ToString() ?? string.Empty; }"></textarea>
                         </label>
-                        <label class="field">
-                            <span>Tekst dla narratora (EN)</span>
-                            <textarea rows="3" value="@(first ? _firstReminderEn : _otherReminderEn)"
-                                      @oninput="e => { if (first) _firstReminderEn = e.Value?.ToString() ?? string.Empty; else _otherReminderEn = e.Value?.ToString() ?? string.Empty; }"></textarea>
-                        </label>
+                        @if (_showEnglish)
+                        {
+                            <label class="field">
+                                <span>Tekst dla narratora (EN)</span>
+                                <textarea rows="3" value="@(first ? _firstReminderEn : _otherReminderEn)"
+                                          @oninput="e => { if (first) _firstReminderEn = e.Value?.ToString() ?? string.Empty; else _otherReminderEn = e.Value?.ToString() ?? string.Empty; }"></textarea>
+                            </label>
+                        }
                     </div>
                 </section>
             }
 
             <section class="panel">
                 <h2>Znaczniki przypomnień</h2>
-                <p class="muted small">Po jednym znaczniku w linii. Wersja angielska w tej samej kolejności i z tą samą liczbą linii; puste pole oznacza „jak po polsku”.</p>
+                <p class="muted small">
+                    Po jednym znaczniku w linii.@(_showEnglish ? " Wersja angielska w tej samej kolejności i z tą samą liczbą linii; puste pole oznacza „jak po polsku”." : null)
+                </p>
                 <div class="field-row">
                     <label class="field">
                         <span>Znaczniki (PL)</span>
                         <textarea rows="4" @bind="_remindersPl" @bind:event="oninput"></textarea>
                     </label>
-                    <label class="field">
-                        <span>Znaczniki (EN)</span>
-                        <textarea rows="4" @bind="_remindersEn" @bind:event="oninput"></textarea>
-                    </label>
+                    @if (_showEnglish)
+                    {
+                        <label class="field">
+                            <span>Znaczniki (EN)</span>
+                            <textarea rows="4" @bind="_remindersEn" @bind:event="oninput"></textarea>
+                        </label>
+                    }
                 </div>
-                @if (Mismatch(_remindersPl, _remindersEn) is { } reminderWarning)
+                @if (_showEnglish && Mismatch(_remindersPl, _remindersEn) is { } reminderWarning)
                 {
                     <p class="notice notice--error">@reminderWarning</p>
                 }
@@ -147,12 +167,15 @@ else
                         <span>Znaczniki globalne (PL)</span>
                         <textarea rows="3" @bind="_globalRemindersPl" @bind:event="oninput"></textarea>
                     </label>
-                    <label class="field">
-                        <span>Znaczniki globalne (EN)</span>
-                        <textarea rows="3" @bind="_globalRemindersEn" @bind:event="oninput"></textarea>
-                    </label>
+                    @if (_showEnglish)
+                    {
+                        <label class="field">
+                            <span>Znaczniki globalne (EN)</span>
+                            <textarea rows="3" @bind="_globalRemindersEn" @bind:event="oninput"></textarea>
+                        </label>
+                    }
                 </div>
-                @if (Mismatch(_globalRemindersPl, _globalRemindersEn) is { } globalWarning)
+                @if (_showEnglish && Mismatch(_globalRemindersPl, _globalRemindersEn) is { } globalWarning)
                 {
                     <p class="notice notice--error">@globalWarning</p>
                 }
@@ -203,7 +226,7 @@ else
     private string _team = TeamIds.Townsfolk;
     private string _edition = string.Empty;
     private bool _setup;
-    private bool _experimental;
+    private bool _official;
     private string _abilityPl = string.Empty;
     private string _abilityEn = string.Empty;
     private int _firstNight;
@@ -218,6 +241,19 @@ else
     private string _globalRemindersEn = string.Empty;
     private string? _iconUrl;
     private string? _error;
+
+    private const string ShowEnglishKey = "grimoire-studio.role-editor-english";
+
+    /// <summary>The English texts are shown; off at first, remembered in this browser.</summary>
+    private bool _showEnglish;
+
+    protected override async Task OnInitializedAsync() => _showEnglish = await Store.GetSettingAsync(ShowEnglishKey) == "1";
+
+    private async Task SetShowEnglishAsync(bool on)
+    {
+        _showEnglish = on;
+        await Store.SetSettingAsync(ShowEnglishKey, on ? "1" : "0");
+    }
 
     /// <summary>Id typed for a new role; null until edited, then the suggestion from the name is used.</summary>
     private string? _id;
@@ -240,7 +276,7 @@ else
         _team = role.Team;
         _edition = role.Edition;
         _setup = role.Setup;
-        _experimental = role.IsExperimental;
+        _official = role.IsOfficial == true;
         _abilityPl = role.AbilityPl;
         _abilityEn = role.AbilityEn;
         _firstNight = role.FirstNight;
@@ -390,6 +426,7 @@ else
         if (Mismatch(_remindersPl, _remindersEn) is not null || Mismatch(_globalRemindersPl, _globalRemindersEn) is not null)
         {
             _error = "Popraw znaczniki: liczba linii po polsku i po angielsku musi być taka sama.";
+            _showEnglish = true;
             return;
         }
 
@@ -412,7 +449,7 @@ else
             Team = _team,
             Edition = _team == TeamIds.Fabled ? string.Empty : _edition,
             Setup = _setup,
-            IsExperimental = _experimental,
+            IsOfficial = _official,
             AbilityPl = _abilityPl.Trim(),
             AbilityEn = string.IsNullOrWhiteSpace(_abilityEn) ? _abilityPl.Trim() : _abilityEn.Trim(),
             FirstNight = _firstNight,

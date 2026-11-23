@@ -48,8 +48,7 @@ public static class DataFiles
             property.ShouldSerialize = (property.Name, IsRole: type.Type == typeof(Role), IsScript: type.Type == typeof(Script)) switch
             {
                 ("remindersGlobalEn" or "remindersGlobalPl", true, _) => (_, value) => value is IReadOnlyCollection<string> { Count: > 0 },
-                ("isOfficial", _, true) => (_, value) => value is true,
-                ("isExperimental", true, _) => (_, value) => value is true,
+                ("isOfficial", _, _) => (_, value) => value is true,
                 ("customIcon", _, true) => (_, value) => value is string { Length: > 0 },
                 ("image", _, true) => (_, _) => false,
                 _ => property.ShouldSerialize,

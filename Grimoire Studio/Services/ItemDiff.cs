@@ -12,7 +12,7 @@ public static class ItemDiff
         ["name"] = "Nazwa",
         ["team"] = "Drużyna",
         ["edition"] = "Edycja",
-        ["isExperimental"] = "Eksperymentalna",
+        ["isOfficial"] = "Oficjalna",
         ["abilityPl"] = "Zdolność (PL)",
         ["abilityEn"] = "Zdolność (EN)",
         ["firstNight"] = "Pierwsza noc – kolejność",

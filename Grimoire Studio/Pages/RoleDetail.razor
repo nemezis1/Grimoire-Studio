@@ -30,9 +30,9 @@
                         {
                             <span> · <a href="scripts/@edition.Id">@edition.Name</a></span>
                         }
-                        @if (role.IsExperimental)
+                        @if (role.IsOfficial != true)
                         {
-                            <span class="experimental-badge">eksperymentalna</span>
+                            <span class="experimental-badge" title="Rola fanowska, nie wydana przez The Pandemonium Institute">nieoficjalna</span>
                         }
                         @if (_isLocal)
                         {

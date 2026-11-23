@@ -30,9 +30,9 @@ public static class GameDataQueries
     {
         var byId = overrides.ToDictionary(r => r.Id, StringComparer.OrdinalIgnoreCase);
         var all = data.AllRoles
-            .Select(r => byId.Remove(r.Id, out var replacement) ? replacement : r)
+            .Select(r => byId.Remove(r.Id, out var replacement) ? replacement with { IsOfficial = replacement.IsOfficial ?? r.IsOfficial } : r)
             .ToList() // before reading byId.Values: Remove must have run for every item
-            .Concat(byId.Values)
+            .Concat(byId.Values.Select(r => r with { IsOfficial = r.IsOfficial ?? false }))
             .ToList();
 
         return data with
