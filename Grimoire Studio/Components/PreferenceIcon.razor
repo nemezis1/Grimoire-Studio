@@ -1,0 +1,30 @@
+@* The heart (liked) or the skull (disliked), drawn the same wherever likes show: role cards, role page, list filter. *@
+@if (Kind == RolePreferences.Like)
+{
+    <svg class="preference-icon preference-icon--like" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />
+    </svg>
+}
+else if (Kind == Neutral)
+{
+    <svg class="preference-icon preference-icon--neutral" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="7" />
+    </svg>
+}
+else
+{
+    @* Eye and nose holes cut out (evenodd), so a filled skull still reads as a skull. *@
+    <svg class="preference-icon preference-icon--dislike" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill-rule="evenodd" d="M12 2.5c-4.4 0-8 3.3-8 7.6 0 2.6 1.3 4.6 3.2 5.8v2.4c0 .9.7 1.6 1.6 1.6h6.4c.9 0 1.6-.7 1.6-1.6v-2.4c1.9-1.2 3.2-3.2 3.2-5.8 0-4.3-3.6-7.6-8-7.6z M9.2 9.3a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 1 0 0-3.8z M14.8 9.3a1.9 1.9 0 1 0 0 3.8 1.9 1.9 0 1 0 0-3.8z M12 13.6l-1.1 1.9h2.2z" />
+        <path class="preference-icon__teeth" d="M10.4 17.4v2.5M13.6 17.4v2.5" />
+    </svg>
+}
+
+@code {
+    /// <summary>A role neither liked nor disliked (only the list filter draws it).</summary>
+    public const string Neutral = "neutral";
+
+    /// <summary><see cref="RolePreferences.Like"/>, <see cref="RolePreferences.Dislike"/> or <see cref="Neutral"/>.</summary>
+    [Parameter, EditorRequired]
+    public string Kind { get; set; } = RolePreferences.Like;
+}

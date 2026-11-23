@@ -41,6 +41,7 @@
                     </p>
                 </div>
                 <div class="script-actions">
+                    <RolePreferenceButtons RoleId="@role.Id" />
                     <a class="button" href="roles/@role.Id/edit">Edytuj</a>
                     <a class="button button--ghost" href="generator?role=@role.Id">Generuj token</a>
                     @* Narrow screens: the other actions fold behind this button. *@

@@ -1,0 +1,26 @@
+@*
+    Heart and skull for a role: mark it as liked or disliked in this browser (a second click unmarks it). Shown on role
+    cards and on the role page.
+*@
+@inject RolePreferences Preferences
+
+@{ var preference = Preferences.Get(RoleId); }
+<span class="role-preference @(preference is null ? null : "role-preference--set")">
+    <button type="button" class="role-preference__button role-preference__button--like @(preference == RolePreferences.Like ? "role-preference__button--on" : null)"
+            aria-pressed="@(preference == RolePreferences.Like)" title="@(preference == RolePreferences.Like ? "Usuń z ulubionych" : "Dodaj do ulubionych")"
+            @onclick="() => Preferences.ToggleAsync(RoleId, RolePreferences.Like)" @onclick:stopPropagation="true">
+        <PreferenceIcon Kind="@RolePreferences.Like" />
+    </button>
+    <button type="button" class="role-preference__button role-preference__button--dislike @(preference == RolePreferences.Dislike ? "role-preference__button--on" : null)"
+            aria-pressed="@(preference == RolePreferences.Dislike)" title="@(preference == RolePreferences.Dislike ? "Przestań ukrywać" : "Nie lubię (ukryj na liście ról)")"
+            @onclick="() => Preferences.ToggleAsync(RoleId, RolePreferences.Dislike)" @onclick:stopPropagation="true">
+        <PreferenceIcon Kind="@RolePreferences.Dislike" />
+    </button>
+</span>
+
+@code {
+    [Parameter, EditorRequired]
+    public string RoleId { get; set; } = string.Empty;
+
+    protected override Task OnInitializedAsync() => Preferences.LoadAsync();
+}

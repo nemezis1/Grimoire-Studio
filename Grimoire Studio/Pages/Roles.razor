@@ -4,6 +4,8 @@
 @inject GameDataClient Client
 @inject ChangeSets ChangeSets
 @inject Proposals Proposals
+@inject RolePreferences Preferences
+@implements IDisposable
 
 <PageTitle>Role – Grimoire Studio</PageTitle>
 
@@ -18,11 +20,15 @@
         // Several scripts show the roles of any of them; several teams likewise.
         var scripts = Split(Script).Select(data.FindScript).OfType<Script>().ToList();
         var teams = Split(Team).Select(Teams.Parse).OfType<TeamInfo>().Select(t => t.Id).ToHashSet();
-        var roles = data.AllRoles
+        var matching = data.AllRoles
             .Where(r => scripts.Count == 0 || scripts.Any(s => s.Roles.Contains(r.Id)))
             .Where(r => teams.Count == 0 || teams.Contains(r.Team))
             .Where(r => SearchText.Matches(Q ?? string.Empty, r.NamePl, r.NameEn, r.AbilityPl, r.AbilityEn, r.Id))
             .ToList();
+
+        // Liked / disliked (this browser): disliked roles stay out unless asked for.
+        var shown = Shown();
+        var roles = matching.Where(r => shown.Contains(PreferenceOf(r.Id))).ToList();
         var descending = Sort is DescendingSort or FlatDescendingSort;
 
         // A–Z / Z–A without teams: one list across all teams.
@@ -48,7 +54,7 @@
 
             @* Narrow screens: scripts, teams and sorting fold behind this button. *@
             <button class="button button--ghost filters__toggle" aria-expanded="@_filtersOpen" @onclick="() => _filtersOpen = !_filtersOpen">
-                Filtry@((scripts.Count > 0 ? 1 : 0) + (Sort is null ? 0 : 1) + (teams.Count > 0 ? 1 : 0) is var active and > 0 ? $" ({active})" : null)
+                Filtry@((scripts.Count > 0 ? 1 : 0) + (Sort is null ? 0 : 1) + (teams.Count > 0 ? 1 : 0) + (string.IsNullOrEmpty(Show) ? 0 : 1) is var active and > 0 ? $" ({active})" : null)
             </button>
 
             <div class="filters__more @(_filtersOpen ? "filters__more--open" : null)">
@@ -92,6 +98,24 @@
                 </div>
             </details>
 
+            @* Likes of this browser: liked and unmarked roles ticked by default, disliked ones left out. With none
+               ticked no role is listed. *@
+            <details class="multi-select multi-select--left preference-select">
+                <summary>@PreferencesLabel(shown)</summary>
+                <div class="multi-select__menu">
+                    @foreach (var (kind, icon, label) in PreferenceChips)
+                    {
+                        var ticked = shown.Contains(kind);
+                        <label class="field field--inline">
+                            <input type="checkbox" checked="@ticked"
+                                   @onchange="() => SetParameter(ShowName, ShowToggled(kind))" />
+                            <PreferenceIcon Kind="@icon" />
+                            <span>@label</span>
+                        </label>
+                    }
+                </div>
+            </details>
+
             <select class="filters__select" value="@(Sort ?? string.Empty)"
                     @onchange="e => SetParameter(SortName, e.Value?.ToString())" aria-label="Sortowanie">
                 <option value="">A–Z, według drużyn</option>
@@ -126,7 +150,7 @@
         }
         else if (flat)
         {
-            <ul class="role-grid">
+            <ul class="role-grid @(shown.SetEquals([DislikedShow]) ? "role-grid--disliked-only" : null)">
                 @foreach (var role in descending ? roles.OrderByDescending(r => r.NamePl, PolishOrder) : roles.OrderBy(r => r.NamePl, PolishOrder))
                 {
                     <RoleCard Role="role" />
@@ -139,7 +163,7 @@
             {
                 <section class="role-group">
                     <h2 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
-                    <ul class="role-grid">
+                    <ul class="role-grid @(shown.SetEquals([DislikedShow]) ? "role-grid--disliked-only" : null)">
                         @foreach (var role in descending ? group.OrderByDescending(r => r.NamePl, PolishOrder) : group.OrderBy(r => r.NamePl, PolishOrder))
                         {
                             <RoleCard Role="role" />
@@ -162,12 +186,78 @@
     private const string OtherNightsSort = "other";
     private const string DescendingSort = "za";
     private const string FlatSort = "az-all";
+    private const string ShowName = "show";
+    private const string LikedShow = "liked";
+    private const string NeutralShow = "neutral";
+    private const string DislikedShow = "disliked";
+    private const string DefaultShow = LikedShow + "," + NeutralShow;
+    private const string NoneShow = "none";
+
+    private static readonly (string Kind, string Icon, string Label)[] PreferenceChips =
+    [
+        (LikedShow, RolePreferences.Like, "Ulubione"),
+        (NeutralShow, PreferenceIcon.Neutral, "Pozostałe"),
+        (DislikedShow, RolePreferences.Dislike, "Nielubiane"),
+    ];
+
+    /// <summary>Which roles by this browser's likes, a comma list of liked/neutral/disliked: none given hides disliked ones.</summary>
+    [SupplyParameterFromQuery(Name = ShowName)]
+    public string? Show { get; set; }
+
+    private HashSet<string> Shown()
+    {
+        if (Show == NoneShow)
+        {
+            return [];
+        }
+
+        var shown = (Show ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(kind => PreferenceChips.Any(chip => chip.Kind == kind))
+            .ToHashSet();
+        return shown.Count > 0 ? shown : [.. DefaultShow.Split(',')];
+    }
+
+    private static string PreferencesLabel(HashSet<string> shown) =>
+        shown.Count == 0 ? "Nic nie zaznaczono"
+        : shown.Count == PreferenceChips.Length ? "Wszystkie role"
+        : string.Join(" i ", PreferenceChips.Where(chip => shown.Contains(chip.Kind)).Select((chip, i) => i == 0 ? chip.Label : chip.Label.ToLowerInvariant()));
+
+    private string PreferenceOf(string roleId) =>
+        Preferences.IsLiked(roleId) ? LikedShow : Preferences.IsDisliked(roleId) ? DislikedShow : NeutralShow;
+
+    /// <summary>The show parameter with the kind ticked or unticked; none ticked is kept as "none", the default drops out.</summary>
+    private string? ShowToggled(string kind)
+    {
+        var shown = Shown();
+        if (!shown.Remove(kind))
+        {
+            shown.Add(kind);
+        }
+
+        if (shown.Count == 0)
+        {
+            return NoneShow;
+        }
+
+        var value = string.Join(',', PreferenceChips.Select(chip => chip.Kind).Where(shown.Contains));
+        return value == DefaultShow ? null : value;
+    }
     private const string FlatDescendingSort = "za-all";
 
     private bool _filtersOpen;
     private ChangeStatus _status = ChangeStatus.Empty;
 
-    protected override async Task OnInitializedAsync() => _status = await ChangeStatus.LoadAsync(Client, ChangeSets, Proposals);
+    protected override async Task OnInitializedAsync()
+    {
+        await Preferences.LoadAsync();
+        Preferences.Changed += OnPreferencesChanged;
+        _status = await ChangeStatus.LoadAsync(Client, ChangeSets, Proposals);
+    }
+
+    // A role just marked disliked leaves the list (or joins it), so the list is drawn again.
+    private void OnPreferencesChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Preferences.Changed -= OnPreferencesChanged;
 
     private static readonly StringComparer PolishOrder = StringComparer.Create(new CultureInfo("pl-PL"), true);
 

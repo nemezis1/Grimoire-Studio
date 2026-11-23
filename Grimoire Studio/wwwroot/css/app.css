@@ -1342,7 +1342,8 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 /* ---------- Smaller windows and phones: the top of each page takes as little height as it can ---------- */
 
 .title-row--compact h1 { margin: 0 0 0.5rem; font-size: 1.6rem; }
-.filters__count { font-size: 0.9rem; }
+/* Fixed room for the count, so a changing number does not shift the filters around it. */
+.filters__count { font-size: 0.9rem; flex: none; min-width: 6.4rem; font-variant-numeric: tabular-nums; }
 
 /* Shown only on narrow screens; on wide ones the folded parts flow in their row as if not wrapped. */
 .filters__toggle, .actions__more, .script-head__toggle { display: none; }
@@ -1823,3 +1824,46 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 
 /* Role editor: the token preview at the top of the side panel. */
 .role-editor__token { display: block; width: min(100%, 220px); height: auto; aspect-ratio: 1; margin: 0 auto 0.5rem; }
+
+/* Liked / disliked roles: heart and skull. On a card they sit in the bottom-right corner and show on hover (always
+   when one is set, and on touch screens). */
+.role-preference { display: inline-flex; gap: 0.15rem; }
+.role-preference__button {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+}
+.role-preference__button:hover { background: var(--bg); color: var(--text); }
+.preference-icon { width: 1.3rem; height: 1.3rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.preference-icon__teeth { stroke-width: 1.6; }
+.role-preference__button--like.role-preference__button--on { color: #e53e3e; }
+.role-preference__button--like.role-preference__button--on .preference-icon { fill: currentColor; }
+/* Set like the heart: the same button, the icon filled in its colour (eye and nose holes stay cut out). */
+.role-preference__button--dislike.role-preference__button--on { color: var(--text); }
+.role-preference__button--dislike.role-preference__button--on .preference-icon path:first-child { fill: currentColor; }
+
+.role-grid__item > .role-preference { position: absolute; right: 0.4rem; bottom: 0.3rem; opacity: 0; transition: opacity 0.15s; }
+.role-grid__item:hover > .role-preference, .role-grid__item:focus-within > .role-preference, .role-grid__item > .role-preference--set { opacity: 1; }
+.role-grid__item > .role-preference .role-preference__button { background: var(--surface); }
+@media (hover: none) {
+    .role-grid__item > .role-preference { opacity: 1; }
+}
+@media print {
+    .role-preference { display: none; }
+}
+
+/* Role list: liked / unmarked / disliked multi-select, with the card icons. */
+.preference-select .preference-icon { width: 1.05rem; height: 1.05rem; flex: none; }
+.preference-select .preference-icon--like { color: #e53e3e; }
+.preference-select .multi-select__menu { min-width: 0; width: 100%; }
+
+/* A disliked role on the list, shown next to others: faded. */
+.role-grid__item--disliked > .role-card { opacity: 0.5; }
+.role-grid--disliked-only .role-grid__item--disliked > .role-card { opacity: 1; }

@@ -1,4 +1,6 @@
-<li class="role-grid__item">
+@inject RolePreferences Preferences
+
+<li class="role-grid__item @(Preferences.IsDisliked(Role.Id) ? "role-grid__item--disliked" : null)">
     <a class="role-card team--@(Role.Team)" style="@Teams.Style(Role.Team)" href="roles/@Role.Id">
         @if (Order is not null)
         {
@@ -16,6 +18,7 @@
         </div>
     </a>
     <WikiLink Role="Role" />
+    <RolePreferenceButtons RoleId="@Role.Id" />
 </li>
 
 @code {
