@@ -28,7 +28,8 @@
 
         // Liked / disliked (this browser): disliked roles stay out unless asked for.
         var shown = Shown();
-        var roles = matching.Where(r => shown.Contains(PreferenceOf(r.Id))).ToList();
+        var origins = Origins();
+        var roles = matching.Where(r => shown.Contains(PreferenceOf(r.Id)) && origins.Contains(OriginOf(r))).ToList();
         var descending = Sort is DescendingSort or FlatDescendingSort;
 
         // A–Z / Z–A without teams: one list across all teams.
@@ -54,7 +55,7 @@
 
             @* Narrow screens: scripts, teams and sorting fold behind this button. *@
             <button class="button button--ghost filters__toggle" aria-expanded="@_filtersOpen" @onclick="() => _filtersOpen = !_filtersOpen">
-                Filtry@((scripts.Count > 0 ? 1 : 0) + (Sort is null ? 0 : 1) + (teams.Count > 0 ? 1 : 0) + (string.IsNullOrEmpty(Show) ? 0 : 1) is var active and > 0 ? $" ({active})" : null)
+                Filtry@((scripts.Count > 0 ? 1 : 0) + (Sort is null ? 0 : 1) + (teams.Count > 0 ? 1 : 0) + (string.IsNullOrEmpty(Show) ? 0 : 1) + (string.IsNullOrEmpty(Origin) ? 0 : 1) is var active and > 0 ? $" ({active})" : null)
             </button>
 
             <div class="filters__more @(_filtersOpen ? "filters__more--open" : null)">
@@ -110,6 +111,20 @@
                             <input type="checkbox" checked="@ticked"
                                    @onchange="() => SetParameter(ShowName, ShowToggled(kind))" />
                             <PreferenceIcon Kind="@icon" />
+                            <span>@label</span>
+                        </label>
+                    }
+                </div>
+            </details>
+
+            @* Official roles (released by The Pandemonium Institute) and the others; both ticked by default. *@
+            <details class="multi-select multi-select--left preference-select">
+                <summary>@OriginsLabel(origins)</summary>
+                <div class="multi-select__menu">
+                    @foreach (var (kind, label) in OriginChoices)
+                    {
+                        <label class="field field--inline">
+                            <input type="checkbox" checked="@origins.Contains(kind)" @onchange="() => SetParameter(OriginName, OriginToggled(kind))" />
                             <span>@label</span>
                         </label>
                     }
@@ -187,6 +202,52 @@
     private const string DescendingSort = "za";
     private const string FlatSort = "az-all";
     private const string ShowName = "show";
+    private const string OriginName = "origin";
+    private const string OfficialOrigin = "official";
+    private const string UnofficialOrigin = "unofficial";
+
+    private static readonly (string Kind, string Label)[] OriginChoices =
+    [
+        (OfficialOrigin, "Oficjalne"),
+        (UnofficialOrigin, "Nieoficjalne"),
+    ];
+
+    /// <summary>Official or unofficial roles: "official", "unofficial" or "none"; none given lists both.</summary>
+    [SupplyParameterFromQuery(Name = OriginName)]
+    public string? Origin { get; set; }
+
+    private HashSet<string> Origins() => Origin switch
+    {
+        OfficialOrigin or UnofficialOrigin => [Origin],
+        NoneShow => [],
+        _ => [OfficialOrigin, UnofficialOrigin],
+    };
+
+    private static string OriginOf(Role role) => role.IsOfficial == true ? OfficialOrigin : UnofficialOrigin;
+
+    private static string OriginsLabel(HashSet<string> origins) => origins.Count switch
+    {
+        0 => "Nic nie zaznaczono",
+        1 => origins.Contains(OfficialOrigin) ? "Tylko oficjalne" : "Tylko nieoficjalne",
+        _ => "Oficjalne i nieoficjalne",
+    };
+
+    /// <summary>The origin parameter with the kind ticked or unticked; both ticked drops it.</summary>
+    private string? OriginToggled(string kind)
+    {
+        var origins = Origins();
+        if (!origins.Remove(kind))
+        {
+            origins.Add(kind);
+        }
+
+        return origins.Count switch
+        {
+            0 => NoneShow,
+            1 => origins.Single(),
+            _ => null,
+        };
+    }
     private const string LikedShow = "liked";
     private const string NeutralShow = "neutral";
     private const string DislikedShow = "disliked";

@@ -22,9 +22,9 @@ else
 {
     <p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Rola z danych strony zostaje nietknięta i można do niej wrócić.</p>
 }
-@* English texts are rarely edited here, so they are hidden until asked for; the choice is kept in this browser. *@
+@* English texts show by themselves when the role has its own translation; otherwise they are hidden until asked for. *@
 <label class="field field--inline role-editor__english">
-    <input type="checkbox" checked="@_showEnglish" @onchange="e => SetShowEnglishAsync(e.Value is true)" />
+    <input type="checkbox" checked="@_showEnglish" @onchange="e => _showEnglish = e.Value is true" />
     <span>Pokaż wersję angielską</span>
 </label>
 
@@ -87,16 +87,6 @@ else
                             </div>
                         </details>
                     </div>
-                    <label class="field">
-                        <span>Edycja</span>
-                        <select @bind="_edition">
-                            <option value="">— brak —</option>
-                            @foreach (var script in _data.Scripts.Scripts)
-                            {
-                                <option value="@script.Id">@script.Name</option>
-                            }
-                        </select>
-                    </label>
                 </div>
                 <label class="field field--inline">
                     <input type="checkbox" @bind="_official" />
@@ -257,7 +247,6 @@ else
     private string _namePl = string.Empty;
     private string _nameEn = string.Empty;
     private string _team = TeamIds.Townsfolk;
-    private string _edition = string.Empty;
     private bool _setup;
     private bool _official;
     private string _abilityPl = string.Empty;
@@ -273,22 +262,27 @@ else
     private string? _iconUrl;
     private string? _error;
 
-    private const string ShowEnglishKey = "grimoire-studio.role-editor-english";
-
-    /// <summary>The English texts are shown; off at first, remembered in this browser.</summary>
+    /// <summary>The English texts are shown: at first when the role has its own translation (<see cref="HasEnglish"/>).</summary>
     private bool _showEnglish;
 
-    protected override async Task OnInitializedAsync()
-    {
-        _showEnglish = await Store.GetSettingAsync(ShowEnglishKey) == "1";
-        _author = await Store.GetSettingAsync(AuthorKey) ?? string.Empty;
-    }
+    protected override async Task OnInitializedAsync() => _author = await Store.GetSettingAsync(AuthorKey) ?? string.Empty;
 
-    private async Task SetShowEnglishAsync(bool on)
-    {
-        _showEnglish = on;
-        await Store.SetSettingAsync(ShowEnglishKey, on ? "1" : "0");
-    }
+    /// <summary>Some English text of the role differs from the Polish one (a missing translation repeats the Polish text).</summary>
+    private static bool HasEnglish(Role role) =>
+        Translated(role.NameEn, role.NamePl)
+        || Translated(role.AbilityEn, role.AbilityPl)
+        || Translated(role.FirstNightReminderEn, role.FirstNightReminderPl)
+        || Translated(role.OtherNightReminderEn, role.OtherNightReminderPl)
+        || Translated(role.RemindersEn, role.RemindersPl)
+        || Translated(role.RemindersGlobalEn, role.RemindersGlobalPl);
+
+    private static string OwnEnglish(string english, string polish) => Translated(english, polish) ? english : string.Empty;
+
+    private static bool Translated(string english, string polish) =>
+        !string.IsNullOrWhiteSpace(english) && !string.Equals(english.Trim(), polish.Trim(), StringComparison.Ordinal);
+
+    private static bool Translated(IReadOnlyList<string> english, IReadOnlyList<string> polish) =>
+        english.Where((text, i) => Translated(text, i < polish.Count ? polish[i] : string.Empty)).Any();
 
     /// <summary>Id typed for a new role; null until edited, then the suggestion from the name is used.</summary>
     private string? _id;
@@ -303,17 +297,20 @@ else
         _existing = Id is null ? null : _data.FindRole(Id);
         if (_existing is not { } role)
         {
+            _showEnglish = false;
             return;
         }
 
+        _showEnglish = HasEnglish(role);
+
         _namePl = role.NamePl;
-        _nameEn = role.NameEn;
+        // An English text equal to the Polish one is the copy made when saving without a translation: shown empty.
+        _nameEn = OwnEnglish(role.NameEn, role.NamePl);
         _team = role.Team;
-        _edition = role.Edition;
         _setup = role.Setup;
         _official = role.IsOfficial == true;
         _abilityPl = role.AbilityPl;
-        _abilityEn = role.AbilityEn;
+        _abilityEn = OwnEnglish(role.AbilityEn, role.AbilityPl);
         _firstNight = role.FirstNight;
         _otherNight = role.OtherNight;
         _firstReminderPl = role.FirstNightReminderPl;
@@ -520,7 +517,8 @@ else
             NamePl = _namePl.Trim(),
             NameEn = string.IsNullOrWhiteSpace(_nameEn) ? _namePl.Trim() : _nameEn.Trim(),
             Team = _team,
-            Edition = _team == TeamIds.Fabled ? string.Empty : _edition,
+            // The edition is not edited here: an existing role keeps its own.
+            Edition = _team == TeamIds.Fabled ? string.Empty : baseRole.Edition,
             Setup = _setup,
             IsOfficial = _official,
             AbilityPl = _abilityPl.Trim(),

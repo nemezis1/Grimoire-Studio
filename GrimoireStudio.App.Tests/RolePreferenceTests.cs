@@ -1,6 +1,7 @@
 using Bunit;
 using Grimoire_Studio.Pages;
 using Grimoire_Studio.Services;
+using GrimoireStudio.Data;
 using Microsoft.AspNetCore.Components;
 
 namespace GrimoireStudio.App.Tests;
@@ -85,6 +86,23 @@ public class RolePreferenceTests : AppTestContext
         page = RenderRoles("roles?show=none");
         Assert.Equal(0, Found(page));
         Assert.Equal("Nic nie zaznaczono", page.Find(".preference-select summary").TextContent.Trim());
+    }
+
+    [Fact]
+    public async Task OriginFilter_Should_ListOfficialOrUnofficialRoles_When_Chosen()
+    {
+        var unofficial = new Role { Id = "latarnik", NamePl = "Latarnik", NameEn = "Latarnik", AbilityPl = "Zdolność.", AbilityEn = "Zdolność.", IsOfficial = false };
+        await Service<ChangeSets>().Personal.Roles.SaveAsync(new LocalRole(unofficial, null));
+
+        var both = Found(RenderRoles());
+        Assert.Equal(1, Found(RenderRoles("roles?origin=unofficial")));
+        Assert.Equal(both - 1, Found(RenderRoles("roles?origin=official")));
+        Assert.Equal(0, Found(RenderRoles("roles?origin=none")));
+
+        // No wiki link for a role the official wiki does not have.
+        var page = RenderRoles("roles?origin=unofficial");
+        Assert.Empty(page.FindAll(".wiki-link"));
+        Assert.Equal("Tylko nieoficjalne", page.FindAll(".preference-select summary")[1].TextContent.Trim());
     }
 
     [Fact]

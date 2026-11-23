@@ -54,6 +54,37 @@ public class ProposeRoleTests : AppTestContext
     }
 
     [Fact]
+    public void EnglishToggle_Should_FollowTheRolesTranslation_When_Opened()
+    {
+        Service<NavigationManager>().NavigateTo("roles/imp/edit");
+        var translated = Render<RoleEditor>(p => p.Add(e => e.Id, "imp"));
+        translated.WaitForAssertion(() => Assert.Contains("Chochlik", translated.Find(".role-editor input[type=text]").GetAttribute("value")));
+        Assert.True(translated.Find(".role-editor__english input").HasAttribute("checked"));
+        Assert.Contains("Nazwa (EN)", translated.Markup);
+
+        var fresh = RenderEditor("roles/new");
+        Assert.False(fresh.Find(".role-editor__english input").HasAttribute("checked"));
+        Assert.DoesNotContain("Nazwa (EN)", fresh.Markup);
+    }
+
+    [Fact]
+    public async Task Editor_Should_LeaveEnglishEmpty_When_RoleWasSavedOnlyInPolish()
+    {
+        // Saving without a translation copies the Polish texts into the English ones.
+        var role = new Role { Id = "latarnik", NamePl = "Latarnik", NameEn = "Latarnik", AbilityPl = "Zdolność.", AbilityEn = "Zdolność." };
+        await Service<ChangeSets>().Personal.Roles.SaveAsync(new LocalRole(role, null));
+
+        Service<NavigationManager>().NavigateTo("roles/latarnik/edit");
+        var page = Render<RoleEditor>(p => p.Add(e => e.Id, "latarnik"));
+        page.WaitForAssertion(() => Assert.Equal("Latarnik", Field(page, "Nazwa (PL)").GetAttribute("value")));
+        Assert.False(page.Find(".role-editor__english input").HasAttribute("checked"));
+
+        page.Find(".role-editor__english input").Change(true);
+        Assert.Equal(string.Empty, Field(page, "Nazwa (EN)").GetAttribute("value") ?? string.Empty);
+        Assert.Equal(string.Empty, Field(page, "Po angielsku (opcjonalnie)").GetAttribute("value") ?? string.Empty);
+    }
+
+    [Fact]
     public void NewRole_Should_SaveWithoutProposal_When_NotProposing()
     {
         var page = RenderEditor("roles/new");

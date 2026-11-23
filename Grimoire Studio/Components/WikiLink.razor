@@ -1,5 +1,11 @@
-@* Link to the role's page on the official Blood on the Clocktower wiki (English names). *@
-<a class="wiki-link" href="@Url(Role)" target="_blank" rel="noopener noreferrer" title="Oficjalna wiki: @Role.NameEn">wiki ↗</a>
+@*
+    Link to the role's page on the official Blood on the Clocktower wiki (English names). Unofficial roles have no page
+    there, so they get no link.
+*@
+@if (Role.IsOfficial == true)
+{
+    <a class="wiki-link" href="@Url(Role)" target="_blank" rel="noopener noreferrer" title="Oficjalna wiki: @Role.NameEn">wiki ↗</a>
+}
 
 @code {
     [Parameter, EditorRequired]

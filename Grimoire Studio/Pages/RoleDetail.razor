@@ -49,7 +49,10 @@
                     <div class="actions__secondary @(_moreOpen ? "actions__secondary--open" : null)">
                         <a class="button button--ghost" href="roles/@role.Id/jinxes">Jinxy</a>
                         <ItemHistoryButton Kind="role" Id="@role.Id" File="@(role.Team == TeamIds.Fabled ? "fabled" : "roles")" Title="@role.NamePl" Style="@Teams.Style(role.Team)" />
-                        <a class="button button--ghost" href="@WikiLink.Url(role)" target="_blank" rel="noopener noreferrer">Oficjalna wiki ↗</a>
+                        @if (role.IsOfficial == true)
+                        {
+                            <a class="button button--ghost" href="@WikiLink.Url(role)" target="_blank" rel="noopener noreferrer">Oficjalna wiki ↗</a>
+                        }
                         @if (_isLocal)
                         {
                             <button class="button button--ghost" @onclick="RemoveLocalAsync">@(_hasOriginal ? "Przywróć oryginał" : "Usuń rolę")</button>
