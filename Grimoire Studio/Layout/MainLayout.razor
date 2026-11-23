@@ -34,7 +34,14 @@
     </div>
 </header>
 
-@if (ChangeSets.EditingWiki)
+@if (ChangeSets.Reviewing is { } reviewing)
+{
+    <div class="wiki-banner">
+        Edytujesz zgłoszenie (@reviewing.Author) przed zatwierdzeniem: zapis w edytorze zmienia zgłoszenie, nie wiki.
+        <a href="admin">Wróć do panelu administratora</a>
+    </div>
+}
+else if (ChangeSets.EditingWiki)
 {
     <div class="wiki-banner">
         Edytujesz wiki bezpośrednio: zapisy w edytorach trafiają do wiki, nie do „Moich zmian”.

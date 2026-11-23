@@ -460,7 +460,7 @@ else
             return;
         }
 
-        Nav.NavigateTo(IsProposal ? "changes" : $"roles/{role.Id}");
+        Nav.NavigateTo(IsProposal ? "changes" : Changes.Reviewing is not null ? "admin" : $"roles/{role.Id}");
     }
 
     /// <summary>Sends the saved role for approval; false (with the error shown) when it could not be sent.</summary>

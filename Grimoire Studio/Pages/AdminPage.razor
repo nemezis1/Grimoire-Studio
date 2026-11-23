@@ -119,9 +119,16 @@ else
                         Poniżej tylko pozycje, które jeszcze czekają.
                     </p>
                 }
-                <p class="muted small">Porównanie z obecną wiki. Zaznacz pozycje, które zatwierdzasz albo odrzucasz; pozostałe poczekają.</p>
+                <p class="muted small">
+                    Porównanie z obecną wiki. Zaznacz pozycje, które zatwierdzasz albo odrzucasz; pozostałe poczekają. „Edytuj”
+                    otwiera pozycję w edytorze: zapis poprawia zgłoszenie, które potem zatwierdzasz.
+                </p>
                 <ChangeSetView Changes="proposal.Changes.Only(waiting)" Base="_wiki" Data="_data" Selected="selected" SelectedChanged="() => { }" DetailsOpen="true">
                     <Actions Context="key">
+                        @if (EditorHref(key) is not null && !proposal.Changes.Removed.Contains(key))
+                        {
+                            <button class="button button--ghost" @onclick="() => EditItemAsync(proposal, key)">Edytuj</button>
+                        }
                         <button class="button" @onclick="() => DecideAsync(proposal, approve: true, [key])">Zatwierdź</button>
                         <button class="button button--ghost" @onclick="() => DecideAsync(proposal, approve: false, [key])">Odrzuć</button>
                     </Actions>
@@ -384,8 +391,87 @@ else
         }
 
         await Publisher.LoadAsync();
+        await FinishReviewAsync();
         await ReloadAsync();
     }
+
+    /// <summary>The editor of a proposal's item; null for items edited nowhere.</summary>
+    private static string? EditorHref(string key) => key.Split(':', 2) switch
+    {
+        ["role", var id] => $"roles/{id}/edit",
+        ["script", var id] => $"scripts/{id}/edit",
+        ["team", _] => "teams",
+        ["jinx", var jinx] => $"roles/{jinx.Split('/')[0]}/jinxes",
+        _ => null,
+    };
+
+    /// <summary>Opens a waiting item of a proposal in its editor; saving there changes the proposal (<see cref="FinishReviewAsync"/>).</summary>
+    private async Task EditItemAsync(Proposal proposal, string key)
+    {
+        if (!await ChangeSets.StartReviewAsync(proposal.Id, proposal.Author, key, proposal.Changes.Only(new HashSet<string> { key })))
+        {
+            Show("Przeglądarka nie pozwoliła zapisać pozycji do edycji (tryb prywatny lub brak miejsca).", error: true);
+            return;
+        }
+
+        Nav.NavigateTo(EditorHref(key)!);
+    }
+
+    /// <summary>
+    /// Back from editing a proposal's item: the item as saved in the editor replaces the proposed one, and the proposal
+    /// waits for the decision as before.
+    /// </summary>
+    private async Task FinishReviewAsync()
+    {
+        if (ChangeSets.Reviewing is not { } review)
+        {
+            return;
+        }
+
+        var edited = await ChangeSets.EndReviewAsync();
+        try
+        {
+            var proposal = (await Proposals.GetForAdminAsync()).FirstOrDefault(p => p.Id == review.ProposalId);
+            if (proposal is null || proposal.Status != ProposalStatus.Pending || !proposal.UndecidedKeys().Contains(review.Key))
+            {
+                Show($"Zgłoszenie ({review.Author}) zostało już rozpatrzone; edycja przepadła.", error: true);
+                return;
+            }
+
+            var keys = new HashSet<string> { review.Key };
+            if (edited.Count == 0 || ItemsJson(edited) == ItemsJson(proposal.Changes.Only(keys)))
+            {
+                Show($"Zgłoszenie ({review.Author}) bez zmian.");
+                return;
+            }
+
+            // Everything the editor saved takes the place of the item (a jinx editor may save the owner's other jinxes).
+            keys.UnionWith(edited.Keys());
+            var others = proposal.Changes.Only(proposal.Changes.Keys().Where(k => !keys.Contains(k)).ToHashSet());
+            var updated = proposal with
+            {
+                Changes = others with
+                {
+                    Roles = [.. others.Roles, .. edited.Roles],
+                    Scripts = [.. others.Scripts, .. edited.Scripts],
+                    Teams = [.. others.Teams, .. edited.Teams],
+                    Jinxes = [.. others.Jinxes, .. edited.Jinxes],
+                    Removed = [.. others.Removed, .. edited.Removed],
+                },
+            };
+            await Proposals.UpdateAsync(updated);
+            _selection.Remove(proposal.Id);
+            Show($"Zmieniono zgłoszenie ({review.Author}). Sprawdź poprawioną wersję i zatwierdź ją albo odrzuć.");
+        }
+        catch (PublishException ex)
+        {
+            Show($"Nie udało się zapisać zmienionego zgłoszenia ({review.Author}): {ex.Message}", error: true);
+        }
+    }
+
+    /// <summary>Items of a change set, for comparing them with another's.</summary>
+    private static string ItemsJson(LocalBackup changes) =>
+        JsonSerializer.Serialize(changes with { BaseVersion = string.Empty, ExportedAt = default }, GameData.JsonOptions);
 
     private async void OnChangeSetsChanged()
     {

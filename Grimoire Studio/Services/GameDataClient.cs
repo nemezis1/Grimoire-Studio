@@ -11,12 +11,16 @@ public sealed class GameDataClient(HttpClient http, ChangeSets changes, TeamText
 {
     private Task<GameData>? _load;
 
-    /// <summary>Data as shown: data folder, wiki changes and personal changes.</summary>
+    /// <summary>
+    /// Data as shown: data folder, wiki changes and personal changes; while the admin edits a proposal's item, that item
+    /// instead of the personal changes.
+    /// </summary>
     public async Task<GameData> GetAsync()
     {
         var wiki = await GetWikiAsync();
-        await changes.Personal.PruneAsync(wiki);
-        var data = await changes.Personal.ApplyToAsync(wiki);
+        var top = changes.Reviewing is null ? changes.Personal : changes.Review;
+        await top.PruneAsync(wiki);
+        var data = await top.ApplyToAsync(wiki);
         teamText.Use(data.Teams);
         return data;
     }
@@ -34,12 +38,13 @@ public sealed class GameDataClient(HttpClient http, ChangeSets changes, TeamText
     }
 
     /// <summary>
-    /// What the current change set is compared with: the data folder while editing the wiki, otherwise the wiki.
+    /// What the current change set is compared with: the data folder while editing the wiki, otherwise (also for a
+    /// proposal's item) the wiki.
     /// </summary>
     public async Task<GameData> GetBaseAsync()
     {
         await changes.LoadAsync();
-        return changes.EditingWiki ? await GetOriginalAsync() : await GetWikiAsync();
+        return changes.EditingWiki && changes.Reviewing is null ? await GetOriginalAsync() : await GetWikiAsync();
     }
 
     public static string IconUrl(string roleId) => $"data/icons/{roleId}.png";

@@ -92,6 +92,35 @@ public class AdminPageTests : AppTestContext
     }
 
     [Fact]
+    public async Task ItemEdit_Should_ChangeTheProposalBeforeTheDecision_When_SavedInTheEditor()
+    {
+        await SubmitProposalAsync();
+        var nav = Service<NavigationManager>();
+        var admin = RenderAsAdmin();
+        admin.WaitForElements(".change-list > li");
+
+        ProposalItem(admin, Name("chef")).QuerySelectorAll("button").Single(b => b.TextContent == "Edytuj").Click();
+        admin.WaitForAssertion(() => Assert.EndsWith("/roles/chef/edit", nav.Uri));
+        Assert.Equal(("p1", LocalBackup.RoleKey("chef"), "Ala"), Service<ChangeSets>().Reviewing);
+
+        // The editor shows the proposed version and saves back to the proposal, not to the wiki.
+        var editor = Render<RoleEditor>(p => p.Add(e => e.Id, "chef"));
+        editor.WaitForAssertion(() => Assert.Equal("Nowa zdolność: chef.", editor.Find(".role-editor textarea").GetAttribute("value")));
+        editor.Find(".role-editor textarea").Input("Poprawiona przez administratora.");
+        editor.FindAll("button").Single(b => b.TextContent == "Zapisz").Click();
+        editor.WaitForAssertion(() => Assert.EndsWith("/admin", nav.Uri));
+        Assert.Empty((await Service<ChangeSets>().Wiki.GetAllAsync()).Keys());
+
+        var back = RenderAsAdmin();
+        back.WaitForAssertion(() => Assert.Contains("Zmieniono zgłoszenie (Ala)", back.Find(".notice").TextContent));
+        Assert.Null(Service<ChangeSets>().Reviewing);
+        var proposal = (await Service<Proposals>().GetAllAsync()).Single();
+        Assert.Equal("Poprawiona przez administratora.", proposal.Changes.Roles.Single(r => r.Role.Id == "chef").Role.AbilityPl);
+        Assert.Equal("Nowa zdolność: empath.", proposal.Changes.Roles.Single(r => r.Role.Id == "empath").Role.AbilityPl);
+        Assert.Equal(2, proposal.UndecidedKeys().Count);
+    }
+
+    [Fact]
     public async Task ItemReject_Should_LeaveWikiUnchanged_When_Clicked()
     {
         await SubmitProposalAsync();

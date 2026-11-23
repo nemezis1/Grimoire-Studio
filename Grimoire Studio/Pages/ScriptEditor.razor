@@ -360,6 +360,6 @@ else
             return;
         }
 
-        Nav.NavigateTo($"scripts/{script.Id}");
+        Nav.NavigateTo(Changes.Reviewing is not null ? "admin" : $"scripts/{script.Id}");
     }
 }

@@ -7,17 +7,12 @@ using Microsoft.AspNetCore.Components;
 namespace GrimoireStudio.App.Tests;
 
 /// <summary>"Zgłoś nową rolę" without the publishing service: the role and the proposal stay in the (fake) browser.</summary>
-public class ProposeRoleTests : AppTestContext, IAsyncLifetime
+public class ProposeRoleTests : AppTestContext
 {
     public ProposeRoleTests()
     {
         LoadData();
     }
-
-    // The token preview service is disposed only asynchronously.
-    Task IAsyncLifetime.InitializeAsync() => Task.CompletedTask;
-
-    async Task IAsyncLifetime.DisposeAsync() => await DisposeAsync();
 
     private IRenderedComponent<RoleEditor> RenderEditor(string address)
     {

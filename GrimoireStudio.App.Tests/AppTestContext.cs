@@ -12,7 +12,7 @@ namespace GrimoireStudio.App.Tests;
 /// A bUnit context with the app's services as in Program.cs, over the repository's data folder and a fake browser.
 /// The publishing service is not configured, so proposals and wiki changes stay in the (fake) browser.
 /// </summary>
-public abstract class AppTestContext : BunitContext
+public abstract class AppTestContext : BunitContext, IAsyncLifetime
 {
     protected AppTestContext()
     {
@@ -32,6 +32,11 @@ public abstract class AppTestContext : BunitContext
     }
 
     protected FakeBrowser Browser { get; } = new();
+
+    // Some services (the token preview) are disposed only asynchronously.
+    Task IAsyncLifetime.InitializeAsync() => Task.CompletedTask;
+
+    async Task IAsyncLifetime.DisposeAsync() => await DisposeAsync();
 
     /// <summary>The data folder as the site serves it, with its teams handed to <see cref="TeamText"/>.</summary>
     protected GameData LoadData()

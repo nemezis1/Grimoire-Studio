@@ -168,7 +168,7 @@ else
             return;
         }
 
-        Nav.NavigateTo($"roles/{_role!.Id}");
+        Nav.NavigateTo(Changes.Reviewing is not null ? "admin" : $"roles/{_role!.Id}");
     }
 
     private static string OwnerOf(GameData data, string roleId, string otherId) =>
