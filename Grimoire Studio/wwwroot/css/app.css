@@ -1838,6 +1838,8 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 /* Liked / disliked roles: heart and skull. On a card they sit in the bottom-right corner and show on hover (always
    when one is set, and on touch screens). */
 .role-preference { display: inline-flex; gap: 0.15rem; }
+/* A marked role shows only its own mark; clicking it unmarks the role and brings both back. */
+.role-preference--set .role-preference__button:not(.role-preference__button--on) { display: none; }
 .role-preference__button {
     display: grid;
     place-items: center;
