@@ -1,15 +1,27 @@
 @page "/roles/new"
+@page "/roles/propose"
 @page "/roles/{Id}/edit"
 @inject GameDataClient Client
 @inject ChangeSets Changes
+@inject Proposals Proposals
 @inject NavigationManager Nav
 @inject LocalStore Store
 @inject Grimoire_Studio.Generator.TokenRenderer Renderer
 
-<PageTitle>@(IsNew ? "Nowa rola" : $"Edycja: {_namePl}") – Grimoire Studio</PageTitle>
+<PageTitle>@Heading@(IsNew ? null : $": {_namePl}") – Grimoire Studio</PageTitle>
 
-<h1>@(IsNew ? "Nowa rola" : "Edycja roli")</h1>
-<p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Rola z danych strony zostaje nietknięta i można do niej wrócić.</p>
+<h1>@Heading</h1>
+@if (IsProposal)
+{
+    <p class="muted">
+        Rola zostanie zapisana w tej przeglądarce (w „Moich zmianach”) i od razu wysłana administratorowi do akceptacji. Po
+        zatwierdzeniu stanie się częścią wiki.
+    </p>
+}
+else
+{
+    <p class="muted">Zmiany są zapisywane tylko w tej przeglądarce. Rola z danych strony zostaje nietknięta i można do niej wrócić.</p>
+}
 @* English texts are rarely edited here, so they are hidden until asked for; the choice is kept in this browser. *@
 <label class="field field--inline role-editor__english">
     <input type="checkbox" checked="@_showEnglish" @onchange="e => SetShowEnglishAsync(e.Value is true)" />
@@ -175,12 +187,34 @@ else
             </div>
             <p class="muted small">Ikona jest zmniejszana do 256 px i zapisywana razem z rolą.</p>
 
+            @if (IsProposal)
+            {
+                <h2>Zgłoszenie</h2>
+                <label class="field">
+                    <span>Podpis</span>
+                    <input type="text" @bind="_author" @bind:event="oninput" placeholder="np. nick z Discorda" />
+                </label>
+                <label class="field">
+                    <span>Komentarz dla administratora</span>
+                    <input type="text" @bind="_comment" @bind:event="oninput" placeholder="skąd rola, co warto wiedzieć" />
+                </label>
+            }
+
             @if (_error is not null)
             {
                 <p class="notice notice--error">@_error</p>
             }
             <div class="field-row">
-                <button class="button" @onclick="SaveAsync">Zapisz</button>
+                @if (IsProposal)
+                {
+                    <button class="button" disabled="@(string.IsNullOrWhiteSpace(_author) || _busy)" @onclick="SaveAsync">
+                        @(_busy ? "Wysyłanie…" : "Wyślij do akceptacji")
+                    </button>
+                }
+                else
+                {
+                    <button class="button" @onclick="SaveAsync">Zapisz</button>
+                }
                 <a class="button button--ghost" href="@(IsNew ? "roles" : $"roles/{Id}")">Anuluj</a>
             </div>
         </aside>
@@ -194,6 +228,18 @@ else
     public string? Id { get; set; }
 
     private bool IsNew => Id is null;
+
+    /// <summary>"Zgłoś nową rolę": a new role saved to the visitor's changes and sent for approval at once.</summary>
+    private bool IsProposal => IsNew && Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].TrimEnd('/') == "roles/propose";
+
+    private string Heading => IsProposal ? "Zgłoś nową rolę" : IsNew ? "Nowa rola" : "Edycja roli";
+
+    /// <summary>Signature of proposals, shared with the "Moje zmiany" page.</summary>
+    private const string AuthorKey = "grimoire-studio.author";
+
+    private string _author = string.Empty;
+    private string _comment = string.Empty;
+    private bool _busy;
 
     private GameData? _data;
     private Role? _existing;
@@ -221,7 +267,11 @@ else
     /// <summary>The English texts are shown; off at first, remembered in this browser.</summary>
     private bool _showEnglish;
 
-    protected override async Task OnInitializedAsync() => _showEnglish = await Store.GetSettingAsync(ShowEnglishKey) == "1";
+    protected override async Task OnInitializedAsync()
+    {
+        _showEnglish = await Store.GetSettingAsync(ShowEnglishKey) == "1";
+        _author = await Store.GetSettingAsync(AuthorKey) ?? string.Empty;
+    }
 
     private async Task SetShowEnglishAsync(bool on)
     {
@@ -396,13 +446,49 @@ else
         }
 
         var role = BuildRole();
-        if (!await (await Changes.GetCurrentAsync()).Roles.SaveAsync(new LocalRole(role, _iconUrl)))
+
+        // A proposal is the visitor's own change, also while the admin edits the wiki directly.
+        var changes = IsProposal ? Changes.Personal : await Changes.GetCurrentAsync();
+        if (!await changes.Roles.SaveAsync(new LocalRole(role, _iconUrl)))
         {
             _error = "Przeglądarka nie pozwoliła zapisać roli (tryb prywatny lub brak miejsca).";
             return;
         }
 
-        Nav.NavigateTo($"roles/{role.Id}");
+        if (IsProposal && !await SubmitAsync(role.Id))
+        {
+            return;
+        }
+
+        Nav.NavigateTo(IsProposal ? "changes" : $"roles/{role.Id}");
+    }
+
+    /// <summary>Sends the saved role for approval; false (with the error shown) when it could not be sent.</summary>
+    private async Task<bool> SubmitAsync(string roleId)
+    {
+        _busy = true;
+        try
+        {
+            var proposal = await Proposals.SubmitAsync(new Proposal
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Author = _author.Trim(),
+                Comment = _comment.Trim(),
+                CreatedAt = DateTimeOffset.Now,
+                Changes = (await Changes.Personal.GetAllAsync()).Only(new HashSet<string> { LocalBackup.RoleKey(roleId) }),
+            });
+            await Store.SetSettingAsync(AuthorKey, proposal.Author);
+            return true;
+        }
+        catch (Exception ex) when (ex is PublishException or IOException)
+        {
+            _error = $"Rola jest zapisana w tej przeglądarce, ale nie udało się wysłać zgłoszenia: {ex.Message} Spróbuj ponownie albo zgłoś ją z „Moich zmian”.";
+            return false;
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     /// <summary>The role as the form describes it: the role being edited (or a new one) with the form's values.</summary>
