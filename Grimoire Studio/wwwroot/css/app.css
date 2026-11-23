@@ -1682,6 +1682,11 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 /* Team colour next to a team in a dropdown list. */
 .multi-select__swatch { width: 0.75rem; height: 0.75rem; flex: none; border-radius: 50%; background: var(--team); }
 
+/* Role editor: the team as a one-choice dropdown with the team colours. */
+.team-select > summary { display: flex; align-items: center; gap: 0.5rem; }
+.team-select > summary::after { margin-left: auto; }
+.team-select .multi-select__menu { left: 0; right: auto; min-width: 100%; }
+
 /* "Więcej" in the menu: the less used pages in a dropdown. Phones list them flat in the folded menu instead. */
 .nav-more { position: relative; }
 .nav-more > summary {

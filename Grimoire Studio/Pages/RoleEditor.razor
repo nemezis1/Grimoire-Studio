@@ -67,15 +67,26 @@ else
                     }
                 }
                 <div class="field-row">
-                    <label class="field">
+                    @* Teams coloured as in the role list's filter. Keyed by the team, so choosing one closes the list. *@
+                    <div class="field">
                         <span>Drużyna</span>
-                        <select @bind="_team">
-                            @foreach (var t in Teams.All)
-                            {
-                                <option value="@t.Id">@t.NamePl</option>
-                            }
-                        </select>
-                    </label>
+                        <details class="multi-select team-select" @key="_team">
+                            <summary style="@Teams.Style(_team)">
+                                <span class="multi-select__swatch" aria-hidden="true"></span>
+                                <span>@(Teams.Parse(_team)?.NamePl ?? _team)</span>
+                            </summary>
+                            <div class="multi-select__menu">
+                                @foreach (var t in Teams.All)
+                                {
+                                    <label class="field field--inline" style="@Teams.Style(t.Id)">
+                                        <input type="radio" name="role-team" checked="@(t.Id == _team)" @onchange="() => _team = t.Id" />
+                                        <span class="multi-select__swatch" aria-hidden="true"></span>
+                                        <span>@t.NamePl</span>
+                                    </label>
+                                }
+                            </div>
+                        </details>
+                    </div>
                     <label class="field">
                         <span>Edycja</span>
                         <select @bind="_edition">
