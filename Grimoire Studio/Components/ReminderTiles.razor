@@ -16,7 +16,7 @@
                        @oninput="e => item.En = e.Value?.ToString() ?? string.Empty" />
             }
             <button type="button" class="reminder-tile__remove" title="Usuń znacznik" aria-label="Usuń znacznik @item.Pl"
-                    @onclick="() => Items.Remove(item)">✕</button>
+                    @onclick="() => RemoveAsync(item)">✕</button>
         </div>
     }
     <div class="reminder-tile reminder-tile--new">
@@ -27,7 +27,7 @@
             <input type="text" class="reminder-tile__en" value="@_newEn" placeholder="@(_newName.Length > 0 ? _newName : "New token…")"
                    aria-label="Nowy znacznik (EN): @Label" @oninput="e => _newEn = e.Value?.ToString() ?? string.Empty" @onkeydown="OnKeyDown" />
         }
-        <button type="button" class="button button--ghost" disabled="@string.IsNullOrWhiteSpace(_newName)" @onclick="Add">Dodaj</button>
+        <button type="button" class="button button--ghost" disabled="@string.IsNullOrWhiteSpace(_newName)" @onclick="AddAsync">Dodaj</button>
     </div>
 </div>
 
@@ -42,10 +42,20 @@
     [Parameter]
     public string Label { get; set; } = "Znacznik";
 
+    /// <summary>Told after a reminder is added or removed (e.g. so a preview can redraw).</summary>
+    [Parameter]
+    public EventCallback Changed { get; set; }
+
     private string _newName = string.Empty;
     private string _newEn = string.Empty;
 
-    private void Add()
+    private async Task RemoveAsync(ReminderText item)
+    {
+        Items.Remove(item);
+        await Changed.InvokeAsync();
+    }
+
+    private async Task AddAsync()
     {
         if (string.IsNullOrWhiteSpace(_newName))
         {
@@ -55,13 +65,14 @@
         Items.Add(new ReminderText { Pl = _newName.Trim(), En = _newEn.Trim() });
         _newName = string.Empty;
         _newEn = string.Empty;
+        await Changed.InvokeAsync();
     }
 
-    private void OnKeyDown(KeyboardEventArgs e)
+    private async Task OnKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            Add();
+            await AddAsync();
         }
     }
 }

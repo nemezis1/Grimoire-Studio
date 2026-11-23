@@ -95,7 +95,7 @@ public sealed class TokenSettings
     public TokenSettings Clone() => (TokenSettings)MemberwiseClone();
 
     /// <summary>Fills name, ability, icon and leaf markers from a role (player token).</summary>
-    public void ApplyRole(Role role, string iconUrl)
+    public void ApplyRole(Role role, string? iconUrl)
     {
         TokenType = PlayerType;
         Text = role.NamePl;

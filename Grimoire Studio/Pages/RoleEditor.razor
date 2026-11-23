@@ -4,6 +4,7 @@
 @inject ChangeSets Changes
 @inject NavigationManager Nav
 @inject LocalStore Store
+@inject Grimoire_Studio.Generator.TokenRenderer Renderer
 
 <PageTitle>@(IsNew ? "Nowa rola" : $"Edycja: {_namePl}") – Grimoire Studio</PageTitle>
 
@@ -145,14 +146,19 @@ else
                 <p class="muted small">
                     Nazwy żetonów przypomnień tej roli.@(_showEnglish ? " Puste pole angielskie oznacza „jak po polsku”." : null)
                 </p>
-                <ReminderTiles Items="_reminders" ShowEnglish="_showEnglish" Label="Znacznik" />
+                <ReminderTiles Items="_reminders" ShowEnglish="_showEnglish" Label="Znacznik" Changed="StateHasChanged" />
                 <h3 class="reminder-tiles__heading">Znaczniki globalne</h3>
                 <p class="muted small">Działają niezależnie od tego, czy rola jest w grze (np. „Jest Pijakiem”).</p>
-                <ReminderTiles Items="_globalReminders" ShowEnglish="_showEnglish" Label="Znacznik globalny" />
+                <ReminderTiles Items="_globalReminders" ShowEnglish="_showEnglish" Label="Znacznik globalny" Changed="StateHasChanged" />
             </section>
         </div>
 
         <aside class="panel role-editor__summary">
+            @* The token as the generator draws it with its default look, redrawn as the form changes. *@
+            <h2>Podgląd tokena</h2>
+            <canvas class="role-editor__token" @ref="_tokenCanvas" width="@TokenPreviewSize" height="@TokenPreviewSize"></canvas>
+            <p class="muted small">Domyślny wygląd z generatora; własny wygląd ustawisz w <a href="@($"generator?role={EffectiveId}")">generatorze tokenów</a>.</p>
+
             <h2>Ikona</h2>
             <div class="role-editor__icon">
                 <img src="@IconPreview" alt="" onerror="this.onerror = null; this.src = 'Assets/token.png';" />
@@ -375,6 +381,19 @@ else
             return;
         }
 
+        var role = BuildRole();
+        if (!await (await Changes.GetCurrentAsync()).Roles.SaveAsync(new LocalRole(role, _iconUrl)))
+        {
+            _error = "Przeglądarka nie pozwoliła zapisać roli (tryb prywatny lub brak miejsca).";
+            return;
+        }
+
+        Nav.NavigateTo($"roles/{role.Id}");
+    }
+
+    /// <summary>The role as the form describes it: the role being edited (or a new one) with the form's values.</summary>
+    private Role BuildRole()
+    {
         var baseRole = _existing ?? new Role
         {
             Id = EffectiveId,
@@ -407,12 +426,38 @@ else
             RemindersGlobalEn = ReminderText.English(_globalReminders),
         };
 
-        if (!await (await Changes.GetCurrentAsync()).Roles.SaveAsync(new LocalRole(role, _iconUrl)))
+        return role;
+    }
+
+    private const int TokenPreviewSize = 500;
+    private ElementReference _tokenCanvas;
+
+    /// <summary>The preview token: default look, the team's border colours and the role's texts, icon and leaves.</summary>
+    private Grimoire_Studio.Generator.TokenSettings PreviewSettings()
+    {
+        var role = BuildRole();
+        if (role.NamePl.Length == 0)
         {
-            _error = "Przeglądarka nie pozwoliła zapisać roli (tryb prywatny lub brak miejsca).";
-            return;
+            role = role with { NamePl = "Nazwa roli" };
         }
 
-        Nav.NavigateTo($"roles/{role.Id}");
+        var settings = new Grimoire_Studio.Generator.TokenSettings();
+        // A new role without an uploaded icon has no picture yet.
+        settings.ApplyRole(role, _iconUrl ?? (IsNew ? null : Changes.IconUrl(Id!)));
+        if (_data is not null)
+        {
+            settings.ApplyTeamBorder(_data, role);
+        }
+
+        return settings;
+    }
+
+    // Every change of the form re-renders the page, so drawing here keeps the preview current.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_data is not null && (IsNew || _existing is not null))
+        {
+            await Renderer.RenderAsync(_tokenCanvas, PreviewSettings(), TokenPreviewSize);
+        }
     }
 }
