@@ -957,7 +957,7 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 .multi-select { position: relative; }
 .multi-select > summary {
     list-style: none;
-    padding: 0.45rem 0.8rem;
+    padding: 0.5rem 0.75rem;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--surface);
@@ -1354,7 +1354,9 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 .filters[data-folded] .filters__search { flex: 1 1 0; }
 .filters[data-folded] .filters__more { display: none; }
 .filters[data-folded] .filters__more--open { display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%; }
-.filters[data-folded] .filters__more--open > .filters__select { flex: 1 1 14rem; }
+/* Opened, the folded filters go under the first row, so the count stays beside "Filtry"; all of them equally wide. */
+.filters[data-folded] .filters__more--open { order: 1; }
+.filters[data-folded] .filters__more--open > * { flex: 1 1 14rem; width: auto; }
 
 /* Detail pages: smaller buttons and icon, so title and actions share one row when they fit. */
 .script-header__icon { width: 72px; height: 72px; }
@@ -1679,6 +1681,9 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 .multi-select__actions { margin: 0.25rem 0 0; flex-wrap: nowrap; }
 .multi-select__actions .button { flex: 1; padding: 0.35rem 0.6rem; white-space: nowrap; }
 
+/* Script icon next to a script in a dropdown list. */
+.multi-select__icon { width: 1.5rem; height: 1.5rem; flex: none; object-fit: contain; }
+
 /* Team colour next to a team in a dropdown list. */
 .multi-select__swatch { width: 0.75rem; height: 0.75rem; flex: none; border-radius: 50%; background: var(--team); }
 
@@ -1857,8 +1862,11 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 .role-grid__item > .role-preference { position: absolute; right: 0.4rem; bottom: 0.3rem; opacity: 0; transition: opacity 0.15s; }
 .role-grid__item:hover > .role-preference, .role-grid__item:focus-within > .role-preference, .role-grid__item > .role-preference--set { opacity: 1; }
 .role-grid__item > .role-preference .role-preference__button { background: var(--surface); }
+/* Where the icons stay visible (a marked role, touch screens), the card keeps room for them under the text. */
+.role-grid__item:has(> .role-preference--set) > .role-card { padding-bottom: 2.6rem; }
 @media (hover: none) {
     .role-grid__item > .role-preference { opacity: 1; }
+    .role-grid__item > .role-card { padding-bottom: 2.6rem; }
 }
 @media print {
     .role-preference { display: none; }

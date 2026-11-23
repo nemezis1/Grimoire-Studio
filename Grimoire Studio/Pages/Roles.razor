@@ -68,6 +68,7 @@
                         var ticked = scripts.Contains(script);
                         <label class="field field--inline">
                             <input type="checkbox" checked="@ticked" @onchange="() => Toggle(ScriptName, Script, script.Id)" />
+                            <img class="multi-select__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" loading="lazy" />
                             <span>@script.Name</span>
                         </label>
                     }
