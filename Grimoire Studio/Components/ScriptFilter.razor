@@ -1,0 +1,62 @@
+@*
+    Scripts in a dropdown, each with its icon: official ones first, the others under a line. Any number can be ticked;
+    with none ticked every role is listed.
+*@
+<details class="multi-select multi-select--left">
+    <summary>@Label</summary>
+    <div class="multi-select__menu">
+        @foreach (var (group, index) in Groups.Select((g, i) => (g, i)))
+        {
+            @if (index > 0)
+            {
+                <hr class="multi-select__separator" />
+            }
+            @foreach (var script in group)
+            {
+                <label class="field field--inline">
+                    <input type="checkbox" checked="@Ticked.Contains(script.Id)" @onchange="() => Toggled.InvokeAsync(script.Id)" />
+                    <img class="multi-select__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" loading="lazy" />
+                    <span>@script.Name</span>
+                </label>
+            }
+        }
+        <div class="field-row multi-select__actions">
+            <button class="button button--ghost" disabled="@(Ticked.Count == Scripts.Count)" @onclick="() => AllSet.InvokeAsync(true)">Zaznacz wszystkie</button>
+            <button class="button button--ghost" disabled="@(Ticked.Count == 0)" @onclick="() => AllSet.InvokeAsync(false)">Odznacz wszystkie</button>
+        </div>
+    </div>
+</details>
+
+@code {
+    [Parameter, EditorRequired]
+    public IReadOnlyList<Script> Scripts { get; set; } = [];
+
+    /// <summary>Ids of the ticked scripts.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlySet<string> Ticked { get; set; } = new HashSet<string>();
+
+    /// <summary>A script ticked or unticked (its id).</summary>
+    [Parameter]
+    public EventCallback<string> Toggled { get; set; }
+
+    /// <summary>"Zaznacz wszystkie" (true) or "Odznacz wszystkie" (false).</summary>
+    [Parameter]
+    public EventCallback<bool> AllSet { get; set; }
+
+    private IEnumerable<List<Script>> Groups =>
+        new[] { Scripts.Where(s => s.IsOfficial).ToList(), Scripts.Where(s => !s.IsOfficial).ToList() }.Where(g => g.Count > 0);
+
+    private string Label
+    {
+        get
+        {
+            var ticked = Scripts.Where(s => Ticked.Contains(s.Id)).ToList();
+            return ticked.Count switch
+            {
+                0 => "Wszystkie skrypty",
+                1 => ticked[0].Name,
+                _ => $"Skrypty: {ticked.Count}",
+            };
+        }
+    }
+}

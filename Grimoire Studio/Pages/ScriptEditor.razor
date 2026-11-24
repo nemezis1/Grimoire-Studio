@@ -3,6 +3,7 @@
 @inject GameDataClient Client
 @inject ChangeSets Changes
 @inject NavigationManager Nav
+@inject RolePreferences Preferences
 
 <PageTitle>@(IsNew ? "Nowy skrypt" : $"Edycja: {_name}") – Grimoire Studio</PageTitle>
 
@@ -22,7 +23,7 @@ else if (!IsNew && _notFound)
 else
 {
     var selected = _selected.Select(_data.FindRole).OfType<Role>().ToList();
-    var team = Teams.Parse(_team);
+    var scripts = _data.Scripts.Scripts.Where(s => _scripts.Contains(s.Id)).ToList();
 
     <div class="script-editor fill-viewport">
         <section class="panel">
@@ -60,11 +61,20 @@ else
                 <p class="notice notice--error">@idError</p>
             }
 
-            @* Search, filters and teams flow together: one row on wide screens, two when there is no room. *@
+            @* Search and filters as on the role list: one row on wide screens; on narrow ones the filters fold behind "Filtry". *@
             <div class="filters script-filters" data-fold-rows="2">
                 <input class="filters__search" type="search" placeholder="Szukaj roli lub zdolności…" @bind="_query" @bind:event="oninput" />
-                <details class="multi-select">
-                    <summary>Filtry@(_filters.Count > 0 ? $" ({_filters.Count})" : null)</summary>
+                <button class="button button--ghost filters__toggle" aria-expanded="@_filtersOpen" @onclick="() => _filtersOpen = !_filtersOpen">
+                    Filtry@(ActiveFilters is var active and > 0 ? $" ({active})" : null)
+                </button>
+                <div class="filters__more @(_filtersOpen ? "filters__more--open" : null)">
+                <ScriptFilter Scripts="_data.Scripts.Scripts" Ticked="_scripts" Toggled="id => Flip(_scripts, id)"
+                              AllSet="all => SetAll(_scripts, all ? _data.Scripts.Scripts.Select(s => s.Id) : Enumerable.Empty<string>())" />
+                <TeamFilter Ticked="_teams" Toggled="id => Flip(_teams, id)" AllSet="all => SetAll(_teams, all ? Teams.All.Select(t => t.Id) : Enumerable.Empty<string>())" />
+                <PreferenceFilter Shown="_shown" Toggled="kind => Flip(_shown, kind)" />
+                <OriginFilter Ticked="_origins" Toggled="kind => Flip(_origins, kind)" />
+                <details class="multi-select multi-select--left">
+                    <summary>Warunki@(_filters.Count > 0 ? $" ({_filters.Count})" : null)</summary>
                     <div class="multi-select__menu">
                         @foreach (var (label, _) in RoleFilters)
                         {
@@ -74,24 +84,18 @@ else
                             </label>
                         }
                         <p class="muted small">Pokazuje role spełniające wszystkie zaznaczone warunki.</p>
-                        <button class="button button--ghost" disabled="@(_filters.Count == 0)" @onclick="() => _filters.Clear()">Wyczyść filtry</button>
+                        <button class="button button--ghost" disabled="@(_filters.Count == 0)" @onclick="() => _filters.Clear()">Wyczyść warunki</button>
                     </div>
                 </details>
-                <button class="button button--ghost filters__toggle" aria-expanded="@_teamsOpen" @onclick="() => _teamsOpen = !_teamsOpen">
-                    Drużyny@(team is null ? null : $": {team.PluralPl}")
-                </button>
-                <div class="chips filters__more @(_teamsOpen ? "filters__more--open" : null)">
-                <button class="chip @(team is null ? "chip--active" : null)" @onclick='() => _team = null'>Wszystkie</button>
-                @foreach (var t in Teams.All)
-                {
-                    <button class="chip team--@(t.Id) @(team?.Id == t.Id ? "chip--active" : null)" style="@Teams.Style(t.Id)" @onclick="() => _team = t.Id">@t.PluralPl</button>
-                }
                 </div>
             </div>
 
             <ul class="role-picker">
                 @foreach (var role in _data.AllRoles
-                    .Where(r => team is null || r.Team == team.Id)
+                    .Where(r => scripts.Count == 0 || scripts.Any(s => s.Roles.Contains(r.Id)))
+                    .Where(r => _teams.Count == 0 || _teams.Contains(r.Team))
+                    .Where(r => _shown.Contains(PreferenceFilter.KindOf(Preferences, r.Id)))
+                    .Where(r => _origins.Contains(OriginFilter.KindOf(r)))
                     .Where(r => SearchText.Matches(_query, r.NamePl, r.NameEn, r.Id, r.AbilityPl, r.AbilityEn))
                     .Where(r => RoleFilters.Where(f => _filters.Contains(f.Label)).All(f => f.Matches(r)))
                     .OrderBy(r => Teams.Get(r.Team).Order)
@@ -159,7 +163,32 @@ else
     private bool IsNew => Id is null;
 
     private bool? _headOpen;
-    private bool _teamsOpen;
+    private bool _filtersOpen;
+
+    // Filters as on the role list: scripts and teams (none ticked: all), likes (disliked left out at first) and origin.
+    private readonly HashSet<string> _scripts = [];
+    private readonly HashSet<string> _teams = [];
+    private readonly HashSet<string> _shown = [.. PreferenceFilter.Default];
+    private readonly HashSet<string> _origins = [.. OriginFilter.All];
+
+    /// <summary>Filters changed from their defaults, for the "Filtry" button on narrow screens.</summary>
+    private int ActiveFilters =>
+        (_scripts.Count > 0 ? 1 : 0) + (_teams.Count > 0 ? 1 : 0) + (_shown.SetEquals(PreferenceFilter.Default) ? 0 : 1)
+        + (_origins.Count == OriginFilter.All.Length ? 0 : 1) + (_filters.Count > 0 ? 1 : 0);
+
+    private static void Flip(HashSet<string> set, string id)
+    {
+        if (!set.Remove(id))
+        {
+            set.Add(id);
+        }
+    }
+
+    private static void SetAll(HashSet<string> set, IEnumerable<string> ids)
+    {
+        set.Clear();
+        set.UnionWith(ids);
+    }
 
     private bool HeadOpen => _headOpen ?? IsNew;
 
@@ -169,7 +198,6 @@ else
     private string _name = string.Empty;
     private List<string> _selected = [];
     private string _query = string.Empty;
-    private string? _team;
     private string? _error;
     private readonly HashSet<string> _filters = [];
 
@@ -219,6 +247,7 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        await Preferences.LoadAsync();
         _data = await Client.GetAsync();
         _existing = Id is null ? null : _data.FindScript(Id);
         _notFound = Id is not null && _existing is null;

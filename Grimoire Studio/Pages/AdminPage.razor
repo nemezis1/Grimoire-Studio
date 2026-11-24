@@ -240,7 +240,7 @@ else
                 </p>
             }
             <ul class="change-list">
-                @foreach (var (commit, proposals) in History)
+                @foreach (var (commit, proposals) in History.Skip(_historyPage * HistoryPageSize).Take(HistoryPageSize))
                 {
                     <li>
                         <span class="change-list__what">
@@ -274,6 +274,17 @@ else
                     </li>
                 }
             </ul>
+            @if (History.Count > HistoryPageSize || _repoMore)
+            {
+                @* Newer and older changes, ten at a time; older pages come from the repository when first asked for. *@
+                <div class="field-row pager">
+                    <button class="button button--ghost" disabled="@(_historyPage == 0)" @onclick="() => _historyPage--">‹ Nowsze</button>
+                    <span class="muted small">Strona @(_historyPage + 1) z @HistoryPages@(_repoMore ? "+" : null)</span>
+                    <button class="button button--ghost" disabled="@(_historyPage + 1 >= HistoryPages && !_repoMore || _loadingHistory)" @onclick="OlderHistoryAsync">
+                        @(_loadingHistory ? "Wczytywanie…" : "Starsze ›")
+                    </button>
+                </div>
+            }
         </section>
     }
     else if (Publisher.IsConfigured && Publisher.AdminName is null)
@@ -308,6 +319,48 @@ else
     private List<Proposal> _pending = [];
     private List<Proposal> _decided = [];
     private List<WikiCommit>? _repoChanges;
+
+    private const int HistoryPageSize = 10;
+
+    /// <summary>Page of the history shown (0 is the newest).</summary>
+    private int _historyPage;
+
+    /// <summary>Repository pages of the history read so far, and whether older ones follow.</summary>
+    private int _repoPage;
+    private bool _repoMore;
+    private bool _loadingHistory;
+
+    private int HistoryPages => Math.Max(1, (History.Count + HistoryPageSize - 1) / HistoryPageSize);
+
+    /// <summary>The next page of the history, reading older repository pages until it has some (or there are none).</summary>
+    private async Task OlderHistoryAsync()
+    {
+        _loadingHistory = true;
+        try
+        {
+            while (_repoMore && (_historyPage + 1) * HistoryPageSize >= History.Count)
+            {
+                var (changes, more) = await Publisher.GetChangesAsync(_repoPage + 1);
+                _repoChanges = [.. _repoChanges ?? [], .. changes];
+                _repoPage++;
+                _repoMore = more;
+            }
+        }
+        catch (PublishException ex)
+        {
+            Show($"Nie udało się wczytać starszych zmian: {ex.Message}", error: true);
+            return;
+        }
+        finally
+        {
+            _loadingHistory = false;
+        }
+
+        if ((_historyPage + 1) * HistoryPageSize < History.Count)
+        {
+            _historyPage++;
+        }
+    }
     private readonly Dictionary<string, HashSet<string>> _selection = [];
     private string? _message;
     private string? _adminKey;
@@ -516,7 +569,11 @@ else
         {
             try
             {
-                _repoChanges = (await Publisher.GetChangesAsync()).ToList();
+                var (changes, more) = await Publisher.GetChangesAsync();
+                _repoChanges = changes.ToList();
+                _repoPage = 1;
+                _repoMore = more;
+                _historyPage = Math.Min(_historyPage, HistoryPages - 1);
             }
             catch (PublishException ex)
             {

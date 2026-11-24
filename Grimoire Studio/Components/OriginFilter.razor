@@ -1,0 +1,44 @@
+@* Official roles (released by The Pandemonium Institute) and the others; both ticked by default. *@
+<details class="multi-select multi-select--left preference-select">
+    <summary>@Label</summary>
+    <div class="multi-select__menu">
+        @foreach (var (kind, label) in Choices)
+        {
+            <label class="field field--inline">
+                <input type="checkbox" checked="@Ticked.Contains(kind)" @onchange="() => Toggled.InvokeAsync(kind)" />
+                <span>@label</span>
+            </label>
+        }
+    </div>
+</details>
+
+@code {
+    public const string Official = "official";
+    public const string Unofficial = "unofficial";
+
+    /// <summary>Both kinds: what is shown when nothing is chosen.</summary>
+    public static readonly string[] All = [Official, Unofficial];
+
+    private static readonly (string Kind, string Label)[] Choices =
+    [
+        (Official, "Oficjalne"),
+        (Unofficial, "Nieoficjalne"),
+    ];
+
+    /// <summary>The ticked kinds.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlySet<string> Ticked { get; set; } = new HashSet<string>();
+
+    /// <summary>A kind ticked or unticked.</summary>
+    [Parameter]
+    public EventCallback<string> Toggled { get; set; }
+
+    public static string KindOf(Role role) => role.IsOfficial == true ? Official : Unofficial;
+
+    private string Label => Ticked.Count switch
+    {
+        0 => "Nic nie zaznaczono",
+        1 => Ticked.Contains(Official) ? "Tylko oficjalne" : "Tylko nieoficjalne",
+        _ => "Oficjalne i nieoficjalne",
+    };
+}

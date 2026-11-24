@@ -86,7 +86,7 @@ async function route(request, env) {
 
     if (request.method === 'GET' && pathname === `${API}changes`) {
         await authenticate(request, env);
-        return json(await wikiChanges(env));
+        return json(await wikiChanges(env, new URL(request.url).searchParams.get('page')));
     }
 
     if (request.method === 'GET' && pathname === `${API}item-history`) {
@@ -645,7 +645,9 @@ export async function deployments(env) {
 
 // --- History of the wiki, read from git ---------------------------------------------------------------------------
 
-const CHANGES_LIMIT = 30;
+/** Commits of the data folder read per page of the wiki history; the admins' ones among them are listed. */
+const CHANGES_PAGE = 60;
+const MAX_CHANGES_PAGE = 100;
 // Per file: one listing, one version per commit and the version before the oldest stay under the subrequest limit.
 const ITEM_COMMITS_LIMIT = 15;
 const PROPOSALS_LINE = /^Zgłoszenia: (.+)$/m;
@@ -663,15 +665,19 @@ function commitSummary(item) {
     };
 }
 
-/** Wiki changes sent by admins (commits made by this Worker), newest first. */
-export async function wikiChanges(env) {
+/**
+ * Wiki changes sent by admins (commits made by this Worker), newest first, one page of the data folder's history at a
+ * time (page 1 is the newest); `more` says whether older pages follow.
+ */
+export async function wikiChanges(env, page) {
+    const number = Math.min(Math.max(Number.parseInt(page ?? '1', 10) || 1, 1), MAX_CHANGES_PAGE);
     const commits = await new GitHub(env).get(
-        `commits?sha=${encodeURIComponent(env.BRANCH)}&path=data&per_page=${CHANGES_LIMIT * 2}`);
+        `commits?sha=${encodeURIComponent(env.BRANCH)}&path=data&per_page=${CHANGES_PAGE}&page=${number}`);
     return {
         changes: commits
             .filter(item => APPROVED_BY.test(item.commit?.message ?? ''))
-            .slice(0, CHANGES_LIMIT)
             .map(commitSummary),
+        more: commits.length === CHANGES_PAGE,
     };
 }
 

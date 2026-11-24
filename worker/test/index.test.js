@@ -61,7 +61,7 @@ beforeEach(async () => {
         const body = init.body ? JSON.parse(init.body) : undefined;
         github.calls.push({ method: init.method, path, body });
 
-        const listing = /^commits\?sha=main&path=([^&]+)&per_page=\d+$/.exec(path);
+        const listing = /^commits\?sha=main&path=([^&]+)&per_page=\d+(?:&page=\d+)?$/.exec(path);
         if (listing) return reply(github.history[decodeURIComponent(listing[1])] ?? []);
         const single = /^commits\/([0-9a-f]+)$/.exec(path);
         if (single) return single[1] in github.details ? reply(github.details[single[1]]) : reply({ message: 'Not Found' }, 404);
@@ -314,6 +314,15 @@ test('changes list only wiki commits sent by admins, with who approved and whose
     const { changes } = await (await call('GET', '/api/changes')).json();
 
     assert.deepEqual(changes.map(c => [c.sha, c.title, c.approvedBy, c.proposals]), [['c3', 'Rycerz', 'Kasia', 'Ola, Tomek']]);
+});
+
+test('changes come a page at a time, saying whether older ones follow', async () => {
+    github.history.data = [commitItem('c3', '2026-11-02T10:00:00Z', 'Rycerz\n\nZatwierdził: Kasia', 'c2')];
+
+    const reply = await (await call('GET', '/api/changes?page=3')).json();
+
+    assert.equal(reply.more, false);
+    assert.ok(github.calls.some(c => c.path === 'commits?sha=main&path=data&per_page=60&page=3'));
 });
 
 test('item history keeps only the commits that changed this role, plus its icon', async () => {

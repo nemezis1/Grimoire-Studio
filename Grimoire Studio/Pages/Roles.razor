@@ -19,6 +19,7 @@
     @{
         // Several scripts show the roles of any of them; several teams likewise.
         var scripts = Split(Script).Select(data.FindScript).OfType<Script>().ToList();
+        var scriptIds = scripts.Select(s => s.Id).ToHashSet();
         var teams = Split(Team).Select(Teams.Parse).OfType<TeamInfo>().Select(t => t.Id).ToHashSet();
         var matching = data.AllRoles
             .Where(r => scripts.Count == 0 || scripts.Any(s => s.Roles.Contains(r.Id)))
@@ -29,7 +30,7 @@
         // Liked / disliked (this browser): disliked roles stay out unless asked for.
         var shown = Shown();
         var origins = Origins();
-        var roles = matching.Where(r => shown.Contains(PreferenceOf(r.Id)) && origins.Contains(OriginOf(r))).ToList();
+        var roles = matching.Where(r => shown.Contains(PreferenceFilter.KindOf(Preferences, r.Id)) && origins.Contains(OriginFilter.KindOf(r))).ToList();
         var descending = Sort is DescendingSort or FlatDescendingSort;
 
         // A–Z / Z–A without teams: one list across all teams.
@@ -59,78 +60,12 @@
             </button>
 
             <div class="filters__more @(_filtersOpen ? "filters__more--open" : null)">
-            @* Scripts: tick any number; with none ticked every role is listed. *@
-            <details class="multi-select multi-select--left">
-                <summary>@ScriptsLabel(scripts)</summary>
-                <div class="multi-select__menu">
-                    @foreach (var script in data.Scripts.Scripts)
-                    {
-                        var ticked = scripts.Contains(script);
-                        <label class="field field--inline">
-                            <input type="checkbox" checked="@ticked" @onchange="() => Toggle(ScriptName, Script, script.Id)" />
-                            <img class="multi-select__icon" src="@GameDataClient.EditionIconUrl(script)" alt="" loading="lazy" />
-                            <span>@script.Name</span>
-                        </label>
-                    }
-                    <div class="field-row multi-select__actions">
-                        <button class="button button--ghost" disabled="@(scripts.Count == data.Scripts.Scripts.Count)"
-                                @onclick="() => SetParameter(ScriptName, string.Join(',', data.Scripts.Scripts.Select(s => s.Id)))">Zaznacz wszystkie</button>
-                        <button class="button button--ghost" disabled="@(scripts.Count == 0)" @onclick="() => SetParameter(ScriptName, null)">Odznacz wszystkie</button>
-                    </div>
-                </div>
-            </details>
-
-            @* Teams: like the scripts, any number; with none ticked every team is listed. *@
-            <details class="multi-select multi-select--left">
-                <summary>@TeamsLabel(teams)</summary>
-                <div class="multi-select__menu">
-                    @foreach (var t in Teams.All)
-                    {
-                        <label class="field field--inline" style="@Teams.Style(t.Id)">
-                            <input type="checkbox" checked="@teams.Contains(t.Id)" @onchange="() => Toggle(TeamName, Team, t.Id)" />
-                            <span class="multi-select__swatch" aria-hidden="true"></span>
-                            <span>@t.PluralPl</span>
-                        </label>
-                    }
-                    <div class="field-row multi-select__actions">
-                        <button class="button button--ghost" disabled="@(teams.Count == Teams.All.Count)"
-                                @onclick="() => SetParameter(TeamName, string.Join(',', Teams.All.Select(t => t.Id)))">Zaznacz wszystkie</button>
-                        <button class="button button--ghost" disabled="@(teams.Count == 0)" @onclick="() => SetParameter(TeamName, null)">Odznacz wszystkie</button>
-                    </div>
-                </div>
-            </details>
-
-            @* Likes of this browser: liked and unmarked roles ticked by default, disliked ones left out. With none
-               ticked no role is listed. *@
-            <details class="multi-select multi-select--left preference-select">
-                <summary>@PreferencesLabel(shown)</summary>
-                <div class="multi-select__menu">
-                    @foreach (var (kind, icon, label) in PreferenceChips)
-                    {
-                        var ticked = shown.Contains(kind);
-                        <label class="field field--inline">
-                            <input type="checkbox" checked="@ticked"
-                                   @onchange="() => SetParameter(ShowName, ShowToggled(kind))" />
-                            <PreferenceIcon Kind="@icon" />
-                            <span>@label</span>
-                        </label>
-                    }
-                </div>
-            </details>
-
-            @* Official roles (released by The Pandemonium Institute) and the others; both ticked by default. *@
-            <details class="multi-select multi-select--left preference-select">
-                <summary>@OriginsLabel(origins)</summary>
-                <div class="multi-select__menu">
-                    @foreach (var (kind, label) in OriginChoices)
-                    {
-                        <label class="field field--inline">
-                            <input type="checkbox" checked="@origins.Contains(kind)" @onchange="() => SetParameter(OriginName, OriginToggled(kind))" />
-                            <span>@label</span>
-                        </label>
-                    }
-                </div>
-            </details>
+            <ScriptFilter Scripts="data.Scripts.Scripts" Ticked="scriptIds" Toggled="id => Toggle(ScriptName, Script, id)"
+                          AllSet="all => SetParameter(ScriptName, all ? string.Join(',', data.Scripts.Scripts.Select(s => s.Id)) : null)" />
+            <TeamFilter Ticked="teams" Toggled="id => Toggle(TeamName, Team, id)"
+                        AllSet="all => SetParameter(TeamName, all ? string.Join(',', Teams.All.Select(t => t.Id)) : null)" />
+            <PreferenceFilter Shown="shown" Toggled="kind => SetParameter(ShowName, ShowToggled(kind))" />
+            <OriginFilter Ticked="origins" Toggled="kind => SetParameter(OriginName, OriginToggled(kind))" />
 
             <select class="filters__select" value="@(Sort ?? string.Empty)"
                     @onchange="e => SetParameter(SortName, e.Value?.ToString())" aria-label="Sortowanie">
@@ -166,7 +101,7 @@
         }
         else if (flat)
         {
-            <ul class="role-grid @(shown.SetEquals([DislikedShow]) ? "role-grid--disliked-only" : null)">
+            <ul class="role-grid @(shown.SetEquals([PreferenceFilter.Disliked]) ? "role-grid--disliked-only" : null)">
                 @foreach (var role in descending ? roles.OrderByDescending(r => r.NamePl, PolishOrder) : roles.OrderBy(r => r.NamePl, PolishOrder))
                 {
                     <RoleCard Role="role" />
@@ -179,7 +114,7 @@
             {
                 <section class="role-group">
                     <h2 class="team-heading team--@(group.Key)" style="@Teams.Style(group.Key)">@Teams.Plural(group.Key) <span class="muted">(@group.Count())</span></h2>
-                    <ul class="role-grid @(shown.SetEquals([DislikedShow]) ? "role-grid--disliked-only" : null)">
+                    <ul class="role-grid @(shown.SetEquals([PreferenceFilter.Disliked]) ? "role-grid--disliked-only" : null)">
                         @foreach (var role in descending ? group.OrderByDescending(r => r.NamePl, PolishOrder) : group.OrderBy(r => r.NamePl, PolishOrder))
                         {
                             <RoleCard Role="role" />
@@ -204,14 +139,7 @@
     private const string FlatSort = "az-all";
     private const string ShowName = "show";
     private const string OriginName = "origin";
-    private const string OfficialOrigin = "official";
-    private const string UnofficialOrigin = "unofficial";
-
-    private static readonly (string Kind, string Label)[] OriginChoices =
-    [
-        (OfficialOrigin, "Oficjalne"),
-        (UnofficialOrigin, "Nieoficjalne"),
-    ];
+    private const string NoneShow = "none";
 
     /// <summary>Official or unofficial roles: "official", "unofficial" or "none"; none given lists both.</summary>
     [SupplyParameterFromQuery(Name = OriginName)]
@@ -219,18 +147,9 @@
 
     private HashSet<string> Origins() => Origin switch
     {
-        OfficialOrigin or UnofficialOrigin => [Origin],
+        OriginFilter.Official or OriginFilter.Unofficial => [Origin],
         NoneShow => [],
-        _ => [OfficialOrigin, UnofficialOrigin],
-    };
-
-    private static string OriginOf(Role role) => role.IsOfficial == true ? OfficialOrigin : UnofficialOrigin;
-
-    private static string OriginsLabel(HashSet<string> origins) => origins.Count switch
-    {
-        0 => "Nic nie zaznaczono",
-        1 => origins.Contains(OfficialOrigin) ? "Tylko oficjalne" : "Tylko nieoficjalne",
-        _ => "Oficjalne i nieoficjalne",
+        _ => [.. OriginFilter.All],
     };
 
     /// <summary>The origin parameter with the kind ticked or unticked; both ticked drops it.</summary>
@@ -249,18 +168,6 @@
             _ => null,
         };
     }
-    private const string LikedShow = "liked";
-    private const string NeutralShow = "neutral";
-    private const string DislikedShow = "disliked";
-    private const string DefaultShow = LikedShow + "," + NeutralShow;
-    private const string NoneShow = "none";
-
-    private static readonly (string Kind, string Icon, string Label)[] PreferenceChips =
-    [
-        (LikedShow, RolePreferences.Like, "Ulubione"),
-        (NeutralShow, PreferenceIcon.Neutral, "Pozostałe"),
-        (DislikedShow, RolePreferences.Dislike, "Nielubiane"),
-    ];
 
     /// <summary>Which roles by this browser's likes, a comma list of liked/neutral/disliked: none given hides disliked ones.</summary>
     [SupplyParameterFromQuery(Name = ShowName)]
@@ -273,19 +180,9 @@
             return [];
         }
 
-        var shown = (Show ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(kind => PreferenceChips.Any(chip => chip.Kind == kind))
-            .ToHashSet();
-        return shown.Count > 0 ? shown : [.. DefaultShow.Split(',')];
+        var shown = Split(Show).Where(PreferenceFilter.Kinds.Contains).ToHashSet();
+        return shown.Count > 0 ? shown : [.. PreferenceFilter.Default];
     }
-
-    private static string PreferencesLabel(HashSet<string> shown) =>
-        shown.Count == 0 ? "Nic nie zaznaczono"
-        : shown.Count == PreferenceChips.Length ? "Wszystkie role"
-        : string.Join(" i ", PreferenceChips.Where(chip => shown.Contains(chip.Kind)).Select((chip, i) => i == 0 ? chip.Label : chip.Label.ToLowerInvariant()));
-
-    private string PreferenceOf(string roleId) =>
-        Preferences.IsLiked(roleId) ? LikedShow : Preferences.IsDisliked(roleId) ? DislikedShow : NeutralShow;
 
     /// <summary>The show parameter with the kind ticked or unticked; none ticked is kept as "none", the default drops out.</summary>
     private string? ShowToggled(string kind)
@@ -301,9 +198,9 @@
             return NoneShow;
         }
 
-        var value = string.Join(',', PreferenceChips.Select(chip => chip.Kind).Where(shown.Contains));
-        return value == DefaultShow ? null : value;
+        return shown.SetEquals(PreferenceFilter.Default) ? null : string.Join(',', PreferenceFilter.Kinds.Where(shown.Contains));
     }
+
     private const string FlatDescendingSort = "za-all";
 
     private bool _filtersOpen;
@@ -354,18 +251,4 @@
 
         SetParameter(name, string.Join(',', ids));
     }
-
-    private string TeamsLabel(IReadOnlySet<string> teams) => teams.Count switch
-    {
-        0 => "Wszystkie drużyny",
-        1 => Teams.Plural(teams.First()),
-        _ => $"Drużyny: {teams.Count}",
-    };
-
-    private static string ScriptsLabel(IReadOnlyList<Script> scripts) => scripts.Count switch
-    {
-        0 => "Wszystkie skrypty",
-        1 => scripts[0].Name,
-        _ => $"Skrypty: {scripts.Count}",
-    };
 }

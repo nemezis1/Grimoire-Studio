@@ -203,12 +203,16 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
         await SendAsync<JsonElement>(request);
     }
 
-    /// <summary>Wiki changes sent by admins, newest first, read from the repository history.</summary>
+    /// <summary>
+    /// Wiki changes sent by admins, newest first, read from the repository history a page at a time (1 is the newest);
+    /// <c>More</c> says whether older pages follow.
+    /// </summary>
     /// <exception cref="PublishException">Not signed in, or the service refused.</exception>
-    public async Task<IReadOnlyList<WikiCommit>> GetChangesAsync()
+    public async Task<(IReadOnlyList<WikiCommit> Changes, bool More)> GetChangesAsync(int page = 1)
     {
-        using var request = Request(HttpMethod.Get, "changes", RequireKey());
-        return (await SendAsync<ChangesReply>(request)).Changes;
+        using var request = Request(HttpMethod.Get, $"changes?page={page}", RequireKey());
+        var reply = await SendAsync<ChangesReply>(request);
+        return (reply.Changes, reply.More);
     }
 
     /// <summary>Commits that changed one item (kind "role", "script" or "jinx"; <paramref name="file"/> picks roles/fabled).</summary>
@@ -459,7 +463,7 @@ public sealed class RepositoryPublisher(IConfiguration configuration, LocalStore
 
     private sealed record MeReply(string Name, bool Owner);
 
-    private sealed record ChangesReply(IReadOnlyList<WikiCommit> Changes);
+    private sealed record ChangesReply(IReadOnlyList<WikiCommit> Changes, bool More);
 
     private sealed record AdminsReply(IReadOnlyList<AdminEntry> Admins);
 

@@ -1,6 +1,6 @@
 @using Grimoire_Studio.Components
 
-@* One A4 page of the script printout: header, content shrunk to fit if needed, and the site name at the bottom. *@
+@* One A4 page of the script printout: header, content shrunk to fit if needed, and the site logo at the bottom. *@
 <section class="print-page">
     <header class="print-page__header">
         <img class="print-page__icon" src="@GameDataClient.EditionIconUrl(Script)" alt="" />
@@ -15,7 +15,7 @@
     {
         <div class="print-page__bottom">@Bottom</div>
     }
-    <footer class="print-page__footer">Grimoire Studio</footer>
+    <footer class="print-page__footer"><span class="logo"><span class="logo__main">Grimoire</span><span class="logo__studio">Studio</span></span></footer>
 </section>
 
 @code {

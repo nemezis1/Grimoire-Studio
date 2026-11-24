@@ -1120,6 +1120,10 @@ a.team-badge:hover { filter: brightness(1.15); text-decoration: underline; }
 }
 .print-note__mark { font-style: normal; font-weight: 700; font-size: 1.6em; line-height: 0.6; color: #7a1f1f; }
 .print-page__footer { flex: none; padding-top: 2mm; text-align: center; font-size: 7pt; color: #777777; }
+/* The site logo, small and in print colours (the paper is white in both themes). */
+.print-page__footer .logo { font-size: 12pt; }
+.print-page__footer .logo__main { color: #7a1f1f; }
+.print-page__footer .logo__studio { color: #555555; }
 
 .print-group + .print-group { margin-top: 5mm; }
 .print-group h2 { margin: 0 0 1.5mm; font-size: 1.45em; color: #111111; }
@@ -1681,6 +1685,9 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 .multi-select__actions { margin: 0.25rem 0 0; flex-wrap: nowrap; }
 .multi-select__actions .button { flex: 1; padding: 0.35rem 0.6rem; white-space: nowrap; }
 
+/* Line between groups in a dropdown list (official scripts above, the others below). */
+.multi-select__separator { width: 100%; margin: 0.15rem 0; border: none; border-top: 1px solid var(--border); }
+
 /* Script icon next to a script in a dropdown list. */
 .multi-select__icon { width: 1.5rem; height: 1.5rem; flex: none; object-fit: contain; }
 
@@ -1882,3 +1889,6 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 /* A disliked role on the list, shown next to others: faded. */
 .role-grid__item--disliked > .role-card { opacity: 0.5; }
 .role-grid--disliked-only .role-grid__item--disliked > .role-card { opacity: 1; }
+
+/* Newer / older pages of a long list (admin history). */
+.pager { justify-content: center; align-items: center; margin-top: 0.75rem; }

@@ -1,0 +1,53 @@
+@*
+    Roles by this browser's likes: liked, unmarked and disliked. Liked and unmarked are ticked by default; with none
+    ticked no role is listed.
+*@
+<details class="multi-select multi-select--left preference-select">
+    <summary>@Label</summary>
+    <div class="multi-select__menu">
+        @foreach (var (kind, icon, label) in Choices)
+        {
+            <label class="field field--inline">
+                <input type="checkbox" checked="@Shown.Contains(kind)" @onchange="() => Toggled.InvokeAsync(kind)" />
+                <PreferenceIcon Kind="@icon" />
+                <span>@label</span>
+            </label>
+        }
+    </div>
+</details>
+
+@code {
+    public const string Liked = "liked";
+    public const string Neutral = "neutral";
+    public const string Disliked = "disliked";
+
+    /// <summary>The kinds in the order of the list.</summary>
+    public static readonly string[] Kinds = [Liked, Neutral, Disliked];
+
+    /// <summary>Shown when nothing is chosen: every role except the disliked ones.</summary>
+    public static readonly string[] Default = [Liked, Neutral];
+
+    private static readonly (string Kind, string Icon, string Label)[] Choices =
+    [
+        (Liked, RolePreferences.Like, "Ulubione"),
+        (Neutral, PreferenceIcon.Neutral, "Pozostałe"),
+        (Disliked, RolePreferences.Dislike, "Nielubiane"),
+    ];
+
+    /// <summary>The ticked kinds.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlySet<string> Shown { get; set; } = new HashSet<string>();
+
+    /// <summary>A kind ticked or unticked.</summary>
+    [Parameter]
+    public EventCallback<string> Toggled { get; set; }
+
+    /// <summary>The kind of a role by this browser's likes.</summary>
+    public static string KindOf(RolePreferences preferences, string roleId) =>
+        preferences.IsLiked(roleId) ? Liked : preferences.IsDisliked(roleId) ? Disliked : Neutral;
+
+    private string Label =>
+        Shown.Count == 0 ? "Nic nie zaznaczono"
+        : Shown.Count == Choices.Length ? "Wszystkie role"
+        : string.Join(" i ", Choices.Where(c => Shown.Contains(c.Kind)).Select((c, i) => i == 0 ? c.Label : c.Label.ToLowerInvariant()));
+}

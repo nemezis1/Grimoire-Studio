@@ -1,0 +1,39 @@
+@* Teams in a dropdown with their colours. Any number can be ticked; with none ticked every team is listed. *@
+<details class="multi-select multi-select--left">
+    <summary>@Label</summary>
+    <div class="multi-select__menu">
+        @foreach (var team in Teams.All)
+        {
+            <label class="field field--inline" style="@Teams.Style(team.Id)">
+                <input type="checkbox" checked="@Ticked.Contains(team.Id)" @onchange="() => Toggled.InvokeAsync(team.Id)" />
+                <span class="multi-select__swatch" aria-hidden="true"></span>
+                <span>@team.PluralPl</span>
+            </label>
+        }
+        <div class="field-row multi-select__actions">
+            <button class="button button--ghost" disabled="@(Ticked.Count == Teams.All.Count)" @onclick="() => AllSet.InvokeAsync(true)">Zaznacz wszystkie</button>
+            <button class="button button--ghost" disabled="@(Ticked.Count == 0)" @onclick="() => AllSet.InvokeAsync(false)">Odznacz wszystkie</button>
+        </div>
+    </div>
+</details>
+
+@code {
+    /// <summary>Ids of the ticked teams.</summary>
+    [Parameter, EditorRequired]
+    public IReadOnlySet<string> Ticked { get; set; } = new HashSet<string>();
+
+    /// <summary>A team ticked or unticked (its id).</summary>
+    [Parameter]
+    public EventCallback<string> Toggled { get; set; }
+
+    /// <summary>"Zaznacz wszystkie" (true) or "Odznacz wszystkie" (false).</summary>
+    [Parameter]
+    public EventCallback<bool> AllSet { get; set; }
+
+    private string Label => Ticked.Count switch
+    {
+        0 => "Wszystkie drużyny",
+        1 => Teams.Plural(Ticked.First()),
+        _ => $"Drużyny: {Ticked.Count}",
+    };
+}
