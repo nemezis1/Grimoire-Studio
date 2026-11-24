@@ -32,6 +32,26 @@ public class FilterTests : AppTestContext
     }
 
     [Fact]
+    public void Generator_Should_FillAroundTheChosenRoles_And_DrawAgainKeepingThem()
+    {
+        Service<NavigationManager>().NavigateTo("scripts/new");
+        var editor = Render<ScriptEditor>();
+        editor.WaitForElements(".role-picker > li");
+        AngleSharp.Dom.IElement Button(string text) => editor.FindAll(".script-generator button").Single(b => b.TextContent.Contains(text));
+
+        editor.FindAll(".role-picker .role-toggle").First(b => b.TextContent.Contains("Chochlik")).Click();
+        Button("Uzupełnij losowo").Click();
+
+        var usual = ScriptGenerator.Usual.Sum(t => t.Count);
+        editor.WaitForAssertion(() => Assert.Contains($"Wybrane role ({usual})", editor.Find(".script-editor__summary h2").TextContent));
+        Assert.Contains("Dolosowano ról: 24.", editor.Find(".script-generator").TextContent);
+
+        Button("Losuj ponownie").Click();
+        editor.WaitForAssertion(() => Assert.Contains($"Wybrane role ({usual})", editor.Find(".script-editor__summary h2").TextContent));
+        Assert.Contains("Chochlik", editor.Find(".script-editor__selected").TextContent);
+    }
+
+    [Fact]
     public void ScriptEditor_Should_ListOnlyTheTickedTeam_When_TeamFiltered()
     {
         Service<NavigationManager>().NavigateTo("scripts/new");

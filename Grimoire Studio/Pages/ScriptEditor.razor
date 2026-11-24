@@ -23,7 +23,6 @@ else if (!IsNew && _notFound)
 else
 {
     var selected = _selected.Select(_data.FindRole).OfType<Role>().ToList();
-    var scripts = _data.Scripts.Scripts.Where(s => _scripts.Contains(s.Id)).ToList();
 
     <div class="script-editor fill-viewport">
         <section class="panel">
@@ -91,13 +90,7 @@ else
             </div>
 
             <ul class="role-picker">
-                @foreach (var role in _data.AllRoles
-                    .Where(r => scripts.Count == 0 || scripts.Any(s => s.Roles.Contains(r.Id)))
-                    .Where(r => _teams.Count == 0 || _teams.Contains(r.Team))
-                    .Where(r => _shown.Contains(PreferenceFilter.KindOf(Preferences, r.Id)))
-                    .Where(r => _origins.Contains(OriginFilter.KindOf(r)))
-                    .Where(r => SearchText.Matches(_query, r.NamePl, r.NameEn, r.Id, r.AbilityPl, r.AbilityEn))
-                    .Where(r => RoleFilters.Where(f => _filters.Contains(f.Label)).All(f => f.Matches(r)))
+                @foreach (var role in Matching()
                     .OrderBy(r => Teams.Get(r.Team).Order)
                     .ThenBy(r => r.NamePl, StringComparer.CurrentCulture))
                 {
@@ -125,6 +118,35 @@ else
                     .Select(x => $"{x.Count} {Teams.Plural(x.Team).ToLowerInvariant()}"))
             </p>
             <ScriptAnalysisView Data="_data" Roles="selected" OnAdd="Add" />
+
+            @* Random roles around the chosen ones, from the roles the filters leave on the list. *@
+            <details class="script-generator">
+                <summary>Losuj skrypt</summary>
+                <p class="muted small">
+                    Wybrane role zostają; brakujące do podanej liczby w każdej drużynie są losowane spośród ról, które
+                    zostawiają filtry i wyszukiwanie po lewej.
+                </p>
+                <div class="script-generator__counts">
+                    @foreach (var (teamId, _) in ScriptGenerator.Usual)
+                    {
+                        var id = teamId;
+                        <label class="field" style="@Teams.Style(id)">
+                            <span class="team-heading team--@(id)">@Teams.Plural(id)</span>
+                            <input type="number" min="0" max="40" value="@_wanted[id]"
+                                   @onchange="e => _wanted[id] = int.TryParse(e.Value?.ToString(), out var n) ? Math.Clamp(n, 0, 40) : _wanted[id]" />
+                        </label>
+                    }
+                </div>
+                <div class="field-row">
+                    <button class="button" @onclick="Generate">Uzupełnij losowo</button>
+                    <button class="button button--ghost" disabled="@(_generated.Count == 0)" title="Losowane role zmieniają się, wybrane ręcznie zostają"
+                            @onclick="Reroll">Losuj ponownie</button>
+                </div>
+                @if (_generatorMessage is not null)
+                {
+                    <p class="muted small">@_generatorMessage</p>
+                }
+            </details>
             <div class="script-editor__selected">
                 @foreach (var group in selected.GroupBy(r => r.Team).OrderBy(g => Teams.Get(g.Key).Order))
                 {
@@ -285,6 +307,58 @@ else
         {
             _selected.Add(roleId);
         }
+
+        // Taken out or picked by hand: no longer a drawn role that "Losuj ponownie" may change.
+        _generated.Remove(roleId);
+    }
+
+    /// <summary>Roles the filters and the search leave on the list.</summary>
+    private IEnumerable<Role> Matching()
+    {
+        var scripts = _data!.Scripts.Scripts.Where(s => _scripts.Contains(s.Id)).ToList();
+        return _data.AllRoles
+            .Where(r => scripts.Count == 0 || scripts.Any(s => s.Roles.Contains(r.Id)))
+            .Where(r => _teams.Count == 0 || _teams.Contains(r.Team))
+            .Where(r => _shown.Contains(PreferenceFilter.KindOf(Preferences, r.Id)))
+            .Where(r => _origins.Contains(OriginFilter.KindOf(r)))
+            .Where(r => SearchText.Matches(_query, r.NamePl, r.NameEn, r.Id, r.AbilityPl, r.AbilityEn))
+            .Where(r => RoleFilters.Where(f => _filters.Contains(f.Label)).All(f => f.Matches(r)));
+    }
+
+    /// <summary>How many roles of each counted team the drawn script should have.</summary>
+    private readonly Dictionary<string, int> _wanted = ScriptGenerator.Usual.ToDictionary(t => t.Team, t => t.Count);
+
+    /// <summary>Roles added by the last draws and still on the script; "Losuj ponownie" swaps them for others.</summary>
+    private readonly HashSet<string> _generated = [];
+    private string? _generatorMessage;
+
+    /// <summary>Adds random roles from the list to reach the wanted counts; the chosen ones stay.</summary>
+    private void Generate()
+    {
+        var chosen = _selected.Select(_data!.FindRole).OfType<Role>().ToList();
+        var added = ScriptGenerator.Fill(_data, chosen, Matching(), _wanted, Random.Shared);
+        foreach (var role in added)
+        {
+            _selected.Add(role.Id);
+            _generated.Add(role.Id);
+        }
+
+        var script = chosen.Concat(added).ToList();
+        var missing = ScriptGenerator.Usual
+            .Select(t => (t.Team, Missing: _wanted[t.Team] - script.Count(r => r.Team == t.Team)))
+            .Where(x => x.Missing > 0)
+            .Select(x => $"{Teams.Plural(x.Team).ToLowerInvariant()}: {x.Missing}")
+            .ToList();
+        _generatorMessage = (added.Count == 0 ? "Nic nie dolosowano." : $"Dolosowano ról: {added.Count}.")
+            + (missing.Count == 0 ? null : $" Na liście zabrakło ról ({string.Join(", ", missing)}); zmień filtry, żeby losować z większej puli.");
+    }
+
+    /// <summary>Takes out the drawn roles and draws again; roles chosen by hand stay.</summary>
+    private void Reroll()
+    {
+        _selected.RemoveAll(_generated.Contains);
+        _generated.Clear();
+        Generate();
     }
 
     private void Add(string roleId)
