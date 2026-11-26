@@ -1903,3 +1903,34 @@ html.search-is-open, html.search-is-open body { overflow: hidden; }
 .script-generator__counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 0.5rem; }
 .script-generator__counts .team-heading { font-size: 0.9rem; }
 .script-generator__counts input { width: 100%; }
+
+/* Admin: official changes (TPI data compared with the wiki). */
+.official-role { padding: 0.75rem 1rem; }
+.official-role--on { border-color: var(--accent); }
+.official-role__head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; cursor: pointer; }
+.official-role__head .field { margin: 0; }
+.official-role__icon { display: flex; align-items: center; gap: 0.75rem; margin: 0.5rem 0; }
+.official-role__icon img { width: 64px; height: 64px; object-fit: contain; }
+.official-field { padding: 0.6rem 0; border-top: 1px solid var(--border); }
+.official-field:first-of-type { border-top: none; }
+.official-field__label { display: flex; align-items: center; gap: 0.5rem; }
+.official-field__label .field { margin: 0; }
+.official-field__diff { margin: 0.35rem 0; font-size: 0.95rem; line-height: 1.5; }
+.official-field__diff ins { text-decoration: none; background: rgba(63, 143, 79, 0.25); border-radius: 3px; }
+.official-field__diff del { color: var(--muted); background: rgba(194, 84, 63, 0.18); border-radius: 3px; }
+/* Polish texts: as tall as their text (one line for a short one). */
+.official-field textarea { width: 100%; font: inherit; padding: 0.4rem 0.6rem; min-height: 0; field-sizing: content; resize: vertical; }
+.official-field__kind--added { color: #3f8f4f; border-color: #3f8f4f; }
+.official-field__kind--removed { color: #c2543f; border-color: #c2543f; }
+.official-field__tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: 0.5rem; }
+.official-ignore { margin-left: auto; padding: 0.2rem 0.6rem; font-size: 0.85rem; }
+.official-night { columns: 3 14rem; font-size: 0.9rem; }
+.official-night--added { color: #3f8f4f; font-weight: 600; }
+.official-night--moved { color: var(--accent); }
+.official-actions { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 0.75rem 0; background: var(--bg); border-top: 1px solid var(--border); }
+.official-actions__message { flex: 1 1 16rem; font: inherit; padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+/* Compact: small select buttons, no extra room under the last Polish text box. */
+.official-role .field-row { margin: 0.4rem 0; gap: 0.4rem; }
+.official-role .field-row .button { padding: 0.2rem 0.65rem; font-size: 0.85rem; }
+.official-field .field { margin-bottom: 0; }
+.official-field:last-child { padding-bottom: 0; }

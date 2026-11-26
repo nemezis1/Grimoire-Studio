@@ -1,0 +1,742 @@
+@page "/admin/official"
+@using System.Text.Json
+@inject ChangeSets ChangeSets
+@inject GameDataClient Client
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject LocalStore Store
+@inject RepositoryPublisher Publisher
+
+<PageTitle>Oficjalne zmiany – Grimoire Studio</PageTitle>
+
+@if (!ChangeSets.IsAdmin)
+{
+    return;
+}
+
+<div class="title-row">
+    <h1>Oficjalne zmiany</h1>
+    <div class="script-actions">
+        <button class="button button--ghost" disabled="@_loading" @onclick="LoadAsync">@(_loading ? "Pobieranie…" : "Pobierz ponownie")</button>
+        <a class="button button--ghost" href="admin">Panel administratora</a>
+    </div>
+</div>
+<p class="muted">
+    Dane publikowane przez The Pandemonium Institute (repozytorium
+    <a href="https://github.com/@OfficialRelease.Repository" target="_blank" rel="noopener noreferrer">botc-release</a>) porównane
+    z wiki. Zaznacz zmiany, które przyjmujesz, i uzupełnij polskie tłumaczenie: „Dodaj do wiki” przenosi je do
+    „Zatwierdzonych, do wysłania” w panelu administratora. Tekst bez tłumaczenia trafi do wiki po angielsku w « », do
+    sprawdzenia.
+</p>
+
+@if (_message is not null)
+{
+    <p class="notice @(_messageIsError ? "notice--error" : null)">@_message</p>
+}
+
+@if (_commits.Count > 0)
+{
+    <details class="panel official-commits">
+        <summary>Ostatnie zmiany w oficjalnych danych (@_commits[0].Date.ToLocalTime().ToString("d"))</summary>
+        <ul class="change-list">
+            @foreach (var commit in _commits)
+            {
+                <li>
+                    <span class="change-list__what">
+                        <a href="@commit.Url" target="_blank" rel="noopener noreferrer">@commit.Title</a>
+                        <span class="change-list__fields">@commit.Date.ToLocalTime().ToString("g")</span>
+                    </span>
+                </li>
+            }
+        </ul>
+    </details>
+}
+
+@if (_comparison is null || _wiki is null)
+{
+    @if (_loading)
+    {
+        <p class="notice">Pobieranie oficjalnych danych…</p>
+    }
+}
+else
+{
+    var newRoles = _comparison.Roles.Where(r => r.IsNew && Visible(r)).ToList();
+    var changedRoles = _comparison.Roles.Where(r => !r.IsNew && Visible(r)).ToList();
+    var jinxes = _comparison.Jinxes.Where(j => Shown(IgnoreKey(j))).ToList();
+    var nights = _comparison.Nights.Where(n => Shown(IgnoreKey(n))).ToList();
+    var hidden = _comparison.Count - newRoles.Concat(changedRoles).Sum(r => VisibleFields(r).Count()) - jinxes.Count - nights.Count;
+
+    <div class="field-row">
+        <span class="muted">Różnice: @(_comparison.Count - hidden)@(hidden > 0 ? $" (ukryte: {hidden})" : null)</span>
+        @if (hidden > 0 || _showIgnored)
+        {
+            <label class="field field--inline">
+                <input type="checkbox" @bind="_showIgnored" />
+                <span>Pokaż pominięte</span>
+            </label>
+        }
+    </div>
+
+    @if (_comparison.Count - hidden == 0)
+    {
+        <p class="notice">Wiki ma wszystko, co jest w oficjalnych danych.</p>
+    }
+
+    @if (newRoles.Count > 0)
+    {
+        <h2>Nowe role (@newRoles.Count)</h2>
+        <p class="muted small">
+            Nowa rola potrzebuje ikony: wczytaj ją tutaj albo później w edytorze roli (bez ikony panel nie wyśle zmian). Miejsce
+            w kolejności nocy dostanie, gdy zaznaczysz też zmianę kolejności poniżej.
+        </p>
+        @foreach (var update in newRoles)
+        {
+            var ticked = _selection.RoleFields.ContainsKey(update.Id);
+            <section class="panel official-role @(ticked ? "official-role--on" : null)">
+                <div class="official-role__head">
+                    <label class="field field--inline">
+                        <input type="checkbox" checked="@ticked" @onchange="e => TickRole(update, e.Value is true)" />
+                        <strong>@update.Official.Name</strong>
+                    </label>
+                    <span class="team-heading team--@(OfficialUpdates.Team(update.Official.Team))" style="@Teams.Style(OfficialUpdates.Team(update.Official.Team))">
+                        @Teams.Get(OfficialUpdates.Team(update.Official.Team)).NamePl
+                    </span>
+                    <a class="small" href="@WikiUrl(update.Official.Name)" target="_blank" rel="noopener noreferrer">wiki ↗</a>
+                    @IgnoreButton(RoleIgnoreKey(update))
+                </div>
+                <div class="official-role__icon">
+                    <img src="@(_selection.Icons.GetValueOrDefault(update.Id) ?? "Assets/token.png")" alt="" />
+                    <label class="button button--ghost button--file">
+                        Wczytaj ikonę…
+                        <InputFile accept="image/png,image/jpeg,image/webp" OnChange="e => UploadIconAsync(update.Id, e)" />
+                    </label>
+                </div>
+                @foreach (var field in update.Fields)
+                {
+                    @FieldRow(update, field, showTick: false)
+                }
+            </section>
+        }
+    }
+
+    @if (changedRoles.Count > 0)
+    {
+        <h2>Zmienione role (@changedRoles.Count)</h2>
+        @foreach (var update in changedRoles)
+        {
+            var fields = VisibleFields(update).ToList();
+            var tickedCount = fields.Count(f => _selection.IsTicked(update.Id, f.Key));
+            <details class="panel official-role @(tickedCount > 0 ? "official-role--on" : null)">
+                <summary class="official-role__head">
+                    <strong>@update.Current!.NamePl</strong> <span class="muted">@update.Current.NameEn</span>
+                    <span class="muted small">· @string.Join(", ", fields.Select(f => f.Label.ToLowerInvariant()))</span>
+                    @if (tickedCount > 0)
+                    {
+                        <span class="local-badge">zaznaczone: @tickedCount</span>
+                    }
+                </summary>
+                <div class="field-row">
+                    <button class="button button--ghost" @onclick="() => TickFields(update, fields, true)">Zaznacz wszystko</button>
+                    <button class="button button--ghost" disabled="@(tickedCount == 0)" @onclick="() => TickFields(update, fields, false)">Odznacz</button>
+                </div>
+                @foreach (var field in fields)
+                {
+                    @FieldRow(update, field, showTick: true)
+                }
+            </details>
+        }
+    }
+
+    @if (jinxes.Count > 0)
+    {
+        <h2>Jinxy (@jinxes.Count)</h2>
+        <section class="panel">
+            @foreach (var jinx in jinxes)
+            {
+                var ticked = _selection.Jinxes.ContainsKey(jinx.Key);
+                <div class="official-field">
+                    <label class="field field--inline official-field__label">
+                        <input type="checkbox" checked="@ticked" @onchange="e => TickJinx(jinx, e.Value is true)" />
+                        <strong>@RoleName(jinx.OwnerId) × @RoleName(jinx.OtherId)</strong>
+                        <span class="local-badge">@(jinx.IsNew ? "nowy" : jinx.IsRemoved ? "usunięty" : "zmieniony")</span>
+                    </label>
+                    @IgnoreButton(IgnoreKey(jinx))
+                    <div class="official-field__diff">@Diff(jinx.Old, jinx.New)</div>
+                    @if (!jinx.IsRemoved)
+                    {
+                        <label class="field">
+                            <span>Po polsku</span>
+                            <textarea rows="1" value="@_jinxPolish.GetValueOrDefault(jinx.Key, jinx.Polish)"
+                                      @oninput="e => _jinxPolish[jinx.Key] = e.Value?.ToString() ?? string.Empty"></textarea>
+                        </label>
+                    }
+                </div>
+            }
+        </section>
+    }
+
+    @if (nights.Count > 0)
+    {
+        <h2>Kolejność nocy</h2>
+        @foreach (var night in nights)
+        {
+            var ticked = _selection.Nights.Contains(night.Key);
+            var moved = night.New.Where((id, i) => night.Old.Contains(id) && night.Old.Where(night.New.Contains).ToList().IndexOf(id) != night.New.Where(night.Old.Contains).ToList().IndexOf(id)).ToHashSet();
+            <details class="panel official-role @(ticked ? "official-role--on" : null)">
+                <summary class="official-role__head">
+                    <strong>@(night.FirstNight ? "Pierwsza noc" : "Pozostałe noce")</strong>
+                    <span class="muted small">
+                        · zmiana miejsca: @moved.Count
+                        @if (night.Added.Any())
+                        {
+                            <span> · zaczynają się budzić: @string.Join(", ", night.Added.Select(RoleName))</span>
+                        }
+                        @if (night.Removed.Any())
+                        {
+                            <span> · przestają się budzić: @string.Join(", ", night.Removed.Select(RoleName))</span>
+                        }
+                    </span>
+                </summary>
+                <div class="field-row">
+                    <label class="field field--inline">
+                        <input type="checkbox" checked="@ticked" @onchange="e => TickNight(night, e.Value is true)" />
+                        <span>Przyjmij oficjalną kolejność (role spoza oficjalnych zostają po roli, po której budzą się teraz)</span>
+                    </label>
+                    @IgnoreButton(IgnoreKey(night))
+                </div>
+                <ol class="official-night">
+                    @foreach (var id in night.New)
+                    {
+                        <li class="@(night.Added.Contains(id) ? "official-night--added" : moved.Contains(id) ? "official-night--moved" : null)">@RoleName(id)</li>
+                    }
+                </ol>
+            </details>
+        }
+    }
+
+    <div class="official-actions">
+        <button class="button" disabled="@(_selection.Count == 0 || _busy)" @onclick="ApplyAsync">
+            @(_busy ? "Zapisywanie…" : $"Dodaj zaznaczone do wiki ({_selection.Count})")
+        </button>
+        @if (Publisher.AdminName is not null)
+        {
+            @* Straight to the repository: only these changes, without the wiki changes waiting in the admin panel. *@
+            <input class="official-actions__message" type="text" @bind="_commitMessage" @bind:event="oninput"
+                   placeholder="@DefaultMessage" aria-label="Opis zmian do historii repozytorium" />
+            <button class="button" disabled="@(_selection.Count == 0 || _busy)" @onclick="PublishAsync"
+                    title="Wysyła tylko zaznaczone zmiany, bez zmian czekających w panelu administratora">
+                @(_publishProgress ?? (_confirmPublish ? $"Na pewno wysłać ({_selection.Count})?" : "Wyślij od razu do repozytorium"))
+            </button>
+        }
+        else
+        {
+            <span class="muted small">
+                Dodane czekają w panelu administratora na wysłanie. Po zalogowaniu kluczem administratora (w panelu) możesz
+                je też wysłać stąd od razu.
+            </span>
+        }
+    </div>
+}
+
+@code {
+    private const string IgnoredKey = "grimoire-studio.official-ignored";
+
+    private GameData? _wiki;
+    private OfficialComparison? _comparison;
+    private OfficialSelection _selection = new();
+    private readonly Dictionary<string, Dictionary<string, string>> _rolePolish = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _jinxPolish = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string> _ignored = [];
+    private bool _showIgnored;
+    private bool _loading;
+    private bool _busy;
+    private string? _message;
+    private bool _messageIsError;
+    private List<OfficialCommit> _commits = [];
+    private string? _commitMessage;
+    private string? _publishProgress;
+    private bool _confirmPublish;
+
+    /// <summary>Differences sent to the repository from here; hidden until the site, deployed with them, has them too.</summary>
+    private HashSet<string> _sent = [];
+    private const string SentKey = "grimoire-studio.official-sent";
+
+    private string DefaultMessage => $"Oficjalne zmiany TPI: {ProposalText.Changes(_selection.Count)}";
+
+    private sealed record OfficialCommit(string Title, DateTimeOffset Date, string Url);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChangeSets.LoadAsync();
+        if (!ChangeSets.IsAdmin)
+        {
+            Nav.NavigateTo("", replace: true);
+            return;
+        }
+
+        _ignored = await ReadSetAsync(IgnoredKey);
+        _sent = await ReadSetAsync(SentKey);
+        await Publisher.LoadAsync();
+
+        await LoadAsync();
+    }
+
+    /// <summary>Reads the published data and compares it with the wiki (data folder and wiki changes of this browser).</summary>
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _message = null;
+        try
+        {
+            var files = await Task.WhenAll(
+                Http.GetStringAsync(OfficialRelease.FileUrl(OfficialRelease.RolesFile)),
+                Http.GetStringAsync(OfficialRelease.FileUrl(OfficialRelease.JinxesFile)),
+                Http.GetStringAsync(OfficialRelease.FileUrl(OfficialRelease.NightSheetFile)));
+            var release = OfficialRelease.Parse(files[0], files[1], files[2]);
+            _wiki = await Client.GetWikiAsync();
+            _comparison = OfficialUpdates.Compare(_wiki, release);
+            _selection = new OfficialSelection();
+            _confirmPublish = false;
+
+            // Sent differences the site has by now drop out of the list of sent ones.
+            var current = AllKeys(_comparison).ToHashSet();
+            if (_sent.RemoveWhere(key => !current.Contains(key)) > 0)
+            {
+                await Store.SetSettingAsync(SentKey, JsonSerializer.Serialize(_sent));
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
+        {
+            Show($"Nie udało się pobrać oficjalnych danych: {ex.Message}", error: true);
+        }
+        finally
+        {
+            _loading = false;
+        }
+
+        await LoadCommitsAsync();
+    }
+
+    /// <summary>The latest commits of the published data, for context (GitHub's public API; skipped when it refuses).</summary>
+    private async Task LoadCommitsAsync()
+    {
+        try
+        {
+            using var reply = await Http.GetAsync($"https://api.github.com/repos/{OfficialRelease.Repository}/commits?path={OfficialRelease.DataPath}&per_page=5");
+            if (!reply.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            using var json = JsonDocument.Parse(await reply.Content.ReadAsStringAsync());
+            _commits = json.RootElement.EnumerateArray()
+                .Select(c => new OfficialCommit(
+                    (c.GetProperty("commit").GetProperty("message").GetString() ?? string.Empty).Split('\n')[0],
+                    c.GetProperty("commit").GetProperty("author").GetProperty("date").GetDateTimeOffset(),
+                    c.GetProperty("html_url").GetString() ?? string.Empty))
+                .ToList();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or KeyNotFoundException or TaskCanceledException)
+        {
+            _commits = [];
+        }
+    }
+
+    private RenderFragment FieldRow(OfficialRoleUpdate update, OfficialField field, bool showTick) => __builder =>
+    {
+        <div class="official-field">
+            <div class="official-field__label">
+                @if (showTick)
+                {
+                    <label class="field field--inline">
+                        <input type="checkbox" checked="@_selection.IsTicked(update.Id, field.Key)" @onchange="e => TickField(update, field, e.Value is true)" />
+                        <strong>@field.Label</strong>
+                    </label>
+                    <span class="local-badge official-field__kind official-field__kind--@(FieldKind(field).Css)">@FieldKind(field).Text</span>
+                    @IgnoreButton(IgnoreKey(update, field))
+                }
+                else
+                {
+                    <strong>@field.Label</strong>
+                }
+            </div>
+            <div class="official-field__diff">
+                @if (field.Key == OfficialField.Team)
+                {
+                    @Diff(TeamName(field.Old), TeamName(field.New))
+                }
+                else if (field.IsList)
+                {
+                    @Diff(field.Old.Replace("\n", " · "), field.New.Replace("\n", " · "))
+                }
+                else
+                {
+                    @Diff(field.Old, field.New)
+                }
+            </div>
+            @if (field.HasPolish && field.New.Length > 0)
+            {
+                @if (field.IsList)
+                {
+                    var english = field.New.Split('\n');
+                    var polish = PolishOf(update, field).Split('\n');
+                    <div class="official-field__tokens">
+                        @for (var i = 0; i < english.Length; i++)
+                        {
+                            var index = i;
+                            <label class="field">
+                                <span>@english[index]</span>
+                                <input type="text" value="@(index < polish.Length ? polish[index] : string.Empty)" placeholder="po polsku"
+                                       @oninput="e => SetToken(update, field, index, english.Length, e.Value?.ToString())" />
+                            </label>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <label class="field">
+                        <span>Po polsku</span>
+                        @if (field.Key == OfficialField.Name)
+                        {
+                            <input type="text" value="@PolishOf(update, field)" @oninput="e => SetPolish(update, field, e.Value?.ToString())" />
+                        }
+                        else
+                        {
+                            <textarea rows="1" value="@PolishOf(update, field)" @oninput="e => SetPolish(update, field, e.Value?.ToString())"></textarea>
+                        }
+                    </label>
+                }
+            }
+        </div>
+    };
+
+    /// <summary>Whether the published data adds the value, drops it or changes it.</summary>
+    private static (string Text, string Css) FieldKind(OfficialField field) =>
+        field.Old.Length == 0 ? ("nowe", "added") : field.New.Length == 0 ? ("usunięte", "removed") : ("zmiana", "changed");
+
+    private RenderFragment IgnoreButton(string key) => __builder =>
+    {
+        var ignored = _ignored.Contains(key);
+        <button class="button button--ghost official-ignore" title="@(ignored ? "Pokazuj tę różnicę" : "Ukryj tę różnicę, dopóki oficjalny tekst się nie zmieni")"
+                @onclick="() => ToggleIgnoredAsync(key)">@(ignored ? "Przywróć" : "Pomiń")</button>
+    };
+
+    /// <summary>The new text with the words it adds and drops marked; all added or all dropped for a new or removed one.</summary>
+    private static RenderFragment Diff(string before, string after) => __builder =>
+    {
+        @if (before.Length == 0)
+        {
+            <ins>@after</ins>
+        }
+        else if (after.Length == 0)
+        {
+            <del>@before</del>
+        }
+        else
+        {
+            @foreach (var (text, kind) in WordDiff.Compare(before, after))
+            {
+                @if (kind == WordDiff.Kind.Added)
+                {
+                    <ins>@text</ins>
+                }
+                else if (kind == WordDiff.Kind.Removed)
+                {
+                    <del>@text</del>
+                }
+                else
+                {
+                    @text
+                }
+            }
+        }
+    };
+
+    private string PolishOf(OfficialRoleUpdate update, OfficialField field) =>
+        _rolePolish.TryGetValue(update.Id, out var texts) && texts.TryGetValue(field.Key, out var text) ? text : field.Polish ?? string.Empty;
+
+    private void SetPolish(OfficialRoleUpdate update, OfficialField field, string? text)
+    {
+        if (!_rolePolish.TryGetValue(update.Id, out var texts))
+        {
+            _rolePolish[update.Id] = texts = new(StringComparer.OrdinalIgnoreCase);
+        }
+
+        texts[field.Key] = text ?? string.Empty;
+    }
+
+    private void SetToken(OfficialRoleUpdate update, OfficialField field, int index, int count, string? text)
+    {
+        var tokens = PolishOf(update, field).Split('\n').ToList();
+        while (tokens.Count < count)
+        {
+            tokens.Add(string.Empty);
+        }
+
+        tokens[index] = (text ?? string.Empty).Replace("\n", " ");
+        SetPolish(update, field, string.Join('\n', tokens));
+    }
+
+    private void TickRole(OfficialRoleUpdate update, bool on) => TickFields(update, update.Fields, on);
+
+    private void TickFields(OfficialRoleUpdate update, IEnumerable<OfficialField> fields, bool on)
+    {
+        foreach (var field in fields.ToList())
+        {
+            TickField(update, field, on);
+        }
+    }
+
+    private void TickField(OfficialRoleUpdate update, OfficialField field, bool on)
+    {
+        if (!_selection.RoleFields.TryGetValue(update.Id, out var fields))
+        {
+            _selection.RoleFields[update.Id] = fields = new(StringComparer.OrdinalIgnoreCase);
+        }
+
+        if (on)
+        {
+            fields.Add(field.Key);
+        }
+        else
+        {
+            fields.Remove(field.Key);
+        }
+
+        if (fields.Count == 0)
+        {
+            _selection.RoleFields.Remove(update.Id);
+        }
+    }
+
+    private void TickJinx(OfficialJinxUpdate jinx, bool on)
+    {
+        if (on)
+        {
+            _selection.Jinxes[jinx.Key] = string.Empty;
+        }
+        else
+        {
+            _selection.Jinxes.Remove(jinx.Key);
+        }
+    }
+
+    private void TickNight(OfficialNightUpdate night, bool on)
+    {
+        if (on)
+        {
+            _selection.Nights.Add(night.Key);
+        }
+        else
+        {
+            _selection.Nights.Remove(night.Key);
+        }
+    }
+
+    private async Task UploadIconAsync(string roleId, InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var stream = e.File.OpenReadStream(5 * 1024 * 1024);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            _selection.Icons[roleId] = await ChangeSets.Wiki.Roles.ShrinkIconAsync($"data:{e.File.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}");
+        }
+        catch (IOException)
+        {
+            Show("Plik jest za duży (maksymalnie 5 MB).", error: true);
+        }
+    }
+
+    /// <summary>Takes the ticked differences into the wiki changes; they then wait in the admin panel to be sent.</summary>
+    private async Task ApplyAsync()
+    {
+        _busy = true;
+        try
+        {
+            CopyPolishToSelection();
+            var count = _selection.Count;
+            var changes = await WithWikiIconsAsync(OfficialUpdates.Apply(_wiki!, _comparison!, _selection));
+
+            if (!await ChangeSets.Wiki.MergeAsync(changes))
+            {
+                Show("Przeglądarka nie pozwoliła zapisać wiki (tryb prywatny lub brak miejsca).", error: true);
+                return;
+            }
+
+            _rolePolish.Clear();
+            _jinxPolish.Clear();
+            await LoadAsync();
+            Show($"Dodano do wiki: {ProposalText.Changes(count)}. Wyślij je w panelu administratora (Zatwierdzone, do wysłania).");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>
+    /// Sends the ticked differences straight to the repository, as their own commit: the wiki changes waiting in the
+    /// admin panel stay there. Refused when the repository changed the same items since the site's data.
+    /// </summary>
+    private async Task PublishAsync()
+    {
+        if (!_confirmPublish)
+        {
+            _confirmPublish = true;
+            return;
+        }
+
+        _confirmPublish = false;
+        _busy = true;
+        try
+        {
+            CopyPolishToSelection();
+            var count = _selection.Count;
+            var keys = SelectedKeys().ToList();
+            var changes = await WithWikiIconsAsync(OfficialUpdates.Apply(_wiki!, _comparison!, _selection));
+
+            var original = await Client.GetOriginalAsync();
+            var target = await Publisher.GetDataAsync(original);
+            if (ItemConflicts.Find(original, target, changes).Count is var conflicts and > 0)
+            {
+                Show($"Nie wysłano: w repozytorium zmieniono te same pozycje ({conflicts}) od wersji tej strony. Dodaj zmiany do wiki i rozstrzygnij konflikty w panelu administratora.", error: true);
+                return;
+            }
+
+            var files = RepositoryExport.ChangedFiles(target, changes);
+            if (files.Count == 0)
+            {
+                Show("Repozytorium ma już te zmiany.");
+                return;
+            }
+
+            var message = string.IsNullOrWhiteSpace(_commitMessage) ? $"Oficjalne zmiany TPI: {ProposalText.Changes(count)}" : _commitMessage.Trim();
+            var result = await Publisher.PublishAsync(message, target.Version, files, (done, total) =>
+            {
+                _publishProgress = $"Wysyłanie plików {done}/{total}…";
+                StateHasChanged();
+            });
+
+            _sent.UnionWith(keys);
+            await Store.SetSettingAsync(SentKey, JsonSerializer.Serialize(_sent));
+            _commitMessage = null;
+            _rolePolish.Clear();
+            _jinxPolish.Clear();
+            _selection = new OfficialSelection();
+            Show(result.Changed
+                ? $"Wysłano do repozytorium (commit {result.Sha[..7]}): {ProposalText.Changes(count)}. Strona pokaże je po wdrożeniu (zwykle 2–3 minuty); do tego czasu są tu ukryte."
+                : "Repozytorium ma już te zmiany.");
+        }
+        catch (Exception ex) when (ex is PublishException or InvalidDataException)
+        {
+            Show(ex.Message, error: true);
+        }
+        finally
+        {
+            _busy = false;
+            _publishProgress = null;
+        }
+    }
+
+    private void CopyPolishToSelection()
+    {
+        foreach (var (roleId, texts) in _rolePolish)
+        {
+            _selection.RolePolish[roleId] = texts;
+        }
+
+        foreach (var key in _selection.Jinxes.Keys.ToList())
+        {
+            _selection.Jinxes[key] = _jinxPolish.GetValueOrDefault(key, string.Empty);
+        }
+    }
+
+    /// <summary>A role keeps the icon the wiki changes gave it, unless a new one was loaded here.</summary>
+    private async Task<LocalBackup> WithWikiIconsAsync(LocalBackup changes)
+    {
+        await ChangeSets.Wiki.GetAllAsync();
+        return changes with
+        {
+            Roles = changes.Roles.Select(r => r.IconUrl is null ? r with { IconUrl = ChangeSets.Wiki.Roles.IconUrl(r.Role.Id) } : r).ToList(),
+        };
+    }
+
+    /// <summary>Keys (as for skipping) of the ticked differences.</summary>
+    private IEnumerable<string> SelectedKeys() =>
+        _comparison!.Roles.SelectMany(r => r.Fields.Where(f => _selection.IsTicked(r.Id, f.Key)).Select(f => r.IsNew ? RoleIgnoreKey(r) : IgnoreKey(r, f)))
+            .Concat(_comparison.Jinxes.Where(j => _selection.Jinxes.ContainsKey(j.Key)).Select(IgnoreKey))
+            .Concat(_comparison.Nights.Where(n => _selection.Nights.Contains(n.Key)).Select(IgnoreKey))
+            .Distinct();
+
+    private static IEnumerable<string> AllKeys(OfficialComparison comparison) =>
+        comparison.Roles.SelectMany(r => r.IsNew ? (IEnumerable<string>)[RoleIgnoreKey(r)] : r.Fields.Select(f => IgnoreKey(r, f)))
+            .Concat(comparison.Jinxes.Select(IgnoreKey))
+            .Concat(comparison.Nights.Select(IgnoreKey));
+
+    private async Task<HashSet<string>> ReadSetAsync(string key)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<HashSet<string>>(await Store.GetSettingAsync(key) ?? "[]") ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    private async Task ToggleIgnoredAsync(string key)
+    {
+        if (!_ignored.Remove(key))
+        {
+            _ignored.Add(key);
+        }
+
+        await Store.SetSettingAsync(IgnoredKey, JsonSerializer.Serialize(_ignored));
+    }
+
+    private bool Shown(string key) => !_sent.Contains(key) && (_showIgnored || !_ignored.Contains(key));
+
+    private bool Visible(OfficialRoleUpdate update) => VisibleFields(update).Any();
+
+    private IEnumerable<OfficialField> VisibleFields(OfficialRoleUpdate update) =>
+        update.IsNew
+            ? (Shown(RoleIgnoreKey(update)) ? update.Fields : [])
+            : update.Fields.Where(f => Shown(IgnoreKey(update, f)));
+
+    // A skipped difference comes back when the published value changes again.
+    private static string RoleIgnoreKey(OfficialRoleUpdate update) => $"new:{update.Id}";
+
+    private static string IgnoreKey(OfficialRoleUpdate update, OfficialField field) => $"role:{update.Id}:{field.Key}:{Hash(field.New)}";
+
+    private static string IgnoreKey(OfficialJinxUpdate jinx) => $"jinx:{jinx.Key}:{Hash(jinx.New)}";
+
+    private static string IgnoreKey(OfficialNightUpdate night) => $"{night.Key}:{Hash(string.Join(',', night.New))}";
+
+    /// <summary>FNV-1a of a text: stable between visits, unlike <see cref="string.GetHashCode()"/>.</summary>
+    private static string Hash(string text)
+    {
+        var hash = 2166136261u;
+        foreach (var c in text)
+        {
+            hash = (hash ^ c) * 16777619u;
+        }
+
+        return hash.ToString("x8");
+    }
+
+    private string RoleName(string id) =>
+        _wiki?.FindRole(id)?.NamePl ?? _comparison?.Roles.FirstOrDefault(r => r.Id == id)?.Official.Name ?? id;
+
+    private string TeamName(string id) => id.Length == 0 ? string.Empty : Teams.Get(id).NamePl;
+
+    private static string WikiUrl(string name) => "https://wiki.bloodontheclocktower.com/" + Uri.EscapeDataString(name.Replace(' ', '_'));
+
+    private void Show(string message, bool error = false)
+    {
+        _message = message;
+        _messageIsError = error;
+    }
+}
