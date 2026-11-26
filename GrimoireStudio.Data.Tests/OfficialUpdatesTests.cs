@@ -175,6 +175,17 @@ public class OfficialUpdatesTests
     }
 
     [Fact]
+    public void IconUrls_Should_TryTheTeamsLookFirst_InTheEditionFolder()
+    {
+        var imp = OfficialRelease.IconUrls(new OfficialRole { Id = "imp", Team = "demon", Edition = "tb" });
+        Assert.Equal("https://raw.githubusercontent.com/ThePandemoniumInstitute/botc-release/main/resources/characters/tb/imp_e.webp", imp[0]);
+
+        Assert.EndsWith("/carousel/steward_g.webp", OfficialRelease.IconUrls(new OfficialRole { Id = "steward", Team = "townsfolk", Edition = "carousel" })[0]);
+        Assert.EndsWith("/fabled/angel.webp", OfficialRelease.IconUrls(new OfficialRole { Id = "angel", Team = "fabled", Edition = "fabled" })[0]);
+        Assert.EndsWith("/tb/thief.webp", OfficialRelease.IconUrls(new OfficialRole { Id = "thief", Team = "traveller", Edition = "tb" })[0]);
+    }
+
+    [Fact]
     public void Renumber_Should_KeepPositionsInOrder_AndPlaceTheOthersBetween()
     {
         Assert.Equal([10, 15, 20, 30], OfficialUpdates.Renumber([10, 0, 20, 30]));

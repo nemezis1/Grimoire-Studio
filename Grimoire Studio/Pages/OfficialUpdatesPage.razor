@@ -87,8 +87,8 @@ else
     {
         <h2>Nowe role (@newRoles.Count)</h2>
         <p class="muted small">
-            Nowa rola potrzebuje ikony: wczytaj ją tutaj albo później w edytorze roli (bez ikony panel nie wyśle zmian). Miejsce
-            w kolejności nocy dostanie, gdy zaznaczysz też zmianę kolejności poniżej.
+            Ikona nowej roli wczytuje się sama z botc-release; możesz wczytać inną. Bez ikony panel nie wyśle zmian. Miejsce
+            w kolejności nocy rola dostanie, gdy zaznaczysz też zmianę kolejności poniżej.
         </p>
         @foreach (var update in newRoles)
         {
@@ -108,9 +108,14 @@ else
                 <div class="official-role__icon">
                     <img src="@(_selection.Icons.GetValueOrDefault(update.Id) ?? "Assets/token.png")" alt="" />
                     <label class="button button--ghost button--file">
-                        Wczytaj ikonę…
+                        @(_selection.Icons.ContainsKey(update.Id) ? "Wczytaj inną…" : "Wczytaj ikonę…")
                         <InputFile accept="image/png,image/jpeg,image/webp" OnChange="e => UploadIconAsync(update.Id, e)" />
                     </label>
+                    <span class="muted small">
+                        @(_iconsLoading.Contains(update.Id) ? "Pobieranie ikony z botc-release…"
+                            : _officialIcons.Contains(update.Id) ? "Ikona z botc-release."
+                            : _selection.Icons.ContainsKey(update.Id) ? "Ikona wczytana ręcznie." : "Brak ikony w botc-release: wczytaj ją.")
+                    </span>
                 </div>
                 @foreach (var field in update.Fields)
                 {
@@ -297,6 +302,8 @@ else
             _wiki = await Client.GetWikiAsync();
             _comparison = OfficialUpdates.Compare(_wiki, release);
             _selection = new OfficialSelection();
+            _officialIcons.Clear();
+            _ = LoadIconsAsync(_comparison.Roles.Where(r => r.IsNew).Select(r => r.Official).ToList());
             _confirmPublish = false;
 
             // Sent differences the site has by now drop out of the list of sent ones.
@@ -534,6 +541,40 @@ else
         }
     }
 
+    private readonly HashSet<string> _iconsLoading = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _officialIcons = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The published icons of new roles (webp in botc-release), made PNG and as small as uploaded ones.</summary>
+    private async Task LoadIconsAsync(IReadOnlyList<OfficialRole> roles)
+    {
+        _iconsLoading.UnionWith(roles.Select(r => r.Id));
+        foreach (var role in roles)
+        {
+            foreach (var url in OfficialRelease.IconUrls(role))
+            {
+                try
+                {
+                    var bytes = await Http.GetByteArrayAsync(url);
+                    var icon = await ChangeSets.Wiki.Roles.ShrinkIconAsync($"data:image/webp;base64,{Convert.ToBase64String(bytes)}");
+                    if (!_selection.Icons.ContainsKey(role.Id))
+                    {
+                        _selection.Icons[role.Id] = icon;
+                        _officialIcons.Add(role.Id);
+                    }
+
+                    break;
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JSException)
+                {
+                    // Not at this address (or not an image): the next one.
+                }
+            }
+
+            _iconsLoading.Remove(role.Id);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
     private async Task UploadIconAsync(string roleId, InputFileChangeEventArgs e)
     {
         try
@@ -541,6 +582,7 @@ else
             using var stream = e.File.OpenReadStream(5 * 1024 * 1024);
             using var memory = new MemoryStream();
             await stream.CopyToAsync(memory);
+            _officialIcons.Remove(roleId);
             _selection.Icons[roleId] = await ChangeSets.Wiki.Roles.ShrinkIconAsync($"data:{e.File.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}");
         }
         catch (IOException)
@@ -624,7 +666,14 @@ else
             _commitMessage = null;
             _rolePolish.Clear();
             _jinxPolish.Clear();
+            // Icons of new roles not sent yet stay for them.
+            var icons = _selection.Icons;
             _selection = new OfficialSelection();
+            foreach (var (id, icon) in icons)
+            {
+                _selection.Icons[id] = icon;
+            }
+
             Show(result.Changed
                 ? $"Wysłano do repozytorium (commit {result.Sha[..7]}): {ProposalText.Changes(count)}. Strona pokaże je po wdrożeniu (zwykle 2–3 minuty); do tego czasu są tu ukryte."
                 : "Repozytorium ma już te zmiany.");

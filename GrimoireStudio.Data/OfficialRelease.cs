@@ -19,6 +19,27 @@ public sealed record OfficialRelease
     public static string FileUrl(string file, string reference = "main") =>
         $"https://raw.githubusercontent.com/{Repository}/{reference}/{DataPath}/{file}";
 
+    /// <summary>
+    /// Addresses where the published icon of a role may be, best first: <c>resources/characters/&lt;edition&gt;/</c>
+    /// holds <c>&lt;id&gt;_g.webp</c> (good), <c>&lt;id&gt;_e.webp</c> (evil) and, for travellers and fabled,
+    /// <c>&lt;id&gt;.webp</c>. Minions and demons look evil, travellers, fabled and loric as they are, the others good.
+    /// </summary>
+    public static IReadOnlyList<string> IconUrls(OfficialRole role, string reference = "main")
+    {
+        var team = OfficialUpdates.Team(role.Team);
+        string[] suffixes = team switch
+        {
+            TeamIds.Minion or TeamIds.Demon => ["_e", string.Empty, "_g"],
+            TeamIds.Traveler or TeamIds.Fabled or "loric" => [string.Empty, "_g", "_e"],
+            _ => ["_g", string.Empty, "_e"],
+        };
+
+        var folder = role.Edition.Length > 0 ? role.Edition : team;
+        return suffixes
+            .Select(suffix => $"https://raw.githubusercontent.com/{Repository}/{reference}/resources/characters/{folder}/{role.Id}{suffix}.webp")
+            .ToList();
+    }
+
     public IReadOnlyList<OfficialRole> Roles { get; init; } = [];
 
     public IReadOnlyList<OfficialJinxes> Jinxes { get; init; } = [];
